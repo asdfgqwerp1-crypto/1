@@ -117,6 +117,7 @@ extension FrameBridge: WKScriptMessageHandler {
         case "startStream":
             isDeliveryEnabled = true
             hasStartedPoll = false
+            schemeHandler.clearFrame()
             DispatchQueue.main.async { [weak self] in
                 self?.delegate?.frameBridgeDidRequestStreamStart()
             }

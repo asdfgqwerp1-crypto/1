@@ -121,3 +121,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** v10 devices OK, но deviceId всё ещё реальный; media-timing зависал/0 кадров без video в document
 **Тесты:** validate-injection.py; на iPhone не запускалось
 **Риски:** prototype patch глобальный — только для треков с `__spoofSettings`
+
+## 2026-06-29 — v12: fix black camera after reinstall / second gUM
+
+**Модули:** `AppState.swift`, `VideoPipeline.swift`, `frameReceiver.js`, `getUserMedia.js`, `FrameBridge.swift`
+**Что изменено:** Убран `isPipelineRunning` guard (pipeline всегда перезапускается на startStream); `AVCaptureDevice.requestAccess` перед сессией; canvas в DOM; сброс frame poll; `requestFrame` pump; повторный poll через 600ms после permission
+**Почему:** После обновления без удаления или повторного gUM камера зависала (pipeline не рестартовал); чёрный квадрат — кадры не доходили до canvas/video
+**Тесты:** validate-injection.py; на iPhone не запускалось
+**Риски:** —

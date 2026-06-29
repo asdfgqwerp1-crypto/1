@@ -150,6 +150,7 @@
     };
   }
 })();
+// --- media/frameReceiver.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -165,14 +166,29 @@
   var frameImage = new Image();
   var isDrawing = false;
 
+  canvas.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
+  if (document.documentElement) {
+    document.documentElement.appendChild(canvas);
+  } else {
+    document.addEventListener('DOMContentLoaded', function () {
+      if (canvas.parentNode !== document.documentElement) {
+        document.documentElement.appendChild(canvas);
+      }
+    });
+  }
+
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
 
-  ctx.fillStyle = '#1b4332';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '16px -apple-system, sans-serif';
-  ctx.fillText('Camera loading…', 16, 32);
+  function drawPlaceholder() {
+    ctx.fillStyle = '#1b4332';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px -apple-system, sans-serif';
+    ctx.fillText('Camera loading…', 16, 32);
+  }
+
+  drawPlaceholder();
 
   function frameURL() {
     var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
@@ -182,16 +198,27 @@
   function drawFrame() {
     if (isDrawing) return;
     isDrawing = true;
+    var released = false;
+    function release() {
+      if (released) return;
+      released = true;
+      isDrawing = false;
+    }
+    setTimeout(release, 500);
     frameImage.onload = function () {
       ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
-      isDrawing = false;
+      release();
     };
-    frameImage.onerror = function () { isDrawing = false; };
+    frameImage.onerror = release;
     frameImage.src = frameURL();
   }
 
   window.__spoofStartFramePoll = function () {
-    if (pollTimer) return;
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    drawPlaceholder();
     drawFrame();
     pollTimer = setInterval(drawFrame, pollIntervalMs);
   };
@@ -389,6 +416,9 @@
   }
 
   function notifyStreamStart(tracks) {
+    if (window.__spoofStopFramePoll) {
+      window.__spoofStopFramePoll();
+    }
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
     }
@@ -397,6 +427,11 @@
         window.__spoofStartFramePoll();
       }
     }, 80);
+    setTimeout(function () {
+      if (window.__spoofStartFramePoll) {
+        window.__spoofStartFramePoll();
+      }
+    }, 600);
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
         if (window.__spoofStopFramePoll) {
@@ -491,6 +526,18 @@
             var tracks = stream.getVideoTracks();
             if (tracks.length > 0) {
               window.__spoofPatchTrack(tracks[0], camera, 'video');
+              if (typeof tracks[0].requestFrame === 'function') {
+                var track = tracks[0];
+                var frameInterval = Math.max(33, Math.round(1000 / fps));
+                var framePump = setInterval(function () {
+                  if (track.readyState === 'ended') {
+                    clearInterval(framePump);
+                    return;
+                  }
+                  try { track.requestFrame(); } catch (e) {}
+                }, frameInterval);
+                track.addEventListener('ended', function () { clearInterval(framePump); });
+              }
             }
 
             notifyStreamStart(tracks);

@@ -13,8 +13,6 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     let videoPipeline: VideoPipeline
     let frameBridge: FrameBridge
 
-    private var isPipelineRunning = false
-
     init() {
         self.testServerHost = TestServerSettings.host
         let store = ProfileStore()
@@ -31,13 +29,10 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     }
 
     func startVideoPipeline() {
-        guard !isPipelineRunning else { return }
-        isPipelineRunning = true
         videoPipeline.start(source: videoSource, profile: activeProfile)
     }
 
     func stopVideoPipeline() {
-        isPipelineRunning = false
         frameBridge.setDeliveryEnabled(false)
         videoPipeline.stop()
     }

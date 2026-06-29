@@ -69,9 +69,23 @@ final class VideoPipeline: NSObject {
     // MARK: - Camera
 
     private func startCamera(position: AVCaptureDevice.Position) {
-        sessionQueue.async { [weak self] in
-            guard let self, self.isRunning else { return }
-            self.configureSession(position: position)
+        let mediaType = AVMediaType.video
+        switch AVCaptureDevice.authorizationStatus(for: mediaType) {
+        case .authorized:
+            sessionQueue.async { [weak self] in
+                guard let self, self.isRunning else { return }
+                self.configureSession(position: position)
+            }
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: mediaType) { [weak self] granted in
+                guard let self, self.isRunning, granted else { return }
+                self.sessionQueue.async {
+                    guard self.isRunning else { return }
+                    self.configureSession(position: position)
+                }
+            }
+        default:
+            break
         }
     }
 
