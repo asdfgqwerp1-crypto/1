@@ -194,6 +194,14 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v25: NV12 chunked delivery (iOS-safe transport)
+
+**Модули:** `ChunkedNV12Frame.swift`, `FrameSchemeHandler.swift`, `FrameBridge.swift`, `frameReceiver.js`
+**Что изменено:** NV12 (~460KB) режется на части по 48KB; `spoofframe://frame/latest` отдаёт meta + `X-Frame-Chunks`, данные в `/part?seq=&p=`; JS параллельно fetch chunk→blob→reassemble→WebGL decode→drawImage; JPEG в profile по умолчанию
+**Почему:** iOS WKWebView не переваривает один большой NV12 fetch/arrayBuffer; JPEG+blob работает только на малых payload
+**Тесты:** `test-frame-pipeline.py` nv12 chunked + jpeg; на iPhone: включить `"frameDelivery":"nv12"` в profile
+**Риски:** 10 parallel fetch/кадр — нагрузка; при fail остаётся jpeg fallback в profile
+
 ## 2026-06-29 — v24: fix SecurityError canvas tainted (CORS fetch)
 
 **Модули:** `frameReceiver.js`, `canvas.js`, `getUserMedia.js`

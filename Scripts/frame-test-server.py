@@ -75,6 +75,15 @@ def make_jpeg_pattern(width: int, height: int) -> bytes:
 
 
 JPEG_FRAME = make_jpeg_pattern(FRAME_WIDTH, FRAME_HEIGHT)
+CHUNK_BYTE_SIZE = 49_152
+NV12_CHUNKS = [
+    NV12_FRAME[i : i + CHUNK_BYTE_SIZE]
+    for i in range(0, len(NV12_FRAME), CHUNK_BYTE_SIZE)
+]
+EXPOSE_HEADERS = (
+    "Content-Type,X-Frame-Format,X-Frame-Chunks,X-Frame-Seq,X-Frame-PTS-Us,"
+    "X-Frame-Width,X-Frame-Height,X-Frame-Part,X-Frame-Part-Count"
+)
 
 
 class FrameTestHandler(SimpleHTTPRequestHandler):
@@ -90,50 +99,78 @@ class FrameTestHandler(SimpleHTTPRequestHandler):
                 return str(target.resolve())
         return super().translate_path(path)
 
+    def _query(self, name: str) -> str | None:
+        if "?" not in self.path:
+            return None
+        query = self.path.split("?", 1)[1]
+        for part in query.split("&"):
+            if part.startswith(name + "="):
+                return part.split("=", 1)[1]
+        return None
+
+    def _send_frame(
+        self,
+        payload: bytes,
+        fmt: str,
+        width: int,
+        height: int,
+        seq: int,
+        chunk_count: int,
+        part_index: int | None = None,
+    ) -> None:
+        content_type = (
+            "application/vnd.safarispoof.nv12" if fmt == "nv12" else "image/jpeg"
+        )
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET")
+        self.send_header("Access-Control-Expose-Headers", EXPOSE_HEADERS)
+        self.send_header("Cross-Origin-Resource-Policy", "cross-origin")
+        self.send_header("X-Frame-Format", fmt)
+        self.send_header("X-Frame-Width", str(width))
+        self.send_header("X-Frame-Height", str(height))
+        self.send_header("X-Frame-Seq", str(seq))
+        self.send_header("X-Frame-PTS-Us", str(seq * 66_000))
+        self.send_header("X-Frame-Chunks", str(chunk_count))
+        if part_index is not None:
+            self.send_header("X-Frame-Part", str(part_index))
+            self.send_header("X-Frame-Part-Count", str(chunk_count))
+        self.end_headers()
+        if payload:
+            self.wfile.write(payload)
+
     def do_GET(self) -> None:
         global FRAME_SEQ
         clean = unquote(self.path.split("?", 1)[0])
+        if clean == "/frame/part":
+            part = int(self._query("p") or "-1")
+            if 0 <= part < len(NV12_CHUNKS):
+                self._send_frame(
+                    NV12_CHUNKS[part],
+                    "nv12",
+                    FRAME_WIDTH,
+                    FRAME_HEIGHT,
+                    FRAME_SEQ,
+                    len(NV12_CHUNKS),
+                    part,
+                )
+            else:
+                self.send_error(404)
+            return
         if clean in ("/frame/latest", "/frame/nv12", "/frame/jpeg", "/frame/jpeg-live", "/frame/placeholder"):
             if clean == "/frame/jpeg-live":
-                payload = JPEG_FRAME
-                fmt = "jpeg"
-                w, h = FRAME_WIDTH, FRAME_HEIGHT
-            elif clean == "/frame/jpeg":
-                payload = PLACEHOLDER_JPEG
-                fmt = "jpeg"
-                w, h = 2, 2
-            elif clean == "/frame/placeholder":
-                payload = PLACEHOLDER_JPEG
-                fmt = "jpeg"
-                w, h = 2, 2
-            else:
-                payload = NV12_FRAME
-                fmt = "nv12"
-                w, h = FRAME_WIDTH, FRAME_HEIGHT
+                FRAME_SEQ += 1
+                self._send_frame(JPEG_FRAME, "jpeg", FRAME_WIDTH, FRAME_HEIGHT, FRAME_SEQ, 1)
+                return
+            if clean in ("/frame/jpeg", "/frame/placeholder"):
+                FRAME_SEQ += 1
+                self._send_frame(PLACEHOLDER_JPEG, "jpeg", 2, 2, FRAME_SEQ, 1)
+                return
             FRAME_SEQ += 1
-            content_type = (
-                "application/vnd.safarispoof.nv12"
-                if fmt == "nv12"
-                else "image/jpeg"
-            )
-            self.send_response(200)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(payload)))
-            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.send_header("Access-Control-Allow-Methods", "GET")
-            self.send_header(
-                "Access-Control-Expose-Headers",
-                "Content-Type,X-Frame-Format,X-Frame-Seq,X-Frame-PTS-Us,X-Frame-Width,X-Frame-Height",
-            )
-            self.send_header("Cross-Origin-Resource-Policy", "cross-origin")
-            self.send_header("X-Frame-Format", fmt)
-            self.send_header("X-Frame-Width", str(w))
-            self.send_header("X-Frame-Height", str(h))
-            self.send_header("X-Frame-Seq", str(FRAME_SEQ))
-            self.send_header("X-Frame-PTS-Us", str(FRAME_SEQ * 66_000))
-            self.end_headers()
-            self.wfile.write(payload)
+            self._send_frame(b"", "nv12", FRAME_WIDTH, FRAME_HEIGHT, FRAME_SEQ, len(NV12_CHUNKS))
             return
         return super().do_GET()
 

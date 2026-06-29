@@ -83,15 +83,40 @@ final class FrameBridge: NSObject {
         sendJitterMs = Double.random(in: -10...14)
         let latency = (now - captureTimestamp) * 1000
 
-        let frame = SpoofFrame(
-            data: data,
-            format: format,
-            width: width,
-            height: height,
-            sequence: sequence,
-            presentationTimeUs: presentationTimeUs
-        )
-        schemeHandler.updateFrame(frame)
+        if format == .nv12 {
+            let chunked = ChunkedNV12Frame(
+                sequence: sequence,
+                width: width,
+                height: height,
+                presentationTimeUs: presentationTimeUs,
+                data: data
+            )
+            if chunked.chunkCount > 1 {
+                schemeHandler.updateChunkedNV12(chunked)
+            } else {
+                schemeHandler.updateFrame(
+                    SpoofFrame(
+                        data: data,
+                        format: format,
+                        width: width,
+                        height: height,
+                        sequence: sequence,
+                        presentationTimeUs: presentationTimeUs
+                    )
+                )
+            }
+        } else {
+            schemeHandler.updateFrame(
+                SpoofFrame(
+                    data: data,
+                    format: format,
+                    width: width,
+                    height: height,
+                    sequence: sequence,
+                    presentationTimeUs: presentationTimeUs
+                )
+            )
+        }
         updateMetrics(latency: latency)
         notifyStartFramePollIfNeeded()
     }

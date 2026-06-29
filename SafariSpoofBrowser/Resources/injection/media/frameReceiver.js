@@ -44,9 +44,30 @@
     ctx.fillText('Camera loading…', 16, 32);
   }
 
+  var fetchOptions = { cache: 'no-store', mode: 'cors', credentials: 'omit' };
+
   function frameURL() {
     var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+  }
+
+  function partURL(seq, index) {
+    if (typeof window.__spoofPartURL__ === 'function') {
+      return window.__spoofPartURL__(seq, index);
+    }
+    return 'spoofframe://frame/part?seq=' + seq + '&p=' + index + '&t=' + Date.now();
+  }
+
+  function blobToArrayBuffer(blob) {
+    if (typeof blob.arrayBuffer === 'function') {
+      return blob.arrayBuffer();
+    }
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(blob);
+    });
   }
 
   function markFrameDrawn(meta) {
@@ -114,8 +135,68 @@
       width: parseInt(headerValue(response, 'X-Frame-Width') || String(caps.width), 10),
       height: parseInt(headerValue(response, 'X-Frame-Height') || String(caps.height), 10),
       seq: parseInt(headerValue(response, 'X-Frame-Seq') || '0', 10),
-      ptsUs: parseInt(headerValue(response, 'X-Frame-PTS-Us') || '0', 10)
+      ptsUs: parseInt(headerValue(response, 'X-Frame-PTS-Us') || '0', 10),
+      chunkCount: parseInt(headerValue(response, 'X-Frame-Chunks') || '0', 10)
     };
+  }
+
+  function fetchChunkedNV12(meta, onDone) {
+    var parts = meta.chunkCount;
+    var seq = meta.seq;
+    if (!parts || parts < 2) {
+      if (onDone) onDone(false);
+      return;
+    }
+    window.__spoofFrameTransport = 'chunked-nv12';
+    var pending = parts;
+    var buffers = new Array(parts);
+    var failed = false;
+
+    function finish(ok) {
+      if (onDone) onDone(!!ok);
+    }
+
+    function tryAssemble() {
+      if (failed) return;
+      if (pending > 0) return;
+      var total = 0;
+      var i;
+      for (i = 0; i < buffers.length; i++) {
+        if (!buffers[i]) {
+          finish(false);
+          return;
+        }
+        total += buffers[i].byteLength;
+      }
+      var out = new Uint8Array(total);
+      var offset = 0;
+      for (i = 0; i < buffers.length; i++) {
+        out.set(new Uint8Array(buffers[i]), offset);
+        offset += buffers[i].byteLength;
+      }
+      finish(drawNV12(out.buffer, meta));
+    }
+
+    for (var p = 0; p < parts; p++) {
+      (function (index) {
+        fetch(partURL(seq, index), fetchOptions)
+          .then(function (response) {
+            if (!response.ok) throw new Error('bad chunk');
+            return response.blob().then(function (blob) {
+              return blobToArrayBuffer(blob);
+            });
+          })
+          .then(function (buf) {
+            buffers[index] = buf;
+            pending -= 1;
+            tryAssemble();
+          })
+          .catch(function () {
+            failed = true;
+            finish(false);
+          });
+      })(p);
+    }
   }
 
   function expectedNV12Bytes(width, height) {
@@ -392,16 +473,26 @@
       return;
     }
 
-    fetch(frameURL(), { cache: 'no-store', mode: 'cors', credentials: 'omit' })
+    fetch(frameURL(), fetchOptions)
       .then(function (response) {
         if (!response.ok) throw new Error('bad status');
         var meta = parseFrameHeaders(response);
+        if (meta.chunkCount > 1 && (meta.formatHeader === 'nv12' || preferNV12)) {
+          fetchChunkedNV12(meta, function (ok) {
+            if (!ok && meta.chunkCount > 1) {
+              window.__spoofFrameTransport = 'chunked-nv12-failed';
+            }
+            release();
+          });
+          return;
+        }
         return response.blob().then(function (blob) {
           if (shouldUseNV12(meta, blob.size)) {
-            return blob.arrayBuffer().then(function (buf) {
+            return blobToArrayBuffer(blob).then(function (buf) {
               handleBuffer(buf, meta, release);
             });
           }
+          window.__spoofFrameTransport = 'jpeg-blob';
           drawBlobAsImage(blob, meta, release);
         });
       })

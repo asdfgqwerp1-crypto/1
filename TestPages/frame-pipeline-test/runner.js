@@ -87,6 +87,11 @@
       var mode = params.get('mode') || 'nv12';
       window.__SAFARI_SPOOF_CONFIG__.frameDelivery = mode === 'jpeg' ? 'jpeg' : 'nv12';
       window.__SAFARI_SPOOF_FRAME_URL__ = mode === 'jpeg' ? '/frame/jpeg-live' : '/frame/latest';
+      if (mode === 'nv12') {
+        window.__spoofPartURL__ = function (seq, index) {
+          return '/frame/part?seq=' + seq + '&p=' + index + '&t=' + Date.now();
+        };
+      }
       window.webkit = {
         messageHandlers: {
           spoofFrameBridge: { postMessage: function () {} }
@@ -142,7 +147,11 @@
 
       var streamFrames = await countStreamFrames(video, 1200);
       assert('captureStream updates', streamFrames >= 4,
-        'rVFC=' + streamFrames + ' before=' + JSON.stringify(before));
+        'rVFC=' + streamFrames + ' transport=' + (window.__spoofFrameTransport || 'unknown'));
+
+      if (mode === 'nv12') {
+        assert('nv12 chunked transport', window.__spoofFrameTransport === 'chunked-nv12');
+      }
 
       window.__spoofStopFramePoll();
     } catch (err) {
