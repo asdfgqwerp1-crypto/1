@@ -26,6 +26,8 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `navigator.maxTouchPoints` | Patched | 5 for iPhone |
 | `navigator.hardwareConcurrency` | Patched | Matches SoC core count |
 | `screen.width/height` | Patched | CSS pixels, not physical |
+| `window.innerWidth/innerHeight` | Patched v17 | Profile viewport (Safari layout, not WKWebView chrome) |
+| `visualViewport` / `clientWidth` | Patched v17 | Matches inner dimensions from profile |
 | `devicePixelRatio` | Patched | 2 or 3 per device |
 | WebGL vendor/renderer | Patched | Apple GPU strings |
 | Canvas hash | Patched | Deterministic noise per profile seed |
@@ -46,7 +48,7 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `applyConstraints` | Patched v15 | Resolves on spoofed tracks |
 | `__spoof*` globals | Mitigated v15 | Non-enumerable on window |
 | Canvas stream origin | Risk | Advanced: canvas.captureStream vs AVFoundation |
-| Frame timing regularity | Mitigated v15 | 12fps target + ±12ms jitter native/JS |
+| Frame timing regularity | Mitigated v17 | 16fps target + ±12ms jitter native/JS |
 | Frame sensor noise | Mitigated v15 | Subtle per-frame noise from profile seed |
 | Permission prompt timing | Mitigated | 50–200ms delay |
 | Synthetic audio | Patched v16 metadata / Risk spectrum | audio-only + video+audio return profile deviceId; silent oscillator — not real mic spectrum |

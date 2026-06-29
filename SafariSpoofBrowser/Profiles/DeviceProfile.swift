@@ -25,6 +25,13 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         let webdriver: Bool?
     }
 
+    struct ViewportProfile: Codable, Equatable {
+        let innerWidth: Int
+        let innerHeight: Int
+        let outerWidth: Int?
+        let outerHeight: Int?
+    }
+
     struct ScreenProfile: Codable, Equatable {
         let width: Int
         let height: Int
@@ -33,6 +40,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         let devicePixelRatio: Double
         let colorDepth: Int
         let orientation: String
+        let viewport: ViewportProfile?
     }
 
     struct WebGLProfile: Codable, Equatable {

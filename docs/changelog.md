@@ -161,3 +161,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** video+audio тест утекал реальные deviceId и 4 камеры; race при поздней инициализации mediaDevices
 **Тесты:** validate-injection.py → 0 failed; на iPhone не запускалось
 **Риски:** синтетический audio — не реальный спектр микрофона (см. detection-vectors)
+
+## 2026-06-29 — v17: 16fps + viewport 414×750 (BrowserLeaks)
+
+**Модули:** `fingerprint/screen.js`, `Profiles/`, `VideoPipeline.swift`, `FrameBridge.swift`, `frameReceiver.js`, `fingerprint-diff/`
+**Что изменено:** Патч innerWidth/innerHeight/outerWidth/outerHeight, visualViewport, document client size; profile viewport 414×750 для iPhone 11; FPS лимит 12→16 (native+JS); JPEG 0.30
+**Почему:** BrowserLeaks показывал viewport 414×646 (реальный WKWebView chrome) вместо Safari 414×750; запрос на 15–18 fps
+**Тесты:** validate-injection.py; на iPhone не запускались
+**Риски:** layout страницы остаётся по реальному WebView — патч только на чтение JS API

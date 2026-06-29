@@ -31,7 +31,7 @@ final class FrameBridge: NSObject {
     private(set) var isDeliveryEnabled = false
     private var lastSendTime: CFAbsoluteTime = 0
     private var hasStartedPoll = false
-    private let minInterval: CFAbsoluteTime = 1.0 / 12.0
+    private let minInterval: CFAbsoluteTime = 1.0 / 16.0
     private var sendJitterMs: Double = 0
 
     var isDelivering: Bool { isDeliveryEnabled }

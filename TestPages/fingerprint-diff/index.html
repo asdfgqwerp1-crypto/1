@@ -53,6 +53,16 @@
           devicePixelRatio: window.devicePixelRatio,
           orientation: screen.orientation ? screen.orientation.type : null
         },
+        viewport: {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          outerWidth: window.outerWidth,
+          outerHeight: window.outerHeight,
+          clientWidth: document.documentElement ? document.documentElement.clientWidth : null,
+          clientHeight: document.documentElement ? document.documentElement.clientHeight : null,
+          visualViewportWidth: window.visualViewport ? window.visualViewport.width : null,
+          visualViewportHeight: window.visualViewport ? window.visualViewport.height : null
+        },
         webgl,
         hasSafariObject: typeof window.safari !== 'undefined',
         audioSampleRate: (() => {

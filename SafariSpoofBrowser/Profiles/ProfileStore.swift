@@ -62,7 +62,8 @@ final class ProfileStore {
             availWidth: 414, availHeight: 896,
             devicePixelRatio: 2,
             colorDepth: 24,
-            orientation: "portrait-primary"
+            orientation: "portrait-primary",
+            viewport: .init(innerWidth: 414, innerHeight: 750, outerWidth: 414, outerHeight: 750)
         ),
         webgl: .init(
             vendor: "Apple Inc.",

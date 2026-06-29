@@ -8,7 +8,7 @@
   var ctx = null;
   var pollTimer = null;
   var pollActive = false;
-  var pollBaseMs = Math.round(1000 / 12);
+  var pollBaseMs = Math.round(1000 / 16);
   var isDrawing = false;
   var noiseSeed = (config.webgl && config.webgl.canvasNoiseSeed) || 284739102;
   var framesSinceNoise = 0;
@@ -117,7 +117,7 @@
   function schedulePoll() {
     if (!pollActive) return;
     var jitter = Math.floor(Math.random() * 24) - 12;
-    var delay = Math.max(55, pollBaseMs + jitter);
+    var delay = Math.max(48, pollBaseMs + jitter);
     pollTimer = setTimeout(function () {
       drawFrame();
       schedulePoll();
