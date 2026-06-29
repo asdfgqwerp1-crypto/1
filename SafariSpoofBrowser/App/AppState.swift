@@ -29,6 +29,10 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
         self.frameBridge.delegate = self
 
+        if let savedURL = NetworkStreamSettings.url, !savedURL.isEmpty {
+            self.videoSource = .networkStream(url: savedURL)
+        }
+
         frameBridge.metricsPublisher
             .receive(on: DispatchQueue.main)
             .sink { [weak self] metrics in
@@ -57,6 +61,8 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         videoPipeline.start(source: videoSource, profile: effectiveProfile)
     }
 
+    var usesNetworkVideoSource: Bool { isNetworkVideoSource }
+
     private var isNetworkVideoSource: Bool {
         switch videoSource {
         case .networkStream, .network:
@@ -78,14 +84,24 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     }
 
     func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?) {
+        if let config {
+            videoPipeline.updateStreamDelivery(config)
+        }
+        if isNetworkVideoSource {
+            frameBridge.setDeliveryEnabled(true)
+            startVideoPipeline()
+            return
+        }
         Task {
-            let granted = isNetworkVideoSource || await Self.requestCameraAccessIfNeeded()
-            guard granted else { return }
-            if let config {
-                videoPipeline.updateStreamDelivery(config)
-            }
+            guard await Self.requestCameraAccessIfNeeded() else { return }
             startVideoPipeline()
         }
+    }
+
+    func prepareForBrowser() {
+        guard isNetworkVideoSource else { return }
+        frameBridge.setDeliveryEnabled(true)
+        startVideoPipeline()
     }
 
     func frameBridgeDidRequestStreamStop() {

@@ -33,3 +33,18 @@ enum TestServerSettings {
         }
     }
 }
+
+enum NetworkStreamSettings {
+    private static let urlKey = "networkStreamURL"
+
+    static var url: String? {
+        get { UserDefaults.standard.string(forKey: urlKey) }
+        set {
+            if let newValue, !newValue.isEmpty {
+                UserDefaults.standard.set(newValue, forKey: urlKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: urlKey)
+            }
+        }
+    }
+}

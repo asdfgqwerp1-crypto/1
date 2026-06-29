@@ -11,32 +11,24 @@ final class NetworkVideoPlayer: NSObject {
     private var liveEdgeTimer: Timer?
     private var statusObserver: NSKeyValueObservation?
     private var videoTransform: CGAffineTransform = .identity
+    private var pendingURLs: [URL] = []
+    private var currentURLIndex = 0
+    private var isLiveHLS = false
 
-    func play(url: URL) {
+    func play(url: String) {
+        play(urls: StreamURLResolver.playbackCandidates(for: url))
+    }
+
+    func play(urls: [URL]) {
         stop()
-        let asset = AVURLAsset(url: url)
-        let item = AVPlayerItem(asset: asset)
-        item.preferredForwardBufferDuration = 0
-        if #available(iOS 15.0, *) {
-            item.preferredPeakBitRate = 0
-        }
-        if #available(iOS 14.0, *) {
-            item.startsOnFirstEligibleVariant = true
-        }
-        setupOutput(for: item)
-        let avPlayer = AVPlayer(playerItem: item)
-        avPlayer.automaticallyWaitsToMinimizeStalling = false
-        avPlayer.actionAtItemEnd = .none
-        player = avPlayer
-        observeItem(item, player: avPlayer)
-        loadVideoTransform(from: asset)
-        avPlayer.playImmediately(atRate: 1.0)
-        startDisplayLink()
-        startLiveEdgeSync(for: item, player: avPlayer)
+        pendingURLs = urls
+        currentURLIndex = 0
+        guard !pendingURLs.isEmpty else { return }
+        startCurrentURL()
     }
 
     func playFile(path: String) {
-        play(url: URL(fileURLWithPath: path))
+        play(url: URL(fileURLWithPath: path).absoluteString)
     }
 
     func attachPreview(to view: UIView) {
@@ -62,6 +54,45 @@ final class NetworkVideoPlayer: NSObject {
         player = nil
         videoOutput = nil
         videoTransform = .identity
+        pendingURLs = []
+        currentURLIndex = 0
+        isLiveHLS = false
+    }
+
+    private func startCurrentURL() {
+        guard currentURLIndex < pendingURLs.count else { return }
+        let url = pendingURLs[currentURLIndex]
+        isLiveHLS = url.path.hasSuffix(".m3u8") || url.absoluteString.contains(".m3u8")
+
+        player?.pause()
+        videoOutput = nil
+
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        item.preferredForwardBufferDuration = isLiveHLS ? 1.0 : 0
+        if #available(iOS 15.0, *) {
+            item.preferredPeakBitRate = 0
+        }
+        if #available(iOS 14.0, *) {
+            item.startsOnFirstEligibleVariant = true
+        }
+        setupOutput(for: item)
+
+        let avPlayer = AVPlayer(playerItem: item)
+        avPlayer.automaticallyWaitsToMinimizeStalling = false
+        avPlayer.actionAtItemEnd = .none
+        player = avPlayer
+        observeItem(item, player: avPlayer)
+        loadVideoTransform(from: asset)
+        avPlayer.playImmediately(atRate: 1.0)
+        startDisplayLink()
+        startLiveEdgeSync(for: item, player: avPlayer)
+    }
+
+    private func tryNextURL() {
+        currentURLIndex += 1
+        guard currentURLIndex < pendingURLs.count else { return }
+        startCurrentURL()
     }
 
     private func setupOutput(for item: AVPlayerItem) {
@@ -69,15 +100,21 @@ final class NetworkVideoPlayer: NSObject {
             kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
         ]
         let output = AVPlayerItemVideoOutput(pixelBufferAttributes: settings)
-        output.suppressesPlayerRendering = true
         item.add(output)
         videoOutput = output
     }
 
     private func observeItem(_ item: AVPlayerItem, player: AVPlayer) {
         statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
-            guard item.status == .readyToPlay else { return }
-            self?.seekToLiveEdge(item: item, player: player)
+            guard let self else { return }
+            switch item.status {
+            case .readyToPlay:
+                self.seekToLiveEdge(item: item, player: player)
+            case .failed:
+                self.tryNextURL()
+            default:
+                break
+            }
         }
     }
 
@@ -92,6 +129,7 @@ final class NetworkVideoPlayer: NSObject {
     }
 
     private func startDisplayLink() {
+        displayLink?.invalidate()
         displayLink = CADisplayLink(target: self, selector: #selector(displayLinkFired))
         displayLink?.preferredFrameRateRange = CAFrameRateRange(minimum: 24, maximum: 30, preferred: 30)
         displayLink?.add(to: .main, forMode: .common)
@@ -99,6 +137,7 @@ final class NetworkVideoPlayer: NSObject {
 
     private func startLiveEdgeSync(for item: AVPlayerItem, player: AVPlayer) {
         seekToLiveEdge(item: item, player: player)
+        liveEdgeTimer?.invalidate()
         let timer = Timer(timeInterval: 0.75, repeats: true) { [weak self, weak item, weak player] _ in
             self?.seekToLiveEdge(item: item, player: player)
         }
@@ -107,7 +146,7 @@ final class NetworkVideoPlayer: NSObject {
     }
 
     private func seekToLiveEdge(item: AVPlayerItem?, player: AVPlayer?) {
-        guard let item, let player, item.status == .readyToPlay else { return }
+        guard isLiveHLS, let item, let player, item.status == .readyToPlay else { return }
         guard let range = item.seekableTimeRanges.last?.timeRangeValue else { return }
         let live = CMTimeRangeGetEnd(range)
         let lag = CMTimeGetSeconds(CMTimeSubtract(live, item.currentTime()))
@@ -118,7 +157,8 @@ final class NetworkVideoPlayer: NSObject {
     @objc private func displayLinkFired() {
         guard let output = videoOutput,
               let player,
-              let item = player.currentItem else { return }
+              let item = player.currentItem,
+              item.status == .readyToPlay else { return }
 
         let time = item.currentTime()
         guard output.hasNewPixelBuffer(forItemTime: time),

@@ -47,6 +47,7 @@ struct SettingsView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                         Button("Apply URL") {
+                            NetworkStreamSettings.url = networkURL
                             appState.videoSource = .networkStream(url: networkURL)
                             appState.stopVideoPipeline()
                             appState.startVideoPipeline()
@@ -69,10 +70,15 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarItems(trailing: Button("Done") { dismiss() })
             .onAppear {
+                if let saved = NetworkStreamSettings.url, !saved.isEmpty {
+                    networkURL = saved
+                }
                 appState.startVideoPipeline()
             }
             .onDisappear {
-                appState.stopVideoPipeline()
+                if !appState.usesNetworkVideoSource {
+                    appState.stopVideoPipeline()
+                }
             }
         }
     }

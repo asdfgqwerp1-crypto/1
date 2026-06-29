@@ -158,7 +158,8 @@ final class VideoPipeline: NSObject {
     // MARK: - Network / file
 
     private func startNetworkStream(url: String, profile: DeviceProfile) {
-        guard let streamURL = URL(string: url) else { return }
+        let candidates = StreamURLResolver.playbackCandidates(for: url)
+        guard !candidates.isEmpty else { return }
         let player = NetworkVideoPlayer()
         player.onFrame = { [weak self] pixelBuffer, transform, timestamp in
             self?.processPixelBufferIfNeeded(
@@ -169,7 +170,7 @@ final class VideoPipeline: NSObject {
             )
         }
         networkPlayer = player
-        player.play(url: streamURL)
+        player.play(url: url)
     }
 
     private func startFilePlayback(path: String, profile: DeviceProfile) {
