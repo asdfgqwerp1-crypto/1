@@ -30,6 +30,9 @@ struct HomeView: View {
                     Text("Профилей: \(appState.profileStore.profiles.count)")
                         .font(.caption)
                         .foregroundStyle(.gray)
+                    Text("Кадры: \(appState.frameDeliveryMode.rawValue.uppercased())")
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.gray)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {

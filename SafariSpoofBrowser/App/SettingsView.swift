@@ -24,6 +24,17 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Frame Delivery") {
+                    Picker("Format", selection: $appState.frameDeliveryMode) {
+                        Text("JPEG").tag(FrameDeliveryFormat.jpeg)
+                        Text("NV12").tag(FrameDeliveryFormat.nv12)
+                    }
+                    .pickerStyle(.segmented)
+                    Text("JPEG — стабильно на iPhone (v24). NV12 — без JPEG-артефактов, chunked v25+. После смены перезагрузите страницу теста.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Video Source") {
                     Picker("Source", selection: $appState.videoSource) {
                         Text("Front Camera").tag(VideoSourceType.deviceCamera(position: .front))

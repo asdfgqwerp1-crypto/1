@@ -98,7 +98,7 @@ struct BrowserScreenView: View {
             if mountWebView {
                 BrowserView(
                     coordinator: coordinator,
-                    profile: appState.activeProfile,
+                    profile: appState.effectiveProfile,
                     frameBridge: appState.frameBridge,
                     initialURL: addressText
                 )
@@ -109,7 +109,13 @@ struct BrowserScreenView: View {
         .background(Color.white)
         .onChange(of: appState.activeProfile.id) { _ in
             coordinator.configure(
-                profile: appState.activeProfile,
+                profile: appState.effectiveProfile,
+                frameBridge: appState.frameBridge
+            )
+        }
+        .onChange(of: appState.frameDeliveryMode) { _ in
+            coordinator.configure(
+                profile: appState.effectiveProfile,
                 frameBridge: appState.frameBridge
             )
         }

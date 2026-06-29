@@ -194,6 +194,14 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v26: Frame Delivery toggle в Settings
+
+**Модули:** `SettingsView.swift`, `AppState.swift`, `DeviceProfile.swift`, `HomeView.swift`, `BrowserScreenView.swift`
+**Что изменено:** Переключатель JPEG / NV12 в настройках приложения; сохранение в UserDefaults; `effectiveProfile` для pipeline и injection
+**Почему:** NV12 включался только правкой JSON — неудобно на устройстве
+**Тесты:** не запускались на устройстве
+**Риски:** после смены формата нужна перезагрузка страницы в браузере
+
 ## 2026-06-29 — v25: NV12 chunked delivery (iOS-safe transport)
 
 **Модули:** `ChunkedNV12Frame.swift`, `FrameSchemeHandler.swift`, `FrameBridge.swift`, `frameReceiver.js`

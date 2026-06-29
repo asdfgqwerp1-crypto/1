@@ -127,7 +127,26 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
     }
 
     var resolvedFrameDelivery: FrameDeliveryFormat {
-        frameDelivery ?? .nv12
+        frameDelivery ?? .jpeg
+    }
+
+    func withFrameDelivery(_ format: FrameDeliveryFormat) -> DeviceProfile {
+        DeviceProfile(
+            id: id,
+            displayName: displayName,
+            userAgent: userAgent,
+            emulateSafariObject: emulateSafariObject,
+            frameDelivery: format,
+            navigator: navigator,
+            screen: screen,
+            webgl: webgl,
+            audio: audio,
+            cameras: cameras,
+            microphones: microphones,
+            mediaCapabilities: mediaCapabilities,
+            videoTrackSpoof: videoTrackSpoof,
+            audioTrackSpoof: audioTrackSpoof
+        )
     }
 
     var injectionConfigJSON: String {
