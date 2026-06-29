@@ -5,6 +5,7 @@ struct BrowserView: UIViewRepresentable {
     @ObservedObject var coordinator: BrowserCoordinator
     let profile: DeviceProfile
     let frameBridge: FrameBridge
+    var initialURL: String?
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
@@ -23,8 +24,12 @@ struct BrowserView: UIViewRepresentable {
         coordinator.prepare(profile: profile, frameBridge: frameBridge)
         coordinator.attach(webView: webView)
 
-        if let blank = URL(string: "about:blank") {
-            webView.load(URLRequest(url: blank))
+        DispatchQueue.main.async {
+            if let initialURL, !initialURL.isEmpty {
+                coordinator.load(urlString: initialURL)
+            } else if let blank = URL(string: "about:blank") {
+                webView.load(URLRequest(url: blank))
+            }
         }
 
         return webView

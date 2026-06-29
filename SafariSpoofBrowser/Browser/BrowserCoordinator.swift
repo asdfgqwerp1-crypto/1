@@ -12,6 +12,8 @@ final class BrowserCoordinator: NSObject, ObservableObject {
 
     @Published private(set) var canGoBack = false
     @Published private(set) var canGoForward = false
+    @Published private(set) var isLoading = false
+    @Published private(set) var statusMessage = "Готов"
 
     private(set) var webView: WKWebView?
     private var injectionManager: InjectionManager?
@@ -35,18 +37,30 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         webView.navigationDelegate = self
         webView.uiDelegate = self
 
-        guard let profile = activeProfile, let frameBridge else { return }
+        guard let profile = activeProfile, let frameBridge else {
+            statusMessage = "Ошибка: профиль не готов"
+            return
+        }
         let manager = InjectionManager(profile: profile, frameBridge: frameBridge)
         injectionManager = manager
         manager.install(into: webView)
         frameBridge.attach(webView: webView)
         webView.customUserAgent = profile.userAgent
+        statusMessage = "Браузер готов"
     }
 
     func load(urlString: String) {
-        guard let webView else { return }
+        guard let webView else {
+            statusMessage = "Ошибка: WebView не создан"
+            return
+        }
         let normalized = URLNormalizer.normalize(urlString)
-        guard let url = URL(string: normalized) else { return }
+        guard let url = URL(string: normalized) else {
+            statusMessage = "Неверный URL"
+            return
+        }
+        isLoading = true
+        statusMessage = "Загрузка \(url.host ?? normalized)…"
         webView.load(URLRequest(url: url))
     }
 
@@ -84,12 +98,43 @@ extension BrowserLogLevel {
 }
 
 extension BrowserCoordinator: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        isLoading = true
+    }
+
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        isLoading = false
+        statusMessage = webView.url?.host ?? "Загружено"
         updateNavigationState()
     }
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         updateNavigationState()
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        isLoading = false
+        statusMessage = "Ошибка: \(error.localizedDescription)"
+        log(statusMessage, level: .error)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        isLoading = false
+        statusMessage = "Не открылось: \(error.localizedDescription)"
+        log(statusMessage, level: .error)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        if challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+           let trust = challenge.protectionSpace.serverTrust {
+            completionHandler(.useCredential, URLCredential(trust: trust))
+            return
+        }
+        completionHandler(.performDefaultHandling, nil)
     }
 }
 
@@ -101,7 +146,6 @@ extension BrowserCoordinator: WKUIDelegate {
         type: WKMediaCaptureType,
         decisionHandler: @escaping (WKPermissionDecision) -> Void
     ) {
-        // Mimic Safari permission delay
         let delay = Double.random(in: 0.05...0.2)
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             decisionHandler(.grant)
