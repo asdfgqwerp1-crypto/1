@@ -73,9 +73,6 @@ final class NetworkVideoPlayer: NSObject {
         if #available(iOS 15.0, *) {
             item.preferredPeakBitRate = 0
         }
-        if #available(iOS 14.0, *) {
-            item.startsOnFirstEligibleVariant = true
-        }
         setupOutput(for: item)
 
         let avPlayer = AVPlayer(playerItem: item)
