@@ -36,6 +36,9 @@ struct ContentView: View {
             Text(appState.activeProfile.displayName)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            Text(BuildInfo.marker)
+                .font(.caption2.monospaced())
+                .foregroundStyle(.orange)
             Spacer()
             if appState.bridgeMetrics.fps > 0 {
                 Text(String(format: "%.0f fps", appState.bridgeMetrics.fps))

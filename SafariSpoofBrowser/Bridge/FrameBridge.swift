@@ -27,9 +27,11 @@ final class FrameBridge: NSObject {
 
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
-    private var isDeliveryEnabled = false
+    private(set) var isDeliveryEnabled = false
     private var lastSendTime: CFAbsoluteTime = 0
     private let minInterval: CFAbsoluteTime = 1.0 / 12.0
+
+    var isDelivering: Bool { isDeliveryEnabled }
 
     func registerScheme(on configuration: WKWebViewConfiguration) {
         configuration.setURLSchemeHandler(schemeHandler, forURLScheme: FrameSchemeHandler.scheme)

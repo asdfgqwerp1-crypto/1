@@ -81,3 +81,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Throttle evaluateJavaScript не устранил краш ~30 с; нужен тестируемый injection без iPhone
 **Тесты:** validate-injection.py → 0 failed на Linux VM
 **Риски:** Desktop WebKit ≠ iOS WKWebView; полный e2e всё ещё требует iPhone
+
+## 2026-06-29 — v3: fix spoofframe HTTP response + native encode throttle
+
+**Модули:** `FrameSchemeHandler.swift`, `VideoPipeline/VideoPipeline.swift`, `frameReceiver.js`, `BuildInfo.swift`, `Scripts/test-injection.py`
+**Что изменено:** `HTTPURLResponse` 200 для spoofframe (без этого img/fetch на iOS не грузят кадры); encode только 12fps и только когда `isDelivering`; камера `.vga640x480`; placeholder JPEG вместо 404; fetch+blob fallback в JS; маркер **v3** в UI; Playwright WebKit тесты на Linux (12/12)
+**Почему:** Smoke-тесты не гоняли WebKit; на iOS оставались чёрное видео (нет HTTP ответа) и краш (30fps JPEG encode на 1080p)
+**Тесты:** test-injection.py Playwright webkit → 12/12 pass; validate-injection.py → 0 failed
+**Риски:** iPhone e2e всё ещё обязателен для финальной проверки

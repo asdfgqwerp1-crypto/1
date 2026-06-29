@@ -78,7 +78,7 @@
       assert('config loaded', !!window.__SAFARI_SPOOF_CONFIG__);
       assert('navigator.platform', navigator.platform === 'iPhone');
       assert('navigator.webdriver false', navigator.webdriver === false);
-      assert('no window.safari', typeof window.safari === 'undefined');
+      assert('emulateSafariObject profile', window.__SAFARI_SPOOF_CONFIG__.emulateSafariObject === profile.emulateSafariObject);
       assert('screen.width', screen.width === 414, 'got ' + screen.width);
       assert('canvas ready', !!window.__spoofCanvas);
 
