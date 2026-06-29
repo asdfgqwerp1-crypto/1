@@ -234,6 +234,7 @@
 				A20000010000000000000040 /* FrameScaler.swift */,
 				A20000010000000000000042 /* StreamURLResolver.swift */,
 				A20000010000000000000043 /* HttpSnapshotPlayer.swift */,
+				A20000010000000000000044 /* CameraIndicatorSession.swift */,
 				A20000010000000000000041 /* FrameTiming.swift */,
 				A20000010000000000000015 /* NetworkVideoPlayer.swift */,
 			);
@@ -422,6 +423,7 @@
 				A10000010000000000000040 /* FrameScaler.swift in Sources */,
 				A10000010000000000000042 /* StreamURLResolver.swift in Sources */,
 				A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */,
+				A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */,
 				A10000010000000000000041 /* FrameTiming.swift in Sources */,
 				A10000010000000000000038 /* SpoofFrame.swift in Sources */,
 				A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */,
