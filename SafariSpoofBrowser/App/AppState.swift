@@ -7,6 +7,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     @Published var videoSource: VideoSourceType = .deviceCamera(position: .front)
     @Published var bridgeMetrics = FrameBridgeMetrics()
     @Published var showSettings = false
+    @Published var testServerHost: String
 
     let profileStore: ProfileStore
     let videoPipeline: VideoPipeline
@@ -15,6 +16,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     private var isPipelineRunning = false
 
     init() {
+        self.testServerHost = TestServerSettings.host
         let store = ProfileStore()
         self.profileStore = store
         self.activeProfile = store.defaultProfile

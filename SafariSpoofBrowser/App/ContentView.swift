@@ -4,10 +4,10 @@ struct ContentView: View {
     @EnvironmentObject private var appState: AppState
     @StateObject private var browserCoordinator = BrowserCoordinator()
     @State private var showBrowser = false
-    @State private var addressText = "https://192.168.2.113:8443/webrtc-inspector/"
+    @State private var addressText = ""
 
     var body: some View {
-        HomeView(testServerURL: $addressText, onOpenBrowser: { showBrowser = true })
+        HomeView(onOpenURL: openBrowser)
             .preferredColorScheme(.light)
             .fullScreenCover(isPresented: $showBrowser, onDismiss: {
                 appState.stopVideoPipeline()
@@ -15,7 +15,11 @@ struct ContentView: View {
                 BrowserScreenView(
                     coordinator: browserCoordinator,
                     addressText: $addressText,
-                    onClose: { showBrowser = false }
+                    onClose: { showBrowser = false },
+                    onNavigate: { url in
+                        addressText = url
+                        browserCoordinator.load(urlString: url)
+                    }
                 )
                 .environmentObject(appState)
             }
@@ -23,5 +27,10 @@ struct ContentView: View {
                 SettingsView()
                     .environmentObject(appState)
             }
+    }
+
+    private func openBrowser(url: String) {
+        addressText = url
+        showBrowser = true
     }
 }

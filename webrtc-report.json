@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-06-29T04:14:26.298Z",
+  "timestamp": "2026-06-29T06:58:55.770Z",
   "secureContext": true,
   "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
   "devices": [
@@ -22,10 +22,10 @@
     "settings": {
       "aspectRatio": 0.75,
       "backgroundBlur": false,
-      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "deviceId": "3947DD3F74F2E3DDFC44B1489D40C500EA410B98",
       "facingMode": "user",
       "frameRate": 30,
-      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "groupId": "EF49488BE7AF2A4D2CBDB88F2B522B1DE6FD106A",
       "height": 640,
       "powerEfficient": false,
       "whiteBalanceMode": "continuous",
@@ -40,7 +40,7 @@
       "backgroundBlur": [
         false
       ],
-      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "deviceId": "3947DD3F74F2E3DDFC44B1489D40C500EA410B98",
       "facingMode": [
         "user"
       ],
@@ -48,7 +48,7 @@
         "max": 60,
         "min": 1
       },
-      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "groupId": "EF49488BE7AF2A4D2CBDB88F2B522B1DE6FD106A",
       "height": {
         "max": 3024,
         "min": 1
@@ -77,19 +77,19 @@
   "audioTrack": {
     "label": "iPhone Microphone",
     "settings": {
-      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
+      "deviceId": "15CB3FC1AFB2B2E9E8C66EACC46BCEDA88FD0F5A",
       "echoCancellation": true,
-      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF",
+      "groupId": "DCB72CF1F3CA83440F968FDD958B41B6B9CD68E4",
       "sampleRate": 48000,
       "volume": 1
     },
     "capabilities": {
-      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
+      "deviceId": "15CB3FC1AFB2B2E9E8C66EACC46BCEDA88FD0F5A",
       "echoCancellation": [
         true,
         false
       ],
-      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF",
+      "groupId": "DCB72CF1F3CA83440F968FDD958B41B6B9CD68E4",
       "sampleRate": {
         "max": 96000,
         "min": 8000

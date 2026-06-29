@@ -2,16 +2,15 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var appState: AppState
-    @Binding var testServerURL: String
-    let onOpenBrowser: () -> Void
+    let onOpenURL: (String) -> Void
 
     @State private var reachabilityStatus = "Нажмите «Проверить сервер»"
     @State private var isChecking = false
 
-    var body: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
+    private var bookmarks: [TestBookmark] { TestBookmark.all }
 
+    var body: some View {
+        ScrollView {
             VStack(spacing: 18) {
                 Text("SafariSpoof")
                     .font(.system(size: 34, weight: .bold))
@@ -34,30 +33,23 @@ struct HomeView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("URL тест-сервера (IP Linux VM):")
+                    Text("IP Linux VM (Wi‑Fi):")
                         .font(.caption)
                         .foregroundStyle(.gray)
-                    TextField("https://192.168.2.113:8443/webrtc-inspector/", text: $testServerURL)
+                    TextField("192.168.2.113", text: $appState.testServerHost)
                         .textFieldStyle(.roundedBorder)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .keyboardType(.URL)
-
-                    HStack(spacing: 8) {
-                        Button("HTTP тест") {
-                            testServerURL = "http://192.168.2.113:8080/fingerprint-diff/"
+                        .keyboardType(.decimalPad)
+                        .onChange(of: appState.testServerHost) { value in
+                            TestServerSettings.host = value
                         }
-                        .font(.caption)
-                        Button("HTTPS камера") {
-                            testServerURL = "https://192.168.2.113:8443/webrtc-inspector/"
-                        }
-                        .font(.caption)
-                    }
 
                     Button {
                         isChecking = true
+                        let url = TestBookmark.all[1].url(host: appState.testServerHost)
                         Task {
-                            reachabilityStatus = await ServerReachability.check(urlString: testServerURL)
+                            reachabilityStatus = await ServerReachability.check(urlString: url)
                             isChecking = false
                         }
                     } label: {
@@ -73,14 +65,34 @@ struct HomeView: View {
                 }
                 .padding(.horizontal, 24)
 
-                Button(action: onOpenBrowser) {
-                    Text("Открыть браузер")
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Быстрые тесты")
                         .font(.headline)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundStyle(.black)
+
+                    ForEach(bookmarks) { bookmark in
+                        Button {
+                            onOpenURL(bookmark.url(host: appState.testServerHost))
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(bookmark.title)
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(bookmark.url(host: appState.testServerHost))
+                                        .font(.caption2.monospaced())
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.right.circle.fill")
+                                    .foregroundStyle(.blue)
+                            }
+                            .padding(12)
+                            .background(Color(white: 0.96))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .padding(.horizontal, 24)
 
@@ -89,8 +101,10 @@ struct HomeView: View {
                         .font(.headline)
                         .foregroundStyle(.blue)
                 }
+                .padding(.bottom, 24)
             }
-            .padding(.vertical, 32)
+            .padding(.vertical, 24)
         }
+        .background(Color.white)
     }
 }

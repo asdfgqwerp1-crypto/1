@@ -6,8 +6,8 @@
   <title>Fingerprint Diff</title>
   <style>
     body { font-family: -apple-system, sans-serif; padding: 16px; background: #f5f5f7; }
-    pre { background: #fff; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; }
-    button { padding: 10px 16px; margin: 4px; border-radius: 8px; border: none; background: #007aff; color: #fff; }
+    pre { background: #fff; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; white-space: pre-wrap; }
+    button { padding: 10px 16px; margin: 4px 4px 4px 0; border-radius: 8px; border: none; background: #007aff; color: #fff; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -16,6 +16,7 @@
   <button onclick="collect()">Collect Signals</button>
   <button onclick="exportJSON()">Export JSON</button>
   <pre id="output">Tap Collect Signals</pre>
+  <script src="../common.js"></script>
   <script>
     let report = null;
 
@@ -69,13 +70,11 @@
       document.getElementById('output').textContent = JSON.stringify(report, null, 2);
     }
 
-    function exportJSON() {
-      if (!report) { collect().then(exportJSON); return; }
-      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = 'fingerprint-report.json';
-      a.click();
+    async function exportJSON() {
+      if (!report) {
+        await collect();
+      }
+      exportReport(report, 'fingerprint-report.json');
     }
   </script>
 </body>

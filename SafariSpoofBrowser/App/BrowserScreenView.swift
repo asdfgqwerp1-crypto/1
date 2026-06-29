@@ -5,6 +5,9 @@ struct BrowserScreenView: View {
     @ObservedObject var coordinator: BrowserCoordinator
     @Binding var addressText: String
     let onClose: () -> Void
+    let onNavigate: (String) -> Void
+
+    @State private var mountWebView = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +41,25 @@ struct BrowserScreenView: View {
                 .padding(.vertical, 6)
                 .background(Color(white: 0.96))
 
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(TestBookmark.all) { bookmark in
+                        Button(bookmark.title) {
+                            onNavigate(bookmark.url(host: appState.testServerHost))
+                        }
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.blue.opacity(0.12))
+                        .foregroundStyle(.blue)
+                        .clipShape(Capsule())
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .background(Color.white)
+
             HStack(spacing: 8) {
                 Button { coordinator.goBack() } label: {
                     Image(systemName: "chevron.left")
@@ -67,14 +89,16 @@ struct BrowserScreenView: View {
             .padding(8)
             .background(Color.white)
 
-            BrowserView(
-                coordinator: coordinator,
-                profile: appState.activeProfile,
-                frameBridge: appState.frameBridge,
-                initialURL: addressText
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.white)
+            if mountWebView {
+                BrowserView(
+                    coordinator: coordinator,
+                    profile: appState.activeProfile,
+                    frameBridge: appState.frameBridge,
+                    initialURL: addressText
+                )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.white)
+            }
         }
         .background(Color.white)
         .onChange(of: appState.activeProfile.id) { _ in

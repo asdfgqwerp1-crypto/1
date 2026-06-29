@@ -25,11 +25,16 @@ function showOutput(text) {
 
 async function exportReport(report, filename) {
   if (!report) {
-    alert('Сначала запустите тест (Start Camera Test / Measure / Request Camera).');
+    alert('Сначала запустите тест (Collect / Start Camera Test / Measure).');
     return;
   }
 
   const json = JSON.stringify(report, null, 2);
+
+  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofExportBridge) {
+    window.webkit.messageHandlers.spoofExportBridge.postMessage({ filename: filename, json: json });
+    return;
+  }
 
   if (navigator.share) {
     try {
@@ -38,6 +43,8 @@ async function exportReport(report, filename) {
         await navigator.share({ files: [file], title: filename });
         return;
       }
+      await navigator.share({ title: filename, text: json });
+      return;
     } catch (e) {
       if (e && e.name === 'AbortError') return;
     }
@@ -45,9 +52,13 @@ async function exportReport(report, filename) {
 
   try {
     await navigator.clipboard.writeText(json);
-    alert('JSON скопирован в буфер обмена. Вставьте в Notes / Files и сохраните.');
+    alert('JSON скопирован. Вставьте в Notes → Share → Save to Files.');
     return;
   } catch (e) {}
+
+  const dataUrl = 'data:application/json;charset=utf-8,' + encodeURIComponent(json);
+  const opened = window.open(dataUrl, '_blank');
+  if (opened) return;
 
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');

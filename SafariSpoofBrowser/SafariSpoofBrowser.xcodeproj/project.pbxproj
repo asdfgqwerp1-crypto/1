@@ -24,6 +24,8 @@
 		A10000010000000000000032 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000032; };
 		A10000010000000000000033 /* BrowserScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000033; };
 		A10000010000000000000034 /* ServerReachability.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000034; };
+		A10000010000000000000035 /* TestBookmarks.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000035; };
+		A10000010000000000000036 /* ExportBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000036; };
 		A10000010000000000000013 /* VideoSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013; };
 		A10000010000000000000014 /* VideoPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014; };
 		A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015; };
@@ -50,6 +52,8 @@
 		A20000010000000000000032 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		A20000010000000000000033 /* BrowserScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserScreenView.swift; sourceTree = "<group>"; };
 		A20000010000000000000034 /* ServerReachability.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerReachability.swift; sourceTree = "<group>"; };
+		A20000010000000000000035 /* TestBookmarks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestBookmarks.swift; sourceTree = "<group>"; };
+		A20000010000000000000036 /* ExportBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportBridge.swift; sourceTree = "<group>"; };
 		A20000010000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A20000010000000000000004 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A20000010000000000000005 /* BrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCoordinator.swift; sourceTree = "<group>"; };
@@ -147,6 +151,7 @@
 				A20000010000000000000032 /* HomeView.swift */,
 				A20000010000000000000033 /* BrowserScreenView.swift */,
 				A20000010000000000000034 /* ServerReachability.swift */,
+				A20000010000000000000035 /* TestBookmarks.swift */,
 				A20000010000000000000002 /* AppState.swift */,
 				A20000010000000000000003 /* ContentView.swift */,
 				A20000010000000000000004 /* SettingsView.swift */,
@@ -197,6 +202,7 @@
 			children = (
 				A20000010000000000000012 /* FrameBridge.swift */,
 				A20000010000000000000030 /* FrameSchemeHandler.swift */,
+				A20000010000000000000036 /* ExportBridge.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -373,6 +379,8 @@
 				A10000010000000000000032 /* HomeView.swift in Sources */,
 				A10000010000000000000033 /* BrowserScreenView.swift in Sources */,
 				A10000010000000000000034 /* ServerReachability.swift in Sources */,
+				A10000010000000000000035 /* TestBookmarks.swift in Sources */,
+				A10000010000000000000036 /* ExportBridge.swift in Sources */,
 				A10000010000000000000002 /* AppState.swift in Sources */,
 				A10000010000000000000003 /* ContentView.swift in Sources */,
 				A10000010000000000000004 /* SettingsView.swift in Sources */,
