@@ -88,8 +88,10 @@
   function shouldSpoofElementSize(el, width, height) {
     if (el === document.documentElement || el === document.body) return true;
     if (width === innerW && height === innerH) return true;
-    if (layoutH !== null && height === layoutH && (width === innerW || width === layoutW)) return true;
-    if (width === innerW && height > 500 && height < 900 && height !== innerH) return true;
+    if (layoutH !== null && height === layoutH && width === innerW) return true;
+    if (layoutW !== null && width === layoutW && height === layoutH) return true;
+    // Full-width probe divs (BrowserLeaks etc.) — 362, 646, …
+    if (width === innerW && height > 200 && height < innerH) return true;
     return false;
   }
 

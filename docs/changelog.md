@@ -185,3 +185,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Подменённое изображение должно совпадать с реальной камерой без JPEG-артефактов; монотонные PTS с CMSampleBuffer
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** ~460KB/кадр — выше нагрузка на WebKit; canvas.captureStream origin остаётся
+
+## 2026-06-29 — v20: fix NV12 green screen + clientHeight 362
+
+**Модули:** `frameReceiver.js`, `screen.js`, `VideoPipeline.swift`
+**Что изменено:** JS декодирует NV12 только при Content-Type nv12 (не JPEG placeholder); валидация размера буфера + JPEG fallback; камера снова BGRA capture → NV12 encode; clientHeight spoof для full-width div 200–750px (362 BrowserLeaks)
+**Почему:** v19 зелёный экран — `useNV12` форсил NV12 decode на JPEG; 1.2 fps; div.clientHeight 362 не попадал в эвристику >500
+**Тесты:** validate-injection.py; на iPhone не запускались
+**Риски:** —

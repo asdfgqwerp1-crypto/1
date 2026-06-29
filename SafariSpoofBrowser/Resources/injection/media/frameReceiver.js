@@ -4,7 +4,6 @@
   if (!config) return;
 
   var caps = config.mediaCapabilities;
-  var useNV12 = config.frameDelivery === 'nv12';
   var canvas = null;
   var ctx = null;
   var pollTimer = null;
@@ -107,10 +106,15 @@
     };
   }
 
+  function expectedNV12Bytes(width, height) {
+    return ((width * height * 3) / 2) | 0;
+  }
+
   function drawNV12(buffer, meta) {
-    if (!ctx || !canvas) return;
+    if (!ctx || !canvas) return false;
     var width = meta.width || canvas.width;
     var height = meta.height || canvas.height;
+    if (buffer.byteLength < expectedNV12Bytes(width, height)) return false;
     if (canvas.width !== width || canvas.height !== height) {
       canvas.width = width;
       canvas.height = height;
@@ -121,6 +125,7 @@
     if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
     if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;
     markFrameDrawn(meta);
+    return true;
   }
 
   function drawJPEG(url, revoke, meta) {
@@ -156,9 +161,12 @@
       .then(function (response) {
         if (!response.ok) throw new Error('bad status');
         var meta = parseFrameHeaders(response);
-        if (meta.format === 'nv12' || useNV12) {
+        if (meta.format === 'nv12') {
           return response.arrayBuffer().then(function (buf) {
-            drawNV12(buf, meta);
+            if (!drawNV12(buf, meta)) {
+              var blob = new Blob([buf], { type: 'image/jpeg' });
+              drawJPEG(URL.createObjectURL(blob), true, meta);
+            }
             release();
           });
         }
