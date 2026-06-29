@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-29 — v29.1: FPS tune — half-res noise + wider VFR
+
+**Модули:** `frameReceiver.js`, `FrameTiming.swift`, `VideoPipeline.swift`, `iphone11_ios265.json`
+**Что изменено:** Sensor noise на ½/⅓ разрешении (480p→240p buffer); один gaussian на пиксель; VFR jitter шире (exposure hitch каждые 60 кадров); JPEG q 0.28
+**Почему:** v29 на устройстве 22.6 fps при target 24+ — getImageData 480×640 каждый кадр упирал в CPU
+**Тесты:** Linux WebKit regression; device media-timing ожидается ≥24 fps
+**Риски:** шум чуть мельче на VGA — визуально ближе к компактной матрице
+
 ## 2026-06-29 — v29: пресеты 720p/1080p + VFR 30fps + sensor noise
 
 **Модули:** `DeviceProfile.swift`, `FrameTiming.swift`, `VideoPipeline.swift`, `FrameBridge.swift`, `iphone11_ios265.json`, `getUserMedia.js`, `frameReceiver.js`, `mediaStreamMock.js`

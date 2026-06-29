@@ -125,42 +125,48 @@
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
 
+  function noiseDownscaleFor(width, height) {
+    var pixels = width * height;
+    if (pixels >= 1244160) return 3;
+    if (pixels >= 307200) return 2;
+    return 1;
+  }
+
   function applySensorNoise(ctx, width, height, frameSeed) {
     var noise = config.frameNoise;
-    if (!noise || noise.enabled === false || !ctx) return;
-    var pixels = width * height;
-    var step = pixels > 1244160 ? 3 : (pixels > 307200 ? 2 : 1);
+    if (!noise || noise.enabled === false || !ctx || !canvas) return;
+
+    var downscale = noiseDownscaleFor(width, height);
+    var nw = Math.max(1, Math.round(width / downscale));
+    var nh = Math.max(1, Math.round(height / downscale));
+    var scratch = ensureNoiseScratchCanvas(nw, nh);
+    var scratchCtx = scratch.getContext('2d');
+    scratchCtx.drawImage(canvas, 0, 0, width, height, 0, 0, nw, nh);
+
     var rng = seededRng(((noise.seed || 0) ^ (frameSeed || 0)) >>> 0);
     var readSigma = noise.readSigma != null ? noise.readSigma : 1.0;
     var shotScale = noise.shotScale != null ? noise.shotScale : 2.5;
     var chromaR = noise.chromaR != null ? noise.chromaR : 1.0;
     var chromaG = noise.chromaG != null ? noise.chromaG : 0.85;
     var chromaB = noise.chromaB != null ? noise.chromaB : 1.3;
-    var image = ctx.getImageData(0, 0, width, height);
+    var image = scratchCtx.getImageData(0, 0, nw, nh);
     var d = image.data;
-    for (var i = 0; i < d.length; i += 4 * step) {
+    var inv255 = 1 / 255;
+
+    for (var i = 0; i < d.length; i += 4) {
       var r = d[i];
       var g = d[i + 1];
       var b = d[i + 2];
-      var luma = 0.299 * r + 0.587 * g + 0.114 * b;
-      var shot = shotScale * Math.sqrt(Math.max(luma, 0) / 255);
-      var n = readSigma * gaussian(rng) + shot * gaussian(rng);
+      var luma = (0.299 * r + 0.587 * g + 0.114 * b) * inv255;
+      var sigma = readSigma + shotScale * Math.sqrt(Math.max(luma, 0));
+      var n = sigma * gaussian(rng);
       d[i] = clampByte(r + n * chromaR);
       d[i + 1] = clampByte(g + n * chromaG);
       d[i + 2] = clampByte(b + n * chromaB);
-      if (step > 1) {
-        for (var k = 1; k < step && i + 4 * k < d.length; k++) {
-          var j = i + 4 * k;
-          d[j] = d[i];
-          d[j + 1] = d[i + 1];
-          d[j + 2] = d[i + 2];
-        }
-      }
     }
-    var scratch = ensureNoiseScratchCanvas(width, height);
-    var scratchCtx = scratch.getContext('2d');
+
     scratchCtx.putImageData(image, 0, 0);
-    ctx.drawImage(scratch, 0, 0, width, height);
+    ctx.drawImage(scratch, 0, 0, nw, nh, 0, 0, width, height);
   }
 
   function ensureNoiseScratchCanvas(width, height) {

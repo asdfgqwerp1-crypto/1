@@ -15,14 +15,14 @@ struct FrameTiming: Codable, Equatable {
     static let iphoneDefault = FrameTiming(
         targetFrameRate: 30,
         minDeliverFps: 24,
-        jitterMsMin: -6,
-        jitterMsMax: 10,
-        exposureHitchInterval: 90,
-        exposureHitchMsMin: 5,
-        exposureHitchMsMax: 15,
-        slowdownProbability: 0.02,
-        slowdownFactorMin: 1.12,
-        slowdownFactorMax: 1.28
+        jitterMsMin: -8,
+        jitterMsMax: 14,
+        exposureHitchInterval: 60,
+        exposureHitchMsMin: 6,
+        exposureHitchMsMax: 18,
+        slowdownProbability: 0.035,
+        slowdownFactorMin: 1.1,
+        slowdownFactorMax: 1.32
     )
 
     var baseIntervalSeconds: CFAbsoluteTime {

@@ -280,7 +280,7 @@ final class VideoPipeline: NSObject {
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let cgImage = context.makeImage() else { return nil }
 
-        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.30)
+        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.28)
     }
 }
 
