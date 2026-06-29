@@ -1,15 +1,12 @@
-# Сборка IPA без GitHub Actions
-# https://codemagic.io — бесплатно ~500 мин/мес
+# Сборка UNSIGNED IPA — подпись делает Sideloadly на Windows
 workflows:
   ios-spoof-build:
-    name: SafariSpoofBrowser IPA
+    name: SafariSpoofBrowser IPA (unsigned)
     max_build_duration: 30
     instance_type: mac_mini_m2
     environment:
       xcode: latest
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.safarispoof.browser
+      # ios_signing НЕ указываем — иначе Codemagic запросит сертификаты
     scripts:
       - name: Build unsigned app
         script: |
@@ -28,8 +25,14 @@ workflows:
         script: |
           cd SafariSpoofBrowser
           APP_PATH=$(find build -name "SafariSpoofBrowser.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "APP not found"
+            find build -type d
+            exit 1
+          fi
           mkdir -p build/ipa/Payload
           cp -r "$APP_PATH" build/ipa/Payload/
           cd build/ipa && zip -r ../SafariSpoofBrowser.ipa Payload
+          ls -la ../SafariSpoofBrowser.ipa
     artifacts:
       - SafariSpoofBrowser/build/SafariSpoofBrowser.ipa
