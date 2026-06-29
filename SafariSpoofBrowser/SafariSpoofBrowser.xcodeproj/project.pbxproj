@@ -19,6 +19,7 @@
 		A10000010000000000000010 /* InjectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000010; };
 		A10000010000000000000011 /* InjectionScriptLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000011; };
 		A10000010000000000000012 /* FrameBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000012; };
+		A10000010000000000000030 /* FrameSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000030; };
 		A10000010000000000000013 /* VideoSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013; };
 		A10000010000000000000014 /* VideoPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014; };
 		A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015; };
@@ -51,6 +52,7 @@
 		A20000010000000000000010 /* InjectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionManager.swift; sourceTree = "<group>"; };
 		A20000010000000000000011 /* InjectionScriptLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionScriptLoader.swift; sourceTree = "<group>"; };
 		A20000010000000000000012 /* FrameBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBridge.swift; sourceTree = "<group>"; };
+		A20000010000000000000030 /* FrameSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSchemeHandler.swift; sourceTree = "<group>"; };
 		A20000010000000000000013 /* VideoSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSourceType.swift; sourceTree = "<group>"; };
 		A20000010000000000000014 /* VideoPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPipeline.swift; sourceTree = "<group>"; };
 		A20000010000000000000015 /* NetworkVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkVideoPlayer.swift; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000012 /* FrameBridge.swift */,
+				A20000010000000000000030 /* FrameSchemeHandler.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -365,6 +368,7 @@
 				A10000010000000000000010 /* InjectionManager.swift in Sources */,
 				A10000010000000000000011 /* InjectionScriptLoader.swift in Sources */,
 				A10000010000000000000012 /* FrameBridge.swift in Sources */,
+				A10000010000000000000030 /* FrameSchemeHandler.swift in Sources */,
 				A10000010000000000000013 /* VideoSourceType.swift in Sources */,
 				A10000010000000000000014 /* VideoPipeline.swift in Sources */,
 				A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */,

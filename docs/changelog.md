@@ -73,3 +73,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Сборка падала с code 65 после crash-fix коммита
 **Тесты:** не запускались (ожидается успешный Codemagic build)
 **Риски:** —
+
+## 2026-06-29 — Frame delivery v2: spoofframe URL scheme + injection lab
+
+**Модули:** `Bridge/FrameSchemeHandler.swift`, `Bridge/FrameBridge.swift`, `Resources/injection/media/frameReceiver.js`, `Browser/BrowserView.swift`, `TestPages/injection-lab/`, `Scripts/validate-injection.py`, `Scripts/injection-test-server.py`
+**Что изменено:** Кадры передаются через `WKURLSchemeHandler` (`spoofframe://frame/latest`), JS поллит Image без `evaluateJavaScript`; VideoPipeline шлёт raw JPEG Data; welcome v2 marker; injection-lab для теста скриптов в WebKit на Linux (Playwright при наличии npm, иначе Python smoke)
+**Почему:** Throttle evaluateJavaScript не устранил краш ~30 с; нужен тестируемый injection без iPhone
+**Тесты:** validate-injection.py → 0 failed на Linux VM
+**Риски:** Desktop WebKit ≠ iOS WKWebView; полный e2e всё ещё требует iPhone

@@ -95,8 +95,14 @@ final class VideoPipeline: NSObject {
             videoOutput = output
         }
 
-        if let connection = output.connection(with: .video), connection.isVideoOrientationSupported {
-            connection.videoOrientation = .portrait
+        if let connection = output.connection(with: .video) {
+            if #available(iOS 17.0, *) {
+                if connection.isVideoRotationAngleSupported(90) {
+                    connection.videoRotationAngle = 90
+                }
+            } else if connection.isVideoOrientationSupported {
+                connection.videoOrientation = .portrait
+            }
         }
 
         session.commitConfiguration()
@@ -150,8 +156,7 @@ final class VideoPipeline: NSObject {
         ciContext.render(scaled, to: output)
 
         guard let jpeg = jpegData(from: output) else { return }
-        let base64 = jpeg.base64EncodedString()
-        frameBridge.sendFrame(base64JPEG: base64, width: width, height: height, timestamp: captureTimestamp)
+        frameBridge.sendFrame(jpegData: jpeg, width: width, height: height, timestamp: captureTimestamp)
     }
 
     private func jpegData(from pixelBuffer: CVPixelBuffer) -> Data? {

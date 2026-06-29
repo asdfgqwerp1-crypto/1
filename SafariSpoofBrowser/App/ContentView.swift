@@ -14,6 +14,7 @@ struct ContentView: View {
                 profile: appState.activeProfile,
                 frameBridge: appState.frameBridge
             )
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .onDisappear {
                     appState.stopVideoPipeline()
                 }

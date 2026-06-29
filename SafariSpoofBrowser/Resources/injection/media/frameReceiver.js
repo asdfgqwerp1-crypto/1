@@ -8,30 +8,39 @@
   canvas.width = caps.width;
   canvas.height = caps.height;
   var ctx = canvas.getContext('2d');
-  var pendingImage = null;
-  var isDecoding = false;
+  var pollTimer = null;
+  var pollIntervalMs = Math.round(1000 / 12);
+  var isDrawing = false;
 
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
 
-  window.__spoofReceiveFrame = function (base64, width, height) {
-    if (!ctx) return;
-    if (isDecoding) {
-      pendingImage = { base64: base64, width: width, height: height };
-      return;
-    }
-    isDecoding = true;
+  function drawFrameFromURL() {
+    if (isDrawing) return;
+    isDrawing = true;
     var img = new Image();
     img.onload = function () {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      isDecoding = false;
-      if (pendingImage) {
-        var p = pendingImage;
-        pendingImage = null;
-        window.__spoofReceiveFrame(p.base64, p.width, p.height);
-      }
+      isDrawing = false;
     };
-    img.onerror = function () { isDecoding = false; };
-    img.src = 'data:image/jpeg;base64,' + base64;
+    img.onerror = function () { isDrawing = false; };
+    var frameBase = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
+    img.src = frameBase + (frameBase.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+  }
+
+  window.__spoofStartFramePoll = function () {
+    if (pollTimer) return;
+    drawFrameFromURL();
+    pollTimer = setInterval(drawFrameFromURL, pollIntervalMs);
   };
+
+  window.__spoofStopFramePoll = function () {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  };
+
+  // Legacy fallback if native still calls receiveFrame directly
+  window.__spoofReceiveFrame = function () {};
 })();

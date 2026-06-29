@@ -39,7 +39,6 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         let manager = InjectionManager(profile: profile, frameBridge: frameBridge)
         injectionManager = manager
         manager.install(into: webView)
-        frameBridge.attach(webView: webView)
         webView.customUserAgent = profile.userAgent
     }
 

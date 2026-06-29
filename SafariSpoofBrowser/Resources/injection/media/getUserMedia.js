@@ -26,11 +26,17 @@
   }
 
   function notifyStreamStart(tracks) {
+    if (window.__spoofStartFramePoll) {
+      window.__spoofStartFramePoll();
+    }
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
     }
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
+        if (window.__spoofStopFramePoll) {
+          window.__spoofStopFramePoll();
+        }
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
           window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
         }

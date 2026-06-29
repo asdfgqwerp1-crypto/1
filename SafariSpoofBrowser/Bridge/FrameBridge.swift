@@ -16,6 +16,8 @@ protocol FrameBridgeDelegate: AnyObject {
 final class FrameBridge: NSObject {
     static let handlerName = "spoofFrameBridge"
 
+    let schemeHandler = FrameSchemeHandler()
+
     weak var delegate: FrameBridgeDelegate?
 
     private let metricsSubject = CurrentValueSubject<FrameBridgeMetrics, Never>(FrameBridgeMetrics())
@@ -23,14 +25,15 @@ final class FrameBridge: NSObject {
         metricsSubject.eraseToAnyPublisher()
     }
 
-    private weak var webView: WKWebView?
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
     private var isDeliveryEnabled = false
     private var lastSendTime: CFAbsoluteTime = 0
     private let minInterval: CFAbsoluteTime = 1.0 / 12.0
-    private var isEvaluating = false
-    private var pendingFrame: (base64: String, width: Int, height: Int)?
+
+    func registerScheme(on configuration: WKWebViewConfiguration) {
+        configuration.setURLSchemeHandler(schemeHandler, forURLScheme: FrameSchemeHandler.scheme)
+    }
 
     func register(with controller: WKUserContentController) {
         controller.add(self, name: Self.handlerName)
@@ -40,60 +43,24 @@ final class FrameBridge: NSObject {
         controller.removeScriptMessageHandler(forName: Self.handlerName)
     }
 
-    func attach(webView: WKWebView) {
-        self.webView = webView
-    }
-
     func setDeliveryEnabled(_ enabled: Bool) {
         isDeliveryEnabled = enabled
         if !enabled {
-            pendingFrame = nil
+            schemeHandler.clearFrame()
         }
     }
 
-    func sendFrame(base64JPEG: String, width: Int, height: Int, timestamp: CFAbsoluteTime) {
-        guard isDeliveryEnabled, let webView else { return }
-        guard base64JPEG.count < 120_000 else { return }
+    func sendFrame(jpegData: Data, width: Int, height: Int, timestamp: CFAbsoluteTime) {
+        guard isDeliveryEnabled else { return }
+        guard jpegData.count < 200_000 else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
         guard now - lastSendTime >= minInterval else { return }
 
-        if isEvaluating {
-            pendingFrame = (base64JPEG, width, height)
-            return
-        }
-
         lastSendTime = now
         let latency = (now - timestamp) * 1000
+        schemeHandler.updateFrame(jpegData)
         updateMetrics(latency: latency)
-        dispatchFrame(base64JPEG: base64JPEG, width: width, height: height, on: webView)
-    }
-
-    private func dispatchFrame(base64JPEG: String, width: Int, height: Int, on webView: WKWebView) {
-        isEvaluating = true
-        let script = """
-        (function(){
-          if (window.__spoofReceiveFrame) {
-            window.__spoofReceiveFrame('\(base64JPEG.escapedForJS())', \(width), \(height));
-          }
-        })();
-        """
-
-        DispatchQueue.main.async { [weak self] in
-            webView.evaluateJavaScript(script) { _, _ in
-                guard let self else { return }
-                self.isEvaluating = false
-                if let pending = self.pendingFrame {
-                    self.pendingFrame = nil
-                    self.sendFrame(
-                        base64JPEG: pending.base64,
-                        width: pending.width,
-                        height: pending.height,
-                        timestamp: CFAbsoluteTimeGetCurrent()
-                    )
-                }
-            }
-        }
     }
 
     private func updateMetrics(latency: Double) {
@@ -122,6 +89,7 @@ extension FrameBridge: WKScriptMessageHandler {
             }
         case "stopStream":
             isDeliveryEnabled = false
+            schemeHandler.clearFrame()
             DispatchQueue.main.async { [weak self] in
                 self?.delegate?.frameBridgeDidRequestStreamStop()
             }
@@ -130,12 +98,3 @@ extension FrameBridge: WKScriptMessageHandler {
         }
     }
 }
-
-private extension String {
-    func escapedForJS() -> String {
-        replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "'", with: "\\'")
-            .replacingOccurrences(of: "\n", with: "\\n")
-    }
-}
-

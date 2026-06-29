@@ -1,0 +1,11 @@
+{
+  "name": "safarispoof-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:injection": "node test-injection.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
+  }
+}
