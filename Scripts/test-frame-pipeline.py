@@ -13,6 +13,12 @@ PORT = int(os.environ.get("FRAME_TEST_PORT", "8093"))
 BASE_URL = os.environ.get("FRAME_TEST_URL", f"http://127.0.0.1:{PORT}/frame-pipeline-test/")
 
 
+def run_case(page, url: str) -> dict:
+    page.goto(url, wait_until="load", timeout=30000)
+    page.wait_for_function("window.__FRAME_PIPELINE_RESULTS__", timeout=30000)
+    return page.evaluate("window.__FRAME_PIPELINE_RESULTS__")
+
+
 def main() -> int:
     try:
         from playwright.sync_api import sync_playwright
@@ -28,21 +34,21 @@ def main() -> int:
     time.sleep(1)
 
     try:
+        failed = 0
         with sync_playwright() as p:
             browser = p.webkit.launch()
             page = browser.new_page()
-            page.goto(BASE_URL, wait_until="load", timeout=30000)
-            page.wait_for_function("window.__FRAME_PIPELINE_RESULTS__", timeout=30000)
-            results = page.evaluate("window.__FRAME_PIPELINE_RESULTS__")
+            for mode in ("nv12", "jpeg"):
+                results = run_case(page, f"{BASE_URL}?mode={mode}")
+                print(f"[{mode}] Frame pipeline: {results['passed']} passed, {results['failed']} failed")
+                for test in results["tests"]:
+                    status = "PASS" if test["ok"] else "FAIL"
+                    detail = f" — {test['detail']}" if test.get("detail") else ""
+                    print(f"{status} {test['name']}{detail}")
+                failed += results["failed"]
             browser.close()
 
-        print(f"Frame pipeline: {results['passed']} passed, {results['failed']} failed")
-        for test in results["tests"]:
-            status = "PASS" if test["ok"] else "FAIL"
-            detail = f" — {test['detail']}" if test.get("detail") else ""
-            print(f"{status} {test['name']}{detail}")
-
-        return 1 if results["failed"] > 0 else 0
+        return 1 if failed > 0 else 0
     except Exception as exc:
         print(f"FAIL runner: {exc}")
         return 1

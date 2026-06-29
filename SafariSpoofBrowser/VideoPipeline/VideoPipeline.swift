@@ -243,37 +243,36 @@ final class VideoPipeline: NSObject {
     }
 
     private func jpegData(from pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data? {
-        guard let nv12Buffer = NV12FramePacker.scaledNV12Buffer(from: pixelBuffer, width: width, height: height) else {
-            return nil
-        }
-
         let attrs: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
         ]
-        var bgraBuffer: CVPixelBuffer?
-        CVPixelBufferCreate(
+        var outputBuffer: CVPixelBuffer?
+        let status = CVPixelBufferCreate(
             kCFAllocatorDefault,
             width,
             height,
             kCVPixelFormatType_32BGRA,
             attrs as CFDictionary,
-            &bgraBuffer
+            &outputBuffer
         )
-        guard let bgra = bgraBuffer else { return nil }
+        guard status == kCVReturnSuccess, let output = outputBuffer else { return nil }
 
-        let ciImage = CIImage(cvPixelBuffer: nv12Buffer)
-        ciContext.render(ciImage, to: bgra)
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+        let scaleX = CGFloat(width) / ciImage.extent.width
+        let scaleY = CGFloat(height) / ciImage.extent.height
+        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
+        ciContext.render(scaled, to: output)
 
-        CVPixelBufferLockBaseAddress(bgra, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(bgra, .readOnly) }
+        CVPixelBufferLockBaseAddress(output, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(output, .readOnly) }
 
         guard let context = CGContext(
-            data: CVPixelBufferGetBaseAddress(bgra),
+            data: CVPixelBufferGetBaseAddress(output),
             width: width,
             height: height,
             bitsPerComponent: 8,
-            bytesPerRow: CVPixelBufferGetBytesPerRow(bgra),
+            bytesPerRow: CVPixelBufferGetBytesPerRow(output),
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let cgImage = context.makeImage() else { return nil }

@@ -83,7 +83,10 @@
       var profileRes = await fetch('/profiles/iphone11_ios265.json');
       var profile = await profileRes.json();
       window.__SAFARI_SPOOF_CONFIG__ = buildConfig(profile);
-      window.__SAFARI_SPOOF_FRAME_URL__ = '/frame/latest';
+      var params = new URLSearchParams(window.location.search);
+      var mode = params.get('mode') || 'nv12';
+      window.__SAFARI_SPOOF_CONFIG__.frameDelivery = mode === 'jpeg' ? 'jpeg' : 'nv12';
+      window.__SAFARI_SPOOF_FRAME_URL__ = mode === 'jpeg' ? '/frame/jpeg-live' : '/frame/latest';
       window.webkit = {
         messageHandlers: {
           spoofFrameBridge: { postMessage: function () {} }

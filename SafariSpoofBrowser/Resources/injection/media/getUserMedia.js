@@ -167,7 +167,11 @@
           startNativePipeline();
           canvas = window.__spoofCanvas;
 
-          waitForFrames(1, 4000).then(function () {
+          waitForFrames(1, 6000).then(function (gotFrame) {
+            if (!gotFrame) {
+              reject(new DOMException('Camera failed to produce frames', 'NotReadableError'));
+              return;
+            }
             try {
               var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
               var stream = canvas.captureStream(fps);

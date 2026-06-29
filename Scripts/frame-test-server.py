@@ -55,6 +55,28 @@ def make_nv12_pattern(width: int, height: int) -> bytes:
 NV12_FRAME = make_nv12_pattern(FRAME_WIDTH, FRAME_HEIGHT)
 
 
+def make_jpeg_pattern(width: int, height: int) -> bytes:
+    try:
+        from io import BytesIO
+
+        from PIL import Image
+
+        img = Image.new("RGB", (width, height))
+        px = img.load()
+        for row in range(height):
+            color = (210, 90, 50) if row < height // 2 else (45, 45, 130)
+            for col in range(width):
+                px[col, row] = color
+        out = BytesIO()
+        img.save(out, format="JPEG", quality=82)
+        return out.getvalue()
+    except Exception:
+        return PLACEHOLDER_JPEG
+
+
+JPEG_FRAME = make_jpeg_pattern(FRAME_WIDTH, FRAME_HEIGHT)
+
+
 class FrameTestHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, directory: str | None = None, **kwargs):
         super().__init__(*args, directory=directory, **kwargs)
@@ -71,8 +93,12 @@ class FrameTestHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         global FRAME_SEQ
         clean = unquote(self.path.split("?", 1)[0])
-        if clean in ("/frame/latest", "/frame/nv12", "/frame/jpeg", "/frame/placeholder"):
-            if clean == "/frame/jpeg":
+        if clean in ("/frame/latest", "/frame/nv12", "/frame/jpeg", "/frame/jpeg-live", "/frame/placeholder"):
+            if clean == "/frame/jpeg-live":
+                payload = JPEG_FRAME
+                fmt = "jpeg"
+                w, h = FRAME_WIDTH, FRAME_HEIGHT
+            elif clean == "/frame/jpeg":
                 payload = PLACEHOLDER_JPEG
                 fmt = "jpeg"
                 w, h = 2, 2

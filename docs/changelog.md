@@ -194,6 +194,14 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v23: откат на JPEG + blob fetch (v17 path)
+
+**Модули:** `VideoPipeline.swift`, `frameReceiver.js`, `getUserMedia.js`, `iphone11_ios265.json`, `ProfileStore.swift`
+**Что изменено:** Profile `frameDelivery: jpeg`; native BGRA→JPEG как v17 (без NV12 encode); JS `fetch→blob→drawImage` вместо `arrayBuffer` (на iOS WKWebView `arrayBuffer` на `spoofframe://` ломает доставку); `crossOrigin` только для http(s); gUM отклоняет stream если 0 кадров за 6 с
+**Почему:** v19–v22 зелёный экран на устройстве при PASS metadata; Linux WebKit тесты проходили — расхождение iOS custom scheme + NV12; v17 JPEG+blob давал 16 fps
+**Тесты:** `test-frame-pipeline.py` nv12+jpeg → 8/8; `validate-injection.py` → 0 failed; на iPhone не запускались
+**Риски:** JPEG-артефакты; NV12 код остаётся для будущего включения в profile
+
 ## 2026-06-29 — v22: NV12 drawImage + WebGL decode (captureStream fix)
 
 **Модули:** `frameReceiver.js`, `getUserMedia.js`, `Scripts/test-frame-pipeline.py`, `Scripts/frame-test-server.py`, `TestPages/frame-pipeline-test/`

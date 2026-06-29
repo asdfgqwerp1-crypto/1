@@ -308,45 +308,55 @@
     return true;
   }
 
-  function drawJPEGFromBuffer(buffer, meta, onDone) {
-    if (!ctx || !canvas) {
-      if (onDone) onDone();
-      return;
-    }
-    var url = URL.createObjectURL(new Blob([buffer], { type: 'image/jpeg' }));
-    var img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function () {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      URL.revokeObjectURL(url);
-      markFrameDrawn(meta);
-      if (onDone) onDone();
-    };
-    img.onerror = function () {
-      URL.revokeObjectURL(url);
-      if (onDone) onDone();
-    };
-    img.src = url;
+  function shouldUseNV12(meta, byteLength) {
+    if (!preferNV12) return false;
+    if (meta.formatHeader === 'jpeg') return false;
+    if (meta.contentType.indexOf('jpeg') >= 0) return false;
+    if (meta.formatHeader === 'nv12') return true;
+    if (meta.contentType.indexOf('nv12') >= 0) return true;
+    var width = meta.width || caps.width;
+    var height = meta.height || caps.height;
+    return byteLength >= expectedNV12Bytes(width, height);
   }
 
-  function drawJPEGURL(url, revoke, meta, onDone) {
+  function drawImageSource(src, revoke, meta, onDone) {
     if (!ctx || !canvas) {
       if (onDone) onDone();
       return;
     }
     var img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (/^https?:/i.test(src)) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = function () {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      if (revoke) URL.revokeObjectURL(url);
+      if (revoke) URL.revokeObjectURL(src);
       markFrameDrawn(meta);
       if (onDone) onDone();
     };
     img.onerror = function () {
-      if (revoke) URL.revokeObjectURL(url);
+      if (revoke) URL.revokeObjectURL(src);
       if (onDone) onDone();
     };
-    img.src = url;
+    img.src = src;
+  }
+
+  function drawBlobAsImage(blob, meta, onDone) {
+    drawImageSource(URL.createObjectURL(blob), true, meta, onDone);
+  }
+
+  function handleBuffer(buffer, meta, release) {
+    if (isJpegBuffer(buffer)) {
+      drawBlobAsImage(new Blob([buffer], { type: 'image/jpeg' }), meta, release);
+      return;
+    }
+    if (shouldUseNV12(meta, buffer.byteLength)) {
+      if (drawNV12(buffer, meta)) {
+        release();
+        return;
+      }
+    }
+    drawBlobAsImage(new Blob([buffer], { type: 'image/jpeg' }), meta, release);
   }
 
   function drawFrame() {
@@ -359,36 +369,26 @@
       isDrawing = false;
     }
 
-    function handleBuffer(buffer, meta) {
-      var format = detectFrameFormat(buffer, meta);
-      if (format === 'nv12') {
-        if (drawNV12(buffer, meta)) {
-          release();
-          return;
-        }
-        if (isJpegBuffer(buffer)) {
-          drawJPEGFromBuffer(buffer, meta, release);
-          return;
-        }
-      }
-      drawJPEGFromBuffer(buffer, meta, release);
-    }
-
     if (typeof fetch !== 'function') {
-      drawJPEGURL(frameURL(), false, null, release);
+      drawImageSource(frameURL(), false, null, release);
       return;
     }
 
-    fetch(frameURL(), { cache: 'no-store', mode: 'cors', credentials: 'omit' })
+    fetch(frameURL(), { cache: 'no-store' })
       .then(function (response) {
         if (!response.ok) throw new Error('bad status');
         var meta = parseFrameHeaders(response);
-        return response.arrayBuffer().then(function (buf) {
-          handleBuffer(buf, meta);
+        return response.blob().then(function (blob) {
+          if (shouldUseNV12(meta, blob.size)) {
+            return blob.arrayBuffer().then(function (buf) {
+              handleBuffer(buf, meta, release);
+            });
+          }
+          drawBlobAsImage(blob, meta, release);
         });
       })
       .catch(function () {
-        drawJPEGURL(frameURL(), false, null, release);
+        drawImageSource(frameURL(), false, null, release);
       });
   }
 
