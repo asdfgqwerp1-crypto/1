@@ -113,3 +113,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** v9 webrtc утекали реальные deviceId (4 камеры) — injection на `documentStart` иногда выполнялся до `mediaDevices`
 **Тесты:** validate-injection.py; injection-lab deviceId asserts; на iPhone не запускалось
 **Риски:** —
+
+## 2026-06-29 — v11: MediaStreamTrack prototype patch + media-timing fix
+
+**Модули:** `mediaStreamMock.js`, `TestPages/media-timing/`, `BuildInfo.swift`
+**Что изменено:** `getSettings`/`getCapabilities` через patch `MediaStreamTrack.prototype` + `__spoofSettings` на треке (WKWebView игнорировал instance override); media-timing: video в DOM, fallback `currentTime` poll если rVFC не даёт кадры
+**Почему:** v10 devices OK, но deviceId всё ещё реальный; media-timing зависал/0 кадров без video в document
+**Тесты:** validate-injection.py; на iPhone не запускалось
+**Риски:** prototype patch глобальный — только для треков с `__spoofSettings`

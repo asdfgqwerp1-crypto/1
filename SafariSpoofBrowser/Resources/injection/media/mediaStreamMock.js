@@ -3,6 +3,43 @@
   var config = window.__SAFARI_SPOOF_CONFIG__;
   if (!config) return;
 
+  function installTrackPrototypePatch() {
+    if (window.__spoofTrackProtoPatched) return;
+    var proto = window.MediaStreamTrack && MediaStreamTrack.prototype;
+    if (!proto) return;
+    window.__spoofTrackProtoPatched = true;
+
+    var origGetSettings = proto.getSettings;
+    var origGetCapabilities = proto.getCapabilities;
+    var origGetConstraints = proto.getConstraints;
+
+    proto.getSettings = function () {
+      if (this.__spoofSettings) return Object.assign({}, this.__spoofSettings);
+      if (origGetSettings) {
+        try { return origGetSettings.call(this); } catch (e) {}
+      }
+      return {};
+    };
+
+    proto.getCapabilities = function () {
+      if (this.__spoofCapabilities) return JSON.parse(JSON.stringify(this.__spoofCapabilities));
+      if (origGetCapabilities) {
+        try { return origGetCapabilities.call(this); } catch (e) {}
+      }
+      return {};
+    };
+
+    proto.getConstraints = function () {
+      if (this.__spoofConstraints) return Object.assign({}, this.__spoofConstraints);
+      if (origGetConstraints) {
+        try { return origGetConstraints.call(this); } catch (e) {}
+      }
+      return {};
+    };
+  }
+
+  installTrackPrototypePatch();
+
   function findCamera(facingMode) {
     var cameras = config.cameras || [];
     if (facingMode) {
@@ -85,27 +122,19 @@
   function patchTrack(track, device, kind) {
     if (!track || track.__spoofPatched) return track;
     track.__spoofPatched = true;
+    installTrackPrototypePatch();
 
-    var settings = kind === 'video' ? buildVideoSettings(device) : buildAudioSettings(device);
-    var capabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
-
-    function defineTrackMethod(name, fn) {
-      try {
-        Object.defineProperty(track, name, { value: fn, configurable: true, writable: true });
-      } catch (e) {
-        track[name] = fn;
-      }
-    }
+    track.__spoofSettings = kind === 'video' ? buildVideoSettings(device) : buildAudioSettings(device);
+    track.__spoofCapabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
+    track.__spoofConstraints = kind === 'video' ? { facingMode: device.facingMode } : {};
+    track.__spoofLabel = device.label;
 
     try {
-      Object.defineProperty(track, 'label', { get: function () { return device.label; }, configurable: true });
+      Object.defineProperty(track, 'label', {
+        get: function () { return this.__spoofLabel || device.label; },
+        configurable: true
+      });
     } catch (e) {}
-
-    defineTrackMethod('getSettings', function () { return Object.assign({}, settings); });
-    defineTrackMethod('getCapabilities', function () { return JSON.parse(JSON.stringify(capabilities)); });
-    defineTrackMethod('getConstraints', function () {
-      return kind === 'video' ? { facingMode: device.facingMode } : {};
-    });
 
     return track;
   }

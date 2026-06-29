@@ -9,13 +9,16 @@
     .warn { background: #fff3cd; color: #664d03; padding: 12px; border-radius: 8px; margin-bottom: 12px; white-space: pre-wrap; }
     pre { background: #f5f5f7; padding: 12px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; }
     button { padding: 10px 16px; margin: 4px 4px 4px 0; border-radius: 8px; border: none; background: #007aff; color: #fff; }
+    button:disabled { opacity: 0.5; }
+    #probe { position: fixed; width: 2px; height: 2px; opacity: 0.01; pointer-events: none; bottom: 0; left: 0; }
   </style>
 </head>
 <body>
   <h1>Media Timing</h1>
   <div id="env-warn" class="warn" hidden></div>
-  <button onclick="start()">Measure 5s</button>
+  <button id="btn-start" onclick="start()">Measure 5s</button>
   <button onclick="exportJSON()">Export JSON</button>
+  <video id="probe" autoplay playsinline muted></video>
   <pre id="output">Нажмите «Measure 5s»</pre>
   <script src="../common.js"></script>
   <script>
@@ -29,66 +32,89 @@
       }
     })();
 
+    function measureFrames(video, durationMs) {
+      return new Promise(function (resolve) {
+        const gaps = [];
+        let last = performance.now();
+        let frames = 0;
+        let method = 'unknown';
+        let done = false;
+
+        function finish() {
+          if (done) return;
+          done = true;
+          resolve({ gaps: gaps, frames: frames, method: method });
+        }
+
+        const timer = setTimeout(finish, durationMs);
+
+        if (typeof video.requestVideoFrameCallback === 'function') {
+          method = 'requestVideoFrameCallback';
+          function onFrame() {
+            const now = performance.now();
+            if (frames > 0) gaps.push(now - last);
+            last = now;
+            frames++;
+            if (!done) video.requestVideoFrameCallback(onFrame);
+          }
+          video.requestVideoFrameCallback(onFrame);
+        } else {
+          method = 'currentTime-poll';
+          let prevTime = video.currentTime;
+          const poll = setInterval(function () {
+            const now = performance.now();
+            if (video.currentTime !== prevTime) {
+              if (frames > 0) gaps.push(now - last);
+              last = now;
+              frames++;
+              prevTime = video.currentTime;
+            }
+          }, 33);
+          setTimeout(function () { clearInterval(poll); }, durationMs);
+        }
+
+        setTimeout(function () {
+          clearTimeout(timer);
+          finish();
+        }, durationMs + 50);
+      });
+    }
+
     async function start() {
       const env = checkMediaEnvironment();
       if (!env.ok) { showOutput(env.message); return; }
 
+      const btn = document.getElementById('btn-start');
+      btn.disabled = true;
+      report = null;
+
       try {
+        showOutput('Запрос камеры...');
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         const track = stream.getVideoTracks()[0];
-        const gaps = [];
-        let last = performance.now();
-        let frames = 0;
         const durationMs = 5000;
 
-        showOutput('Измерение 5 секунд (реальные кадры видео)...');
-
-        const video = document.createElement('video');
-        video.muted = true;
-        video.playsInline = true;
+        const video = document.getElementById('probe');
         video.srcObject = stream;
         await video.play().catch(function () {});
 
-        await new Promise(function (resolve) {
-          const timeout = setTimeout(resolve, durationMs);
+        showOutput('Измерение 5 секунд...');
 
-          if (video.requestVideoFrameCallback) {
-            function onFrame() {
-              const now = performance.now();
-              if (frames > 0) gaps.push(now - last);
-              last = now;
-              frames++;
-              video.requestVideoFrameCallback(onFrame);
-            }
-            video.requestVideoFrameCallback(onFrame);
-          } else {
-            const interval = setInterval(function () {
-              const now = performance.now();
-              if (frames > 0) gaps.push(now - last);
-              last = now;
-              frames++;
-            }, 16);
-            setTimeout(function () { clearInterval(interval); }, durationMs);
-          }
+        const measured = await measureFrames(video, durationMs);
 
-          setTimeout(function () {
-            clearTimeout(timeout);
-            track.stop();
-            stream.getTracks().forEach(function (t) { t.stop(); });
-            video.srcObject = null;
-            resolve();
-          }, durationMs);
-        });
+        track.stop();
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        video.srcObject = null;
 
-        const sorted = gaps.slice().sort(function (a, b) { return a - b; });
+        const sorted = measured.gaps.slice().sort(function (a, b) { return a - b; });
         const avg = sorted.length ? sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length : 0;
 
         report = {
           timestamp: new Date().toISOString(),
           durationMs: durationMs,
-          method: video.requestVideoFrameCallback ? 'requestVideoFrameCallback' : 'setInterval-fallback',
-          frameCount: frames,
-          estimatedFps: frames / (durationMs / 1000),
+          method: measured.method,
+          frameCount: measured.frames,
+          estimatedFps: measured.frames / (durationMs / 1000),
           gapMs: {
             avg: avg,
             p50: sorted[Math.floor(sorted.length * 0.5)] || 0,
@@ -103,6 +129,8 @@
       } catch (e) {
         report = null;
         showOutput('Ошибка: ' + e.name + '\n' + e.message);
+      } finally {
+        btn.disabled = false;
       }
     }
 

@@ -55,6 +55,13 @@ def main() -> int:
             else:
                 print(f"PASS fetch {module}")
 
+        _, mock_js = fetch("/injection/media/mediaStreamMock.js")
+        if "__spoofTrackProtoPatched" not in mock_js:
+            print("FAIL mediaStreamMock missing prototype track patch")
+            failed += 1
+        else:
+            print("PASS mediaStreamMock prototype track patch")
+
         _, frame_js = fetch("/injection/media/frameReceiver.js")
         if "spoofframe://" not in frame_js:
             print("FAIL frameReceiver missing spoofframe URL")
