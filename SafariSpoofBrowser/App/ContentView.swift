@@ -8,7 +8,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             statusBar
-            toolbar
+            browserToolbar
             BrowserView(coordinator: browserCoordinator)
                 .onAppear {
                     browserCoordinator.configure(
@@ -58,7 +58,7 @@ struct ContentView: View {
         }
     }
 
-    private var toolbar: some View {
+    private var browserToolbar: some View {
         HStack(spacing: 8) {
             Button { browserCoordinator.goBack() } label: {
                 Image(systemName: "chevron.left")

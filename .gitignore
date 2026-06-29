@@ -10,3 +10,5 @@ __pycache__/
 *.pyc
 /tmp/
 .env
+.env.local
+Scripts/.github-token
