@@ -10,6 +10,8 @@ final class VideoPipeline: NSObject {
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var networkPlayer: NetworkVideoPlayer?
     private var httpSnapshotPlayer: HttpSnapshotPlayer?
+    private var cameraIndicator: CameraIndicatorSession?
+    private var cameraIndicatorEnabled = false
     private var activeProfile: DeviceProfile?
     private var isRunning = false
     private var lastFrameTime: CFAbsoluteTime = 0
@@ -32,6 +34,15 @@ final class VideoPipeline: NSObject {
         streamDelivery = config
         if let profile = activeProfile {
             activeProfile = profile.withStreamDelivery(config)
+        }
+    }
+
+    func setCameraIndicatorActive(_ active: Bool) {
+        cameraIndicatorEnabled = active
+        if active, isRunning, httpSnapshotPlayer != nil || networkPlayer != nil {
+            startCameraIndicatorIfNeeded()
+        } else {
+            stopCameraIndicator()
         }
     }
 
@@ -70,7 +81,21 @@ final class VideoPipeline: NSObject {
         networkPlayer = nil
         httpSnapshotPlayer?.stop()
         httpSnapshotPlayer = nil
+        stopCameraIndicator()
         videoOutput = nil
+    }
+
+    private func startCameraIndicatorIfNeeded() {
+        guard cameraIndicatorEnabled else { return }
+        if cameraIndicator == nil {
+            cameraIndicator = CameraIndicatorSession()
+        }
+        cameraIndicator?.start(position: .front)
+    }
+
+    private func stopCameraIndicator() {
+        cameraIndicator?.stop()
+        cameraIndicator = nil
     }
 
     func attachPreview(to view: UIView) {
@@ -183,6 +208,7 @@ final class VideoPipeline: NSObject {
         }
         networkPlayer = player
         player.play(url: url)
+        startCameraIndicatorIfNeeded()
     }
 
     private func startHttpSnapshotStream(url: URL, profile: DeviceProfile) {
@@ -192,6 +218,7 @@ final class VideoPipeline: NSObject {
         }
         httpSnapshotPlayer = player
         player.play(url: url)
+        startCameraIndicatorIfNeeded()
     }
 
     private func sendHTTPJPEG(_ data: Data, profile: DeviceProfile) {
