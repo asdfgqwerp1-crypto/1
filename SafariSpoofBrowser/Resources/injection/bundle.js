@@ -20,13 +20,15 @@
   define(navigator, 'languages', Object.freeze(nav.languages.slice()));
   define(navigator, 'language', nav.languages[0]);
   define(navigator, 'cookieEnabled', nav.cookieEnabled);
-  define(navigator, 'webdriver', undefined);
 
-  try {
-    delete Navigator.prototype.webdriver;
-  } catch (e) {}
+  if (nav.webdriver === false) {
+    define(navigator, 'webdriver', false);
+  } else {
+    define(navigator, 'webdriver', undefined);
+    try { delete Navigator.prototype.webdriver; } catch (e) {}
+  }
 
-  if (typeof window.safari === 'undefined') {
+  if (config.emulateSafariObject !== false && typeof window.safari === 'undefined') {
     window.safari = { pushNotification: {} };
   }
 })();
@@ -159,32 +161,50 @@
   canvas.width = caps.width;
   canvas.height = caps.height;
   var ctx = canvas.getContext('2d');
-  var pendingImage = null;
-  var isDecoding = false;
+  var pollTimer = null;
+  var pollIntervalMs = Math.round(1000 / 10);
+  var frameImage = new Image();
+  var isDrawing = false;
 
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
 
-  window.__spoofReceiveFrame = function (base64, width, height) {
-    if (!ctx) return;
-    if (isDecoding) {
-      pendingImage = { base64: base64, width: width, height: height };
-      return;
-    }
-    isDecoding = true;
-    var img = new Image();
-    img.onload = function () {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      isDecoding = false;
-      if (pendingImage) {
-        var p = pendingImage;
-        pendingImage = null;
-        window.__spoofReceiveFrame(p.base64, p.width, p.height);
-      }
+  ctx.fillStyle = '#1b4332';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '16px -apple-system, sans-serif';
+  ctx.fillText('Camera loading…', 16, 32);
+
+  function frameURL() {
+    var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+  }
+
+  function drawFrame() {
+    if (isDrawing) return;
+    isDrawing = true;
+    frameImage.onload = function () {
+      ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+      isDrawing = false;
     };
-    img.onerror = function () { isDecoding = false; };
-    img.src = 'data:image/jpeg;base64,' + base64;
+    frameImage.onerror = function () { isDrawing = false; };
+    frameImage.src = frameURL();
+  }
+
+  window.__spoofStartFramePoll = function () {
+    if (pollTimer) return;
+    drawFrame();
+    pollTimer = setInterval(drawFrame, pollIntervalMs);
   };
+
+  window.__spoofStopFramePoll = function () {
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  };
+
+  window.__spoofReceiveFrame = function () {};
 })();
 // --- media/mediaStreamMock.js ---
 (function () {
@@ -201,44 +221,92 @@
     return cameras[0];
   }
 
-  function patchTrack(track, device, kind) {
-    if (!track || track.__spoofPatched) return track;
-    track.__spoofPatched = true;
-
+  function buildVideoSettings(device) {
     var caps = config.mediaCapabilities;
-    var settings = kind === 'video' ? {
+    var extra = (config.videoTrackSpoof && config.videoTrackSpoof.settings) || {};
+    return {
       width: caps.width,
       height: caps.height,
       frameRate: caps.frameRate,
       facingMode: device.facingMode,
       deviceId: device.deviceId,
-      groupId: device.groupId
-    } : {
+      groupId: device.groupId,
+      aspectRatio: extra.aspectRatio !== undefined ? extra.aspectRatio : (caps.width / caps.height),
+      backgroundBlur: extra.backgroundBlur !== undefined ? extra.backgroundBlur : false,
+      powerEfficient: extra.powerEfficient !== undefined ? extra.powerEfficient : false,
+      whiteBalanceMode: extra.whiteBalanceMode || 'continuous',
+      zoom: extra.zoom !== undefined ? extra.zoom : 1
+    };
+  }
+
+  function buildVideoCapabilities(device) {
+    var caps = config.mediaCapabilities;
+    var extra = (config.videoTrackSpoof && config.videoTrackSpoof.capabilities) || {};
+    return {
+      aspectRatio: {
+        min: extra.aspectRatioMin !== undefined ? extra.aspectRatioMin : 0.00033,
+        max: extra.aspectRatioMax !== undefined ? extra.aspectRatioMax : caps.widthMax
+      },
+      backgroundBlur: extra.backgroundBlur || [false],
+      deviceId: device.deviceId,
+      facingMode: [device.facingMode],
+      frameRate: { min: caps.minFrameRate, max: caps.maxFrameRate },
+      groupId: device.groupId,
+      height: { min: caps.heightMin, max: caps.heightMax },
+      powerEfficient: extra.powerEfficient || [false, true],
+      whiteBalanceMode: extra.whiteBalanceMode || ['manual', 'continuous'],
+      width: { min: caps.widthMin, max: caps.widthMax },
+      zoom: {
+        min: extra.zoomMin !== undefined ? extra.zoomMin : 1,
+        max: extra.zoomMax !== undefined ? extra.zoomMax : 10
+      }
+    };
+  }
+
+  function buildAudioSettings(device) {
+    var extra = (config.audioTrackSpoof && config.audioTrackSpoof.settings) || {};
+    return {
       deviceId: device.deviceId,
       groupId: device.groupId,
       sampleRate: config.audio.sampleRate,
-      channelCount: config.audio.maxChannelCount
+      echoCancellation: extra.echoCancellation !== undefined ? extra.echoCancellation : true,
+      volume: extra.volume !== undefined ? extra.volume : 1
     };
+  }
 
-    var capabilities = kind === 'video' ? {
-      facingMode: [device.facingMode],
-      width: { min: caps.widthMin, max: caps.widthMax },
-      height: { min: caps.heightMin, max: caps.heightMax },
-      frameRate: { min: caps.minFrameRate, max: caps.maxFrameRate }
-    } : {
-      sampleRate: { min: 44100, max: 48000 },
-      channelCount: { min: 1, max: config.audio.maxChannelCount }
+  function buildAudioCapabilities(device) {
+    var extra = (config.audioTrackSpoof && config.audioTrackSpoof.capabilities) || {};
+    return {
+      deviceId: device.deviceId,
+      groupId: device.groupId,
+      echoCancellation: extra.echoCancellation || [true, false],
+      sampleRate: {
+        min: extra.sampleRateMin || 8000,
+        max: extra.sampleRateMax || 96000
+      },
+      volume: {
+        min: extra.volumeMin !== undefined ? extra.volumeMin : 0,
+        max: extra.volumeMax !== undefined ? extra.volumeMax : 1
+      }
     };
+  }
+
+  function patchTrack(track, device, kind) {
+    if (!track || track.__spoofPatched) return track;
+    track.__spoofPatched = true;
+
+    var settings = kind === 'video' ? buildVideoSettings(device) : buildAudioSettings(device);
+    var capabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
 
     try {
       Object.defineProperty(track, 'label', { get: function () { return device.label; } });
     } catch (e) {}
 
-    var origGetSettings = track.getSettings ? track.getSettings.bind(track) : null;
     track.getSettings = function () { return Object.assign({}, settings); };
-
     track.getCapabilities = function () { return JSON.parse(JSON.stringify(capabilities)); };
-    track.getConstraints = function () { return {}; };
+    track.getConstraints = function () {
+      return kind === 'video' ? { facingMode: device.facingMode } : {};
+    };
 
     return track;
   }
@@ -274,6 +342,52 @@
     return constraints && constraints.audio;
   }
 
+  function drawPlaceholder(canvas) {
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#1b4332';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px -apple-system, sans-serif';
+    ctx.fillText('Camera loading…', 16, 32);
+  }
+
+  function notifyStreamStart(tracks) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
+      window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
+    }
+    setTimeout(function () {
+      if (window.__spoofStartFramePoll) {
+        window.__spoofStartFramePoll();
+      }
+    }, 80);
+    if (tracks.length > 0 && tracks[0].addEventListener) {
+      tracks[0].addEventListener('ended', function () {
+        if (window.__spoofStopFramePoll) {
+          window.__spoofStopFramePoll();
+        }
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
+          window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
+        }
+      });
+    }
+  }
+
+  function createSyntheticAudioTrack() {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    var ctx = new Ctx();
+    var oscillator = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var destination = ctx.createMediaStreamDestination();
+    gain.gain.value = 0;
+    oscillator.connect(gain);
+    gain.connect(destination);
+    oscillator.start();
+    var tracks = destination.stream.getAudioTracks();
+    return tracks.length > 0 ? tracks[0] : null;
+  }
+
   navigator.mediaDevices.getUserMedia = function (constraints) {
     var useSpoof = wantsVideo(constraints);
 
@@ -291,7 +405,9 @@
             return;
           }
 
-          var fps = config.mediaCapabilities.frameRate;
+          drawPlaceholder(canvas);
+
+          var fps = Math.min(config.mediaCapabilities.frameRate || 12, 12);
           var stream = canvas.captureStream(fps);
           var facingMode = parseFacingMode(constraints);
           var camera = window.__spoofFindCamera(facingMode);
@@ -301,18 +417,15 @@
             window.__spoofPatchTrack(tracks[0], camera, 'video');
           }
 
+          notifyStreamStart(tracks);
+
           if (wantsAudio(constraints)) {
-            originalGetUserMedia({ audio: true }).then(function (audioStream) {
-              audioStream.getAudioTracks().forEach(function (t) {
-                var mic = (config.microphones || [])[0];
-                if (mic) window.__spoofPatchTrack(t, mic, 'audio');
-                stream.addTrack(t);
-              });
-              resolve(stream);
-            }).catch(function () {
-              resolve(stream);
-            });
-            return;
+            var mic = (config.microphones || [])[0];
+            var audioTrack = createSyntheticAudioTrack();
+            if (audioTrack) {
+              if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
+              stream.addTrack(audioTrack);
+            }
           }
 
           resolve(stream);

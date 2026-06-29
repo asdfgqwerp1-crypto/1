@@ -7,21 +7,24 @@
   <style>
     body { font-family: -apple-system, sans-serif; padding: 16px; }
     .warn { background: #fff3cd; color: #664d03; padding: 12px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; white-space: pre-wrap; }
-    video { width: 100%; max-width: 400px; background: #000; border-radius: 8px; display: block; margin: 12px 0; }
+    video { width: 100%; max-width: 400px; background: #000; border-radius: 8px; display: block; margin: 12px 0; min-height: 200px; }
     pre { background: #f5f5f7; padding: 12px; border-radius: 8px; font-size: 12px; overflow: auto; white-space: pre-wrap; }
     button { padding: 10px 16px; margin: 4px 4px 4px 0; border-radius: 8px; border: none; background: #007aff; color: #fff; font-size: 16px; }
+    button:disabled { opacity: 0.5; }
   </style>
 </head>
 <body>
   <h1>WebRTC Inspector</h1>
   <div id="env-warn" class="warn" hidden></div>
-  <button onclick="runTest()">Start Camera Test</button>
+  <button id="btn-video" onclick="runTest(false)">Start Camera Test</button>
+  <button id="btn-audio" onclick="runTest(true)">Video + Mic</button>
   <button onclick="exportJSON()">Export JSON</button>
   <video id="preview" autoplay playsinline muted></video>
-  <pre id="output">Нажмите «Start Camera Test» и разрешите доступ к камере.</pre>
+  <pre id="output">Нажмите «Start Camera Test» (только видео, быстрее). Для mic — «Video + Mic».</pre>
   <script src="../common.js"></script>
   <script>
     let report = null;
+    let activeStream = null;
 
     (function init() {
       const env = checkMediaEnvironment();
@@ -29,18 +32,36 @@
         const box = document.getElementById('env-warn');
         box.hidden = false;
         box.textContent = env.message;
-        showOutput('Тест камеры недоступен по HTTP. Используйте HTTPS-сервер.');
+        showOutput('Тест камеры недоступен по HTTP. Используйте HTTPS-сервер (порт 8443).');
       }
     })();
 
-    async function runTest() {
+    function setBusy(busy) {
+      document.getElementById('btn-video').disabled = busy;
+      document.getElementById('btn-audio').disabled = busy;
+    }
+
+    function stopActiveStream() {
+      if (!activeStream) return;
+      activeStream.getTracks().forEach(function (t) { t.stop(); });
+      activeStream = null;
+      const video = document.getElementById('preview');
+      video.srcObject = null;
+    }
+
+    async function runTest(withAudio) {
       const env = checkMediaEnvironment();
       if (!env.ok) {
         showOutput(env.message);
         return;
       }
 
-      showOutput('Запрос камеры... Разрешите доступ, если Safari спросит.');
+      stopActiveStream();
+      setBusy(true);
+      report = null;
+
+      const modeLabel = withAudio ? 'видео + микрофон' : 'только видео';
+      showOutput('Запрос камеры (' + modeLabel + ')...');
 
       try {
         let devices = [];
@@ -50,10 +71,11 @@
           devices = [];
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user' },
-          audio: true
-        });
+        const constraints = { video: { facingMode: 'user' } };
+        if (withAudio) constraints.audio = true;
+
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        activeStream = stream;
 
         const video = document.getElementById('preview');
         video.srcObject = stream;
@@ -66,6 +88,7 @@
           timestamp: new Date().toISOString(),
           secureContext: window.isSecureContext,
           pageUrl: location.href,
+          testMode: withAudio ? 'video+audio' : 'video-only',
           devices: devices.map(function (d) {
             return { kind: d.kind, label: d.label, deviceId: d.deviceId, groupId: d.groupId };
           }),
@@ -78,16 +101,24 @@
           } : null,
           audioTrack: audioTrack ? {
             label: audioTrack.label,
+            readyState: audioTrack.readyState,
             settings: audioTrack.getSettings(),
             capabilities: audioTrack.getCapabilities()
-          } : null
+          } : null,
+          preview: {
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            readyState: video.readyState
+          }
         };
 
         showOutput(JSON.stringify(report, null, 2));
       } catch (e) {
         report = null;
         showOutput('Ошибка: ' + e.name + '\n' + e.message + '\n\n'
-          + 'Если открыто по http:// — переключитесь на https:// (порт 8443).');
+          + 'Проверьте HTTPS (порт 8443). Для первого теста используйте «Start Camera Test» без микрофона.');
+      } finally {
+        setBusy(false);
       }
     }
 

@@ -97,3 +97,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Пользователь iPhone 11 — приложение могло работать с чужим профилем и перегружать память
 **Тесты:** test-injection.py Playwright webkit; validate-injection.py
 **Риски:** —
+
+## 2026-06-29 — v9: WebRTC camera fix (synthetic audio + video output)
+
+**Модули:** `Resources/injection/media/getUserMedia.js`, `frameReceiver.js`, `VideoPipeline/VideoPipeline.swift`, `TestPages/webrtc-inspector/`, `TestPages/media-timing/`, `BuildInfo.swift`
+**Что изменено:** getUserMedia больше не ждёт реальный микрофон — синтетический silent audio track; `notifyStreamStart` + ранний `__spoofStartFramePoll`; placeholder на canvas; VideoPipeline переведён на `AVCaptureVideoDataOutput` ~10fps; webrtc-inspector: кнопка «только видео» по умолчанию; media-timing измеряет реальные кадры через `requestVideoFrameCallback`
+**Почему:** На v8 webrtc-inspector зависал на `audio: true` (реальный mic permission), media-timing показывал 125 fps (setInterval), fingerprint OK но превью чёрное
+**Тесты:** validate-injection.py → 0 failed; fingerprint/media-timing от пользователя на v8 — PASS metadata; webrtc — не запускался (ожидается retest на v9)
+**Риски:** Synthetic audio может отличаться от Safari mic fingerprint на глубоком анализе

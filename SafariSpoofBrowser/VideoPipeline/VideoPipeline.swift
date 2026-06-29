@@ -7,12 +7,13 @@ final class VideoPipeline: NSObject {
     private let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "com.safarispoof.video.session")
     private let processingQueue = DispatchQueue(label: "com.safarispoof.video.processing")
-    private var photoOutput: AVCapturePhotoOutput?
+    private var videoOutput: AVCaptureVideoDataOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var networkPlayer: NetworkVideoPlayer?
     private var activeProfile: DeviceProfile?
     private var isRunning = false
-    private var captureTimer: DispatchSourceTimer?
+    private var lastFrameTime: CFAbsoluteTime = 0
+    private let minFrameInterval: CFAbsoluteTime = 1.0 / 10.0
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
     init(frameBridge: FrameBridge) {
@@ -28,6 +29,7 @@ final class VideoPipeline: NSObject {
         stop()
         activeProfile = profile
         isRunning = true
+        lastFrameTime = 0
 
         switch source {
         case .deviceCamera(let position):
@@ -43,7 +45,7 @@ final class VideoPipeline: NSObject {
 
     func stop() {
         isRunning = false
-        stopCaptureTimer()
+        lastFrameTime = 0
         sessionQueue.async { [weak self] in
             guard let self else { return }
             if self.session.isRunning { self.session.stopRunning() }
@@ -52,7 +54,7 @@ final class VideoPipeline: NSObject {
         }
         networkPlayer?.stop()
         networkPlayer = nil
-        photoOutput = nil
+        videoOutput = nil
     }
 
     func attachPreview(to view: UIView) {
@@ -64,13 +66,12 @@ final class VideoPipeline: NSObject {
         previewLayer = layer
     }
 
-    // MARK: - Camera (photo timer, max 8 fps)
+    // MARK: - Camera
 
     private func startCamera(position: AVCaptureDevice.Position) {
         sessionQueue.async { [weak self] in
             guard let self, self.isRunning else { return }
             self.configureSession(position: position)
-            self.startCaptureTimer()
         }
     }
 
@@ -93,38 +94,28 @@ final class VideoPipeline: NSObject {
 
         if session.canAddInput(input) { session.addInput(input) }
 
-        let output = AVCapturePhotoOutput()
+        let output = AVCaptureVideoDataOutput()
+        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        output.alwaysDiscardsLateVideoFrames = true
+        output.setSampleBufferDelegate(self, queue: processingQueue)
+
         if session.canAddOutput(output) {
             session.addOutput(output)
-            photoOutput = output
+            videoOutput = output
+        }
+
+        if let connection = output.connection(with: .video) {
+            if #available(iOS 17.0, *) {
+                if connection.isVideoRotationAngleSupported(90) {
+                    connection.videoRotationAngle = 90
+                }
+            } else if connection.isVideoOrientationSupported {
+                connection.videoOrientation = .portrait
+            }
         }
 
         session.commitConfiguration()
         if !session.isRunning { session.startRunning() }
-    }
-
-    private func startCaptureTimer() {
-        stopCaptureTimer()
-        let timer = DispatchSource.makeTimerSource(queue: processingQueue)
-        timer.schedule(deadline: .now() + 0.2, repeating: 1.0 / 8.0)
-        timer.setEventHandler { [weak self] in
-            self?.capturePhotoIfNeeded()
-        }
-        timer.resume()
-        captureTimer = timer
-    }
-
-    private func stopCaptureTimer() {
-        captureTimer?.cancel()
-        captureTimer = nil
-    }
-
-    private func capturePhotoIfNeeded() {
-        guard isRunning, frameBridge.isDelivering, let photoOutput else { return }
-        let settings = AVCapturePhotoSettings()
-        if photoOutput.availablePhotoCodecTypes.contains(.jpeg) {
-            photoOutput.capturePhoto(with: settings, delegate: self)
-        }
     }
 
     // MARK: - Network / file
@@ -148,13 +139,13 @@ final class VideoPipeline: NSObject {
         player.playFile(path: path)
     }
 
-    private var lastNetworkProcessTime: CFAbsoluteTime = 0
-
     private func processPixelBufferIfNeeded(_ pixelBuffer: CVPixelBuffer, captureTimestamp: CFAbsoluteTime, profile: DeviceProfile) {
         guard isRunning, frameBridge.isDelivering else { return }
+
         let now = CFAbsoluteTimeGetCurrent()
-        guard now - lastNetworkProcessTime >= 1.0 / 8.0 else { return }
-        lastNetworkProcessTime = now
+        guard now - lastFrameTime >= minFrameInterval else { return }
+        lastFrameTime = now
+
         sendPixelBuffer(pixelBuffer, profile: profile, timestamp: captureTimestamp)
     }
 
@@ -201,21 +192,18 @@ final class VideoPipeline: NSObject {
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let cgImage = context.makeImage() else { return nil }
 
-        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.3)
+        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.35)
     }
 }
 
-extension VideoPipeline: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
-        guard isRunning, frameBridge.isDelivering, error == nil,
+extension VideoPipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard isRunning,
+              frameBridge.isDelivering,
               let profile = activeProfile,
-              let data = photo.fileDataRepresentation() else { return }
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
-        frameBridge.sendFrame(
-            jpegData: data,
-            width: profile.mediaCapabilities.width,
-            height: profile.mediaCapabilities.height,
-            timestamp: CFAbsoluteTimeGetCurrent()
-        )
+        let timestamp = CFAbsoluteTimeGetCurrent()
+        processPixelBufferIfNeeded(pixelBuffer, captureTimestamp: timestamp, profile: profile)
     }
 }

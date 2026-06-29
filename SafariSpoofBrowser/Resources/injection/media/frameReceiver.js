@@ -9,12 +9,18 @@
   canvas.height = caps.height;
   var ctx = canvas.getContext('2d');
   var pollTimer = null;
-  var pollIntervalMs = Math.round(1000 / 8);
+  var pollIntervalMs = Math.round(1000 / 10);
   var frameImage = new Image();
   var isDrawing = false;
 
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
+
+  ctx.fillStyle = '#1b4332';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '16px -apple-system, sans-serif';
+  ctx.fillText('Camera loading…', 16, 32);
 
   function frameURL() {
     var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';

@@ -39,38 +39,62 @@
         const gaps = [];
         let last = performance.now();
         let frames = 0;
+        const durationMs = 5000;
 
-        showOutput('Измерение 5 секунд...');
+        showOutput('Измерение 5 секунд (реальные кадры видео)...');
+
+        const video = document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+        video.srcObject = stream;
+        await video.play().catch(function () {});
 
         await new Promise(function (resolve) {
-          const interval = setInterval(function () {
-            const now = performance.now();
-            gaps.push(now - last);
-            last = now;
-            frames++;
-          }, 0);
+          const timeout = setTimeout(resolve, durationMs);
+
+          if (video.requestVideoFrameCallback) {
+            function onFrame() {
+              const now = performance.now();
+              if (frames > 0) gaps.push(now - last);
+              last = now;
+              frames++;
+              video.requestVideoFrameCallback(onFrame);
+            }
+            video.requestVideoFrameCallback(onFrame);
+          } else {
+            const interval = setInterval(function () {
+              const now = performance.now();
+              if (frames > 0) gaps.push(now - last);
+              last = now;
+              frames++;
+            }, 16);
+            setTimeout(function () { clearInterval(interval); }, durationMs);
+          }
 
           setTimeout(function () {
-            clearInterval(interval);
+            clearTimeout(timeout);
             track.stop();
             stream.getTracks().forEach(function (t) { t.stop(); });
+            video.srcObject = null;
             resolve();
-          }, 5000);
+          }, durationMs);
         });
 
-        const sorted = gaps.slice(1).sort(function (a, b) { return a - b; });
-        const avg = sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length;
+        const sorted = gaps.slice().sort(function (a, b) { return a - b; });
+        const avg = sorted.length ? sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length : 0;
 
         report = {
           timestamp: new Date().toISOString(),
-          durationMs: 5000,
-          estimatedFps: frames / 5,
+          durationMs: durationMs,
+          method: video.requestVideoFrameCallback ? 'requestVideoFrameCallback' : 'setInterval-fallback',
+          frameCount: frames,
+          estimatedFps: frames / (durationMs / 1000),
           gapMs: {
             avg: avg,
-            p50: sorted[Math.floor(sorted.length * 0.5)],
-            p95: sorted[Math.floor(sorted.length * 0.95)],
-            min: sorted[0],
-            max: sorted[sorted.length - 1]
+            p50: sorted[Math.floor(sorted.length * 0.5)] || 0,
+            p95: sorted[Math.floor(sorted.length * 0.95)] || 0,
+            min: sorted[0] || 0,
+            max: sorted[sorted.length - 1] || 0
           },
           settings: track.getSettings()
         };

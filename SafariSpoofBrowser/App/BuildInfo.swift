@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v8"
-    static let frameDelivery = "bookmarks+native-export"
+    static let marker = "v9"
+    static let frameDelivery = "webrtc-camera-fix"
 }

@@ -25,17 +25,50 @@
     return constraints && constraints.audio;
   }
 
+  function drawPlaceholder(canvas) {
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#1b4332';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px -apple-system, sans-serif';
+    ctx.fillText('Camera loading…', 16, 32);
+  }
+
   function notifyStreamStart(tracks) {
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
     }
+    setTimeout(function () {
+      if (window.__spoofStartFramePoll) {
+        window.__spoofStartFramePoll();
+      }
+    }, 80);
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
+        if (window.__spoofStopFramePoll) {
+          window.__spoofStopFramePoll();
+        }
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
           window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
         }
       });
     }
+  }
+
+  function createSyntheticAudioTrack() {
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    var ctx = new Ctx();
+    var oscillator = ctx.createOscillator();
+    var gain = ctx.createGain();
+    var destination = ctx.createMediaStreamDestination();
+    gain.gain.value = 0;
+    oscillator.connect(gain);
+    gain.connect(destination);
+    oscillator.start();
+    var tracks = destination.stream.getAudioTracks();
+    return tracks.length > 0 ? tracks[0] : null;
   }
 
   navigator.mediaDevices.getUserMedia = function (constraints) {
@@ -55,6 +88,8 @@
             return;
           }
 
+          drawPlaceholder(canvas);
+
           var fps = Math.min(config.mediaCapabilities.frameRate || 12, 12);
           var stream = canvas.captureStream(fps);
           var facingMode = parseFacingMode(constraints);
@@ -65,23 +100,17 @@
             window.__spoofPatchTrack(tracks[0], camera, 'video');
           }
 
+          notifyStreamStart(tracks);
+
           if (wantsAudio(constraints)) {
             var mic = (config.microphones || [])[0];
-            originalGetUserMedia({ audio: true, video: false }).then(function (audioStream) {
-              audioStream.getAudioTracks().forEach(function (t) {
-                if (mic) window.__spoofPatchTrack(t, mic, 'audio');
-                stream.addTrack(t);
-              });
-              notifyStreamStart(tracks);
-              resolve(stream);
-            }).catch(function () {
-              notifyStreamStart(tracks);
-              resolve(stream);
-            });
-            return;
+            var audioTrack = createSyntheticAudioTrack();
+            if (audioTrack) {
+              if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
+              stream.addTrack(audioTrack);
+            }
           }
 
-          notifyStreamStart(tracks);
           resolve(stream);
         } catch (err) {
           reject(err);
