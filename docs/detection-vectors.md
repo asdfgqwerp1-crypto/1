@@ -27,7 +27,10 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `navigator.hardwareConcurrency` | Patched | Matches SoC core count |
 | `screen.width/height` | Patched | CSS pixels, not physical |
 | `window.innerWidth/innerHeight` | Patched v17 | Profile viewport (Safari layout, not WKWebView chrome) |
-| `visualViewport` / `clientWidth` | Patched v17 | Matches inner dimensions from profile |
+| `window.outerHeight` | Patched v18 | 896 on iPhone 11 (screen height, not inner) |
+| `Screen.prototype` width/height | Patched v18 | Instance patch broke BL → prototype patch |
+| `div.clientHeight` probe | Patched v18 | Element.prototype + layout-leak heuristic |
+| `visualViewport` / `clientWidth` | Patched v17–v18 | Matches inner dimensions from profile |
 | `devicePixelRatio` | Patched | 2 or 3 per device |
 | WebGL vendor/renderer | Patched | Apple GPU strings |
 | Canvas hash | Patched | Deterministic noise per profile seed |

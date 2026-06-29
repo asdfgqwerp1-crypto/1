@@ -169,3 +169,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** BrowserLeaks показывал viewport 414×646 (реальный WKWebView chrome) вместо Safari 414×750; запрос на 15–18 fps
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** layout страницы остаётся по реальному WebView — патч только на чтение JS API
+
+## 2026-06-29 — v18: BrowserLeaks screen + div.clientHeight fix
+
+**Модули:** `fingerprint/screen.js`, `Profiles/`, `injection-lab/`
+**Что изменено:** Патч Screen.prototype (width/height/colorDepth не undefined); outerHeight=896; Element.prototype clientWidth/clientHeight с подменой layout-leak (646→750) для probe-div; injection-lab тест div 100%×100%
+**Почему:** BrowserLeaks: screen.* undefined, div.clientHeight 646, outerHeight должен быть 896 как Safari
+**Тесты:** validate-injection.py; на iPhone не запускались
+**Риски:** эвристика clientHeight для full-width элементов — редкие ложные срабатывания на узких виджетах

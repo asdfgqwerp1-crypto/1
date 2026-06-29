@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-29T09:46:27.796Z",
+  "timestamp": "2026-06-29T10:14:07.149Z",
   "secureContext": true,
   "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
-  "testMode": "video-only",
+  "testMode": "video+audio",
   "devicesBefore": [
     {
       "kind": "audioinput",
@@ -127,7 +127,12 @@
       "facingMode": "user"
     }
   },
-  "audioTrack": null,
+  "audioTrack": {
+    "label": "MediaStreamAudioDestinationNode",
+    "readyState": "live",
+    "settings": {},
+    "capabilities": {}
+  },
   "preview": {
     "videoWidth": 480,
     "videoHeight": 640,

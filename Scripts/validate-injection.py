@@ -62,6 +62,16 @@ def main() -> int:
         else:
             print("PASS mediaStreamMock prototype track patch")
 
+        _, screen_js = fetch("/injection/fingerprint/screen.js")
+        if "__spoofScreenPatched" not in screen_js and "__spoofGeomPatched" not in screen_js:
+            print("FAIL screen.js missing prototype geometry patch")
+            failed += 1
+        elif "Screen.prototype" not in screen_js and "screenProto" not in screen_js:
+            print("FAIL screen.js missing Screen.prototype patch")
+            failed += 1
+        else:
+            print("PASS screen.js Screen.prototype + element geometry patch")
+
         _, frame_js = fetch("/injection/media/frameReceiver.js")
         if "spoofframe://" not in frame_js:
             print("FAIL frameReceiver missing spoofframe URL")

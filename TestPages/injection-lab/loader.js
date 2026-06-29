@@ -80,6 +80,18 @@
       assert('navigator.webdriver false', navigator.webdriver === false);
       assert('emulateSafariObject profile', window.__SAFARI_SPOOF_CONFIG__.emulateSafariObject === profile.emulateSafariObject);
       assert('screen.width', screen.width === 414, 'got ' + screen.width);
+      assert('screen.height', screen.height === 896, 'got ' + screen.height);
+      assert('screen.colorDepth', screen.colorDepth === 24, 'got ' + screen.colorDepth);
+      assert('innerHeight', window.innerHeight === 750, 'got ' + window.innerHeight);
+      assert('outerHeight', window.outerHeight === 896, 'got ' + window.outerHeight);
+
+      var probe = document.createElement('div');
+      probe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none';
+      document.body.appendChild(probe);
+      assert('div.clientWidth', probe.clientWidth === 414, 'got ' + probe.clientWidth);
+      assert('div.clientHeight', probe.clientHeight === 750, 'got ' + probe.clientHeight);
+      probe.remove();
+
       assert('canvas ready', !!window.__spoofCanvas);
 
       if (window.__spoofStartFramePoll) {
