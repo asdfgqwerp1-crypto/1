@@ -48,7 +48,6 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
 
     func startVideoPipeline() {
         if isNetworkVideoSource {
-            frameBridge.setDeliveryEnabled(true)
             let profile = effectiveProfile
             videoPipeline.updateStreamDelivery(
                 StreamDeliveryConfig(
@@ -74,6 +73,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
 
     func stopVideoPipeline() {
         frameBridge.setDeliveryEnabled(false)
+        videoPipeline.setCameraIndicatorActive(false)
         videoPipeline.stop()
     }
 
@@ -91,8 +91,8 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
             Task {
                 guard await Self.requestCameraAccessIfNeeded() else { return }
                 frameBridge.setDeliveryEnabled(true)
-                videoPipeline.setCameraIndicatorActive(true)
                 startVideoPipeline()
+                videoPipeline.setCameraIndicatorActive(true)
             }
             return
         }
@@ -104,7 +104,6 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
 
     func prepareForBrowser() {
         guard isNetworkVideoSource else { return }
-        frameBridge.setDeliveryEnabled(true)
         videoPipeline.setCameraIndicatorActive(false)
         startVideoPipeline()
     }

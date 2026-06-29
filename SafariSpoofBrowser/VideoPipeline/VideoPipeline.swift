@@ -81,6 +81,7 @@ final class VideoPipeline: NSObject {
         networkPlayer = nil
         httpSnapshotPlayer?.stop()
         httpSnapshotPlayer = nil
+        cameraIndicatorEnabled = false
         stopCameraIndicator()
         videoOutput = nil
     }
@@ -208,7 +209,6 @@ final class VideoPipeline: NSObject {
         }
         networkPlayer = player
         player.play(url: url)
-        startCameraIndicatorIfNeeded()
     }
 
     private func startHttpSnapshotStream(url: URL, profile: DeviceProfile) {
@@ -218,7 +218,6 @@ final class VideoPipeline: NSObject {
         }
         httpSnapshotPlayer = player
         player.play(url: url)
-        startCameraIndicatorIfNeeded()
     }
 
     private func sendHTTPJPEG(_ data: Data, profile: DeviceProfile) {
