@@ -35,6 +35,7 @@
 		A10000010000000000000025 /* getUserMedia.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000025; };
 		A10000010000000000000026 /* enumerateDevices.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000026; };
 		A10000010000000000000027 /* DeviceProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000027; };
+		A10000010000000000000029 /* welcome.html in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000029; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,6 +70,7 @@
 		A20000010000000000000099 /* SafariSpoofBrowser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafariSpoofBrowser.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000098 /* SafariSpoofBrowserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafariSpoofBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A20000010000000000000097 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A20000010000000000000029 /* welcome.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = welcome.html; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -198,6 +200,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000016 /* Assets.xcassets */,
+				A20000010000000000000029 /* welcome.html */,
 				A40000010000000000000013 /* injection */,
 			);
 			path = Resources;
@@ -333,6 +336,7 @@
 				A10000010000000000000024 /* mediaStreamMock.js in Resources */,
 				A10000010000000000000025 /* getUserMedia.js in Resources */,
 				A10000010000000000000026 /* enumerateDevices.js in Resources */,
+				A10000010000000000000029 /* welcome.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

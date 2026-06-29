@@ -18,9 +18,13 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     private var frameBridge: FrameBridge?
     private var activeProfile: DeviceProfile?
 
-    func configure(profile: DeviceProfile, frameBridge: FrameBridge) {
+    func prepare(profile: DeviceProfile, frameBridge: FrameBridge) {
         self.activeProfile = profile
         self.frameBridge = frameBridge
+    }
+
+    func configure(profile: DeviceProfile, frameBridge: FrameBridge) {
+        prepare(profile: profile, frameBridge: frameBridge)
         injectionManager?.updateProfile(profile)
         webView?.customUserAgent = profile.userAgent
         reinjectScripts()

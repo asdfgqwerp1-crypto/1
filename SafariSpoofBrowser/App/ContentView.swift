@@ -9,14 +9,11 @@ struct ContentView: View {
         VStack(spacing: 0) {
             statusBar
             browserToolbar
-            BrowserView(coordinator: browserCoordinator)
-                .onAppear {
-                    browserCoordinator.configure(
-                        profile: appState.activeProfile,
-                        frameBridge: appState.frameBridge
-                    )
-                    appState.startVideoPipeline()
-                }
+            BrowserView(
+                coordinator: browserCoordinator,
+                profile: appState.activeProfile,
+                frameBridge: appState.frameBridge
+            )
                 .onDisappear {
                     appState.stopVideoPipeline()
                 }

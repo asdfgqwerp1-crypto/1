@@ -61,6 +61,14 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .navigationBarItems(trailing: Button("Done") { dismiss() })
+            .onAppear {
+                appState.startVideoPipeline()
+                appState.frameBridge.setDeliveryEnabled(true)
+            }
+            .onDisappear {
+                appState.frameBridge.setDeliveryEnabled(false)
+                appState.stopVideoPipeline()
+            }
         }
     }
 }

@@ -8,8 +8,15 @@ struct FrameBridgeMetrics: Equatable {
     var framesSent: Int = 0
 }
 
+protocol FrameBridgeDelegate: AnyObject {
+    func frameBridgeDidRequestStreamStart()
+    func frameBridgeDidRequestStreamStop()
+}
+
 final class FrameBridge: NSObject {
     static let handlerName = "spoofFrameBridge"
+
+    weak var delegate: FrameBridgeDelegate?
 
     private let metricsSubject = CurrentValueSubject<FrameBridgeMetrics, Never>(FrameBridgeMetrics())
     var metricsPublisher: AnyPublisher<FrameBridgeMetrics, Never> {
@@ -17,9 +24,13 @@ final class FrameBridge: NSObject {
     }
 
     private weak var webView: WKWebView?
-    private var lastFrameTime: CFAbsoluteTime = 0
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
+    private var isDeliveryEnabled = false
+    private var lastSendTime: CFAbsoluteTime = 0
+    private let minInterval: CFAbsoluteTime = 1.0 / 12.0
+    private var isEvaluating = false
+    private var pendingFrame: (base64: String, width: Int, height: Int)?
 
     func register(with controller: WKUserContentController) {
         controller.add(self, name: Self.handlerName)
@@ -33,17 +44,54 @@ final class FrameBridge: NSObject {
         self.webView = webView
     }
 
+    func setDeliveryEnabled(_ enabled: Bool) {
+        isDeliveryEnabled = enabled
+        if !enabled {
+            pendingFrame = nil
+        }
+    }
+
     func sendFrame(base64JPEG: String, width: Int, height: Int, timestamp: CFAbsoluteTime) {
-        guard let webView else { return }
+        guard isDeliveryEnabled, let webView else { return }
+        guard base64JPEG.count < 120_000 else { return }
 
-        let latency = (CFAbsoluteTimeGetCurrent() - timestamp) * 1000
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastSendTime >= minInterval else { return }
+
+        if isEvaluating {
+            pendingFrame = (base64JPEG, width, height)
+            return
+        }
+
+        lastSendTime = now
+        let latency = (now - timestamp) * 1000
         updateMetrics(latency: latency)
+        dispatchFrame(base64JPEG: base64JPEG, width: width, height: height, on: webView)
+    }
 
-        let escaped = base64JPEG.replacingOccurrences(of: "'", with: "\\'")
-        let js = "window.__spoofReceiveFrame && window.__spoofReceiveFrame('\(escaped)', \(width), \(height));"
+    private func dispatchFrame(base64JPEG: String, width: Int, height: Int, on webView: WKWebView) {
+        isEvaluating = true
+        let finish: () -> Void = { [weak self] in
+            guard let self else { return }
+            self.isEvaluating = false
+            if let pending = self.pendingFrame {
+                self.pendingFrame = nil
+                self.sendFrame(
+                    base64JPEG: pending.base64,
+                    width: pending.width,
+                    height: pending.height,
+                    timestamp: CFAbsoluteTimeGetCurrent()
+                )
+            }
+        }
 
-        DispatchQueue.main.async {
-            webView.evaluateJavaScript(js, completionHandler: nil)
+        webView.callAsyncJavaScript(
+            "if (window.__spoofReceiveFrame) { window.__spoofReceiveFrame(arguments[0], arguments[1], arguments[2]); }",
+            arguments: [base64JPEG, width, height],
+            in: nil,
+            in: .page
+        ) { _, _ in
+            finish()
         }
     }
 
@@ -61,14 +109,20 @@ final class FrameBridge: NSObject {
 
 extension FrameBridge: WKScriptMessageHandler {
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        // Reserved for JS → native messages (e.g. stream started, errors)
         guard message.name == Self.handlerName,
               let body = message.body as? [String: Any],
               let event = body["event"] as? String else { return }
 
-        if event == "streamStarted" {
-            metrics = FrameBridgeMetrics()
-            metricsSubject.send(metrics)
+        switch event {
+        case "startStream":
+            isDeliveryEnabled = true
+            delegate?.frameBridgeDidRequestStreamStart()
+        case "stopStream":
+            isDeliveryEnabled = false
+            delegate?.frameBridgeDidRequestStreamStop()
+        default:
+            break
         }
     }
 }
+

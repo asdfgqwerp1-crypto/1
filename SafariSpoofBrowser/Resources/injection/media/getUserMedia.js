@@ -25,6 +25,19 @@
     return constraints && constraints.audio;
   }
 
+  function notifyStreamStart(tracks) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
+      window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
+    }
+    if (tracks.length > 0 && tracks[0].addEventListener) {
+      tracks[0].addEventListener('ended', function () {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
+          window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
+        }
+      });
+    }
+  }
+
   navigator.mediaDevices.getUserMedia = function (constraints) {
     var useSpoof = wantsVideo(constraints);
 
@@ -59,13 +72,16 @@
                 if (mic) window.__spoofPatchTrack(t, mic, 'audio');
                 stream.addTrack(t);
               });
+              notifyStreamStart(tracks);
               resolve(stream);
             }).catch(function () {
+              notifyStreamStart(tracks);
               resolve(stream);
             });
             return;
           }
 
+          notifyStreamStart(tracks);
           resolve(stream);
         } catch (err) {
           reject(err);
