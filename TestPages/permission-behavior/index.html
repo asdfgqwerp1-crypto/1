@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Permission Behavior</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 16px; }
+    .warn { background: #fff3cd; color: #664d03; padding: 12px; border-radius: 8px; margin-bottom: 12px; white-space: pre-wrap; }
+    pre { background: #f5f5f7; padding: 12px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; }
+    button { padding: 10px 16px; margin: 4px 4px 4px 0; border-radius: 8px; border: none; background: #007aff; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Permission Behavior</h1>
+  <div id="env-warn" class="warn" hidden></div>
+  <button onclick="testPermission()">Request Camera</button>
+  <button onclick="exportJSON()">Export JSON</button>
+  <pre id="output">Нажмите «Request Camera»</pre>
+  <script src="../common.js"></script>
+  <script>
+    let report = null;
+
+    (function init() {
+      const env = checkMediaEnvironment();
+      if (!env.ok) {
+        document.getElementById('env-warn').hidden = false;
+        document.getElementById('env-warn').textContent = env.message;
+      }
+    })();
+
+    async function testPermission() {
+      const env = checkMediaEnvironment();
+      if (!env.ok) { showOutput(env.message); return; }
+
+      const t0 = performance.now();
+      let status = 'unknown';
+      let granted = false;
+      let error = null;
+
+      try {
+        if (navigator.permissions) {
+          const perm = await navigator.permissions.query({ name: 'camera' });
+          status = perm.state;
+        }
+      } catch (e) {}
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        granted = true;
+        stream.getTracks().forEach(function (t) { t.stop(); });
+      } catch (e) {
+        error = e.name + ': ' + e.message;
+      }
+
+      report = {
+        timestamp: new Date().toISOString(),
+        permissionState: status,
+        granted: granted,
+        error: error,
+        responseTimeMs: performance.now() - t0
+      };
+
+      showOutput(JSON.stringify(report, null, 2));
+    }
+
+    function exportJSON() {
+      exportReport(report, 'permission-report.json');
+    }
+  </script>
+</body>
+</html>

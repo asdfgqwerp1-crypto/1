@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media Timing</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 16px; }
+    .warn { background: #fff3cd; color: #664d03; padding: 12px; border-radius: 8px; margin-bottom: 12px; white-space: pre-wrap; }
+    pre { background: #f5f5f7; padding: 12px; border-radius: 8px; font-size: 12px; white-space: pre-wrap; }
+    button { padding: 10px 16px; margin: 4px 4px 4px 0; border-radius: 8px; border: none; background: #007aff; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Media Timing</h1>
+  <div id="env-warn" class="warn" hidden></div>
+  <button onclick="start()">Measure 5s</button>
+  <button onclick="exportJSON()">Export JSON</button>
+  <pre id="output">Нажмите «Measure 5s»</pre>
+  <script src="../common.js"></script>
+  <script>
+    let report = null;
+
+    (function init() {
+      const env = checkMediaEnvironment();
+      if (!env.ok) {
+        document.getElementById('env-warn').hidden = false;
+        document.getElementById('env-warn').textContent = env.message;
+      }
+    })();
+
+    async function start() {
+      const env = checkMediaEnvironment();
+      if (!env.ok) { showOutput(env.message); return; }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const track = stream.getVideoTracks()[0];
+        const gaps = [];
+        let last = performance.now();
+        let frames = 0;
+
+        showOutput('Измерение 5 секунд...');
+
+        await new Promise(function (resolve) {
+          const interval = setInterval(function () {
+            const now = performance.now();
+            gaps.push(now - last);
+            last = now;
+            frames++;
+          }, 0);
+
+          setTimeout(function () {
+            clearInterval(interval);
+            track.stop();
+            stream.getTracks().forEach(function (t) { t.stop(); });
+            resolve();
+          }, 5000);
+        });
+
+        const sorted = gaps.slice(1).sort(function (a, b) { return a - b; });
+        const avg = sorted.reduce(function (a, b) { return a + b; }, 0) / sorted.length;
+
+        report = {
+          timestamp: new Date().toISOString(),
+          durationMs: 5000,
+          estimatedFps: frames / 5,
+          gapMs: {
+            avg: avg,
+            p50: sorted[Math.floor(sorted.length * 0.5)],
+            p95: sorted[Math.floor(sorted.length * 0.95)],
+            min: sorted[0],
+            max: sorted[sorted.length - 1]
+          },
+          settings: track.getSettings()
+        };
+
+        showOutput(JSON.stringify(report, null, 2));
+      } catch (e) {
+        report = null;
+        showOutput('Ошибка: ' + e.name + '\n' + e.message);
+      }
+    }
+
+    function exportJSON() {
+      exportReport(report, 'media-timing-report.json');
+    }
+  </script>
+</body>
+</html>

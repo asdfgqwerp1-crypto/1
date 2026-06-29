@@ -1,0 +1,102 @@
+{
+  "id": "iphone11_ios265",
+  "displayName": "iPhone 11 (iOS 26.5)",
+  "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1",
+  "emulateSafariObject": false,
+  "navigator": {
+    "platform": "iPhone",
+    "vendor": "Apple Computer, Inc.",
+    "maxTouchPoints": 5,
+    "hardwareConcurrency": 4,
+    "languages": ["en-US"],
+    "cookieEnabled": true,
+    "webdriver": false
+  },
+  "screen": {
+    "width": 414,
+    "height": 896,
+    "availWidth": 414,
+    "availHeight": 896,
+    "devicePixelRatio": 2,
+    "colorDepth": 24,
+    "orientation": "portrait-primary"
+  },
+  "webgl": {
+    "vendor": "Apple Inc.",
+    "renderer": "Apple GPU",
+    "canvasNoiseSeed": 284739102
+  },
+  "audio": {
+    "sampleRate": 48000,
+    "maxChannelCount": 2
+  },
+  "cameras": [
+    {
+      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "label": "Front Camera",
+      "facingMode": "user"
+    },
+    {
+      "deviceId": "8A2C4F1B9D3E5670A1B2C3D4E5F60718293A4B5C",
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "label": "Back Dual Camera",
+      "facingMode": "environment"
+    },
+    {
+      "deviceId": "7B1D3E2C8A4F5061B0C1D2E3F4A51627384B5C6D",
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "label": "Back Ultra Wide Camera",
+      "facingMode": "environment"
+    }
+  ],
+  "microphones": [
+    {
+      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
+      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF",
+      "label": "iPhone Microphone"
+    }
+  ],
+  "mediaCapabilities": {
+    "width": 480,
+    "height": 640,
+    "frameRate": 30,
+    "minFrameRate": 1,
+    "maxFrameRate": 60,
+    "widthMin": 1,
+    "widthMax": 4032,
+    "heightMin": 1,
+    "heightMax": 3024
+  },
+  "videoTrackSpoof": {
+    "settings": {
+      "aspectRatio": 0.75,
+      "backgroundBlur": false,
+      "powerEfficient": false,
+      "whiteBalanceMode": "continuous",
+      "zoom": 1
+    },
+    "capabilities": {
+      "aspectRatioMin": 0.00033068783068783067,
+      "aspectRatioMax": 4032,
+      "backgroundBlur": [false],
+      "powerEfficient": [false, true],
+      "whiteBalanceMode": ["manual", "continuous"],
+      "zoomMin": 1,
+      "zoomMax": 10
+    }
+  },
+  "audioTrackSpoof": {
+    "settings": {
+      "echoCancellation": true,
+      "volume": 1
+    },
+    "capabilities": {
+      "echoCancellation": [true, false],
+      "sampleRateMin": 8000,
+      "sampleRateMax": 96000,
+      "volumeMin": 0,
+      "volumeMax": 1
+    }
+  }
+}

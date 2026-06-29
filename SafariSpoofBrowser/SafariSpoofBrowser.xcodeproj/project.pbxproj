@@ -1,0 +1,539 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000010000000000000001 /* SafariSpoofBrowserApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000001; };
+		A10000010000000000000002 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000002; };
+		A10000010000000000000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000003; };
+		A10000010000000000000004 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000004; };
+		A10000010000000000000005 /* BrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000005; };
+		A10000010000000000000006 /* BrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000006; };
+		A10000010000000000000007 /* URLNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000007; };
+		A10000010000000000000008 /* DeviceProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000008; };
+		A10000010000000000000009 /* ProfileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000009; };
+		A10000010000000000000010 /* InjectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000010; };
+		A10000010000000000000011 /* InjectionScriptLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000011; };
+		A10000010000000000000012 /* FrameBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000012; };
+		A10000010000000000000013 /* VideoSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013; };
+		A10000010000000000000014 /* VideoPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014; };
+		A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015; };
+		A10000010000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016; };
+		A10000010000000000000017 /* iphone15pro_ios174.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017; };
+		A10000010000000000000028 /* iphone11_ios265.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000028; };
+		A10000010000000000000018 /* navigator.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018; };
+		A10000010000000000000019 /* screen.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019; };
+		A10000010000000000000020 /* webgl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000020; };
+		A10000010000000000000021 /* canvas.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000021; };
+		A10000010000000000000022 /* audio.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000022; };
+		A10000010000000000000023 /* frameReceiver.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000023; };
+		A10000010000000000000024 /* mediaStreamMock.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000024; };
+		A10000010000000000000025 /* getUserMedia.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000025; };
+		A10000010000000000000026 /* enumerateDevices.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000026; };
+		A10000010000000000000027 /* DeviceProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000027; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A20000010000000000000001 /* SafariSpoofBrowserApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariSpoofBrowserApp.swift; sourceTree = "<group>"; };
+		A20000010000000000000002 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		A20000010000000000000003 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A20000010000000000000004 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A20000010000000000000005 /* BrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCoordinator.swift; sourceTree = "<group>"; };
+		A20000010000000000000006 /* BrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserView.swift; sourceTree = "<group>"; };
+		A20000010000000000000007 /* URLNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLNormalizer.swift; sourceTree = "<group>"; };
+		A20000010000000000000008 /* DeviceProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfile.swift; sourceTree = "<group>"; };
+		A20000010000000000000009 /* ProfileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileStore.swift; sourceTree = "<group>"; };
+		A20000010000000000000010 /* InjectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionManager.swift; sourceTree = "<group>"; };
+		A20000010000000000000011 /* InjectionScriptLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionScriptLoader.swift; sourceTree = "<group>"; };
+		A20000010000000000000012 /* FrameBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBridge.swift; sourceTree = "<group>"; };
+		A20000010000000000000013 /* VideoSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSourceType.swift; sourceTree = "<group>"; };
+		A20000010000000000000014 /* VideoPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPipeline.swift; sourceTree = "<group>"; };
+		A20000010000000000000015 /* NetworkVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkVideoPlayer.swift; sourceTree = "<group>"; };
+		A20000010000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A20000010000000000000017 /* iphone15pro_ios174.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = iphone15pro_ios174.json; sourceTree = "<group>"; };
+		A20000010000000000000028 /* iphone11_ios265.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = iphone11_ios265.json; sourceTree = "<group>"; };
+		A20000010000000000000018 /* navigator.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = navigator.js; sourceTree = "<group>"; };
+		A20000010000000000000019 /* screen.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = screen.js; sourceTree = "<group>"; };
+		A20000010000000000000020 /* webgl.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webgl.js; sourceTree = "<group>"; };
+		A20000010000000000000021 /* canvas.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = canvas.js; sourceTree = "<group>"; };
+		A20000010000000000000022 /* audio.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = audio.js; sourceTree = "<group>"; };
+		A20000010000000000000023 /* frameReceiver.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = frameReceiver.js; sourceTree = "<group>"; };
+		A20000010000000000000024 /* mediaStreamMock.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = mediaStreamMock.js; sourceTree = "<group>"; };
+		A20000010000000000000025 /* getUserMedia.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = getUserMedia.js; sourceTree = "<group>"; };
+		A20000010000000000000026 /* enumerateDevices.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = enumerateDevices.js; sourceTree = "<group>"; };
+		A20000010000000000000027 /* DeviceProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfileTests.swift; sourceTree = "<group>"; };
+		A20000010000000000000099 /* SafariSpoofBrowser.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SafariSpoofBrowser.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000098 /* SafariSpoofBrowserTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SafariSpoofBrowserTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000010000000000000097 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A30000010000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000010000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A40000010000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000002 /* SafariSpoofBrowser */,
+				A40000010000000000000003 /* SafariSpoofBrowserTests */,
+				A40000010000000000000004 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A40000010000000000000002 /* SafariSpoofBrowser */ = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000005 /* App */,
+				A40000010000000000000006 /* Browser */,
+				A40000010000000000000007 /* Profiles */,
+				A40000010000000000000008 /* Injection */,
+				A40000010000000000000009 /* Bridge */,
+				A40000010000000000000010 /* VideoPipeline */,
+				A40000010000000000000011 /* Resources */,
+				A20000010000000000000097 /* Info.plist */,
+			);
+			path = SafariSpoofBrowser;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000003 /* SafariSpoofBrowserTests */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000027 /* DeviceProfileTests.swift */,
+			);
+			path = SafariSpoofBrowserTests;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000004 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000099 /* SafariSpoofBrowser.app */,
+				A20000010000000000000098 /* SafariSpoofBrowserTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000005 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000001 /* SafariSpoofBrowserApp.swift */,
+				A20000010000000000000002 /* AppState.swift */,
+				A20000010000000000000003 /* ContentView.swift */,
+				A20000010000000000000004 /* SettingsView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000006 /* Browser */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000005 /* BrowserCoordinator.swift */,
+				A20000010000000000000006 /* BrowserView.swift */,
+				A20000010000000000000007 /* URLNormalizer.swift */,
+			);
+			path = Browser;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000007 /* Profiles */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000008 /* DeviceProfile.swift */,
+				A20000010000000000000009 /* ProfileStore.swift */,
+				A40000010000000000000012 /* Profiles */,
+			);
+			path = Profiles;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000012 /* Profiles */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000017 /* iphone15pro_ios174.json */,
+				A20000010000000000000028 /* iphone11_ios265.json */,
+			);
+			path = Profiles;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000008 /* Injection */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000010 /* InjectionManager.swift */,
+				A20000010000000000000011 /* InjectionScriptLoader.swift */,
+			);
+			path = Injection;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000009 /* Bridge */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000012 /* FrameBridge.swift */,
+			);
+			path = Bridge;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000010 /* VideoPipeline */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000013 /* VideoSourceType.swift */,
+				A20000010000000000000014 /* VideoPipeline.swift */,
+				A20000010000000000000015 /* NetworkVideoPlayer.swift */,
+			);
+			path = VideoPipeline;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000011 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000016 /* Assets.xcassets */,
+				A40000010000000000000013 /* injection */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000013 /* injection */ = {
+			isa = PBXGroup;
+			children = (
+				A40000010000000000000014 /* fingerprint */,
+				A40000010000000000000015 /* media */,
+				A40000010000000000000016 /* webrtc */,
+			);
+			path = injection;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000014 /* fingerprint */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000018 /* navigator.js */,
+				A20000010000000000000019 /* screen.js */,
+				A20000010000000000000020 /* webgl.js */,
+				A20000010000000000000021 /* canvas.js */,
+				A20000010000000000000022 /* audio.js */,
+			);
+			path = fingerprint;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000015 /* media */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000023 /* frameReceiver.js */,
+				A20000010000000000000024 /* mediaStreamMock.js */,
+				A20000010000000000000025 /* getUserMedia.js */,
+			);
+			path = media;
+			sourceTree = "<group>";
+		};
+		A40000010000000000000016 /* webrtc */ = {
+			isa = PBXGroup;
+			children = (
+				A20000010000000000000026 /* enumerateDevices.js */,
+			);
+			path = webrtc;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A50000010000000000000001 /* SafariSpoofBrowser */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000010000000000000001 /* Build configuration list for PBXNativeTarget "SafariSpoofBrowser" */;
+			buildPhases = (
+				A60000010000000000000001 /* Sources */,
+				A30000010000000000000001 /* Frameworks */,
+				A60000010000000000000002 /* Resources */,
+			);
+			buildRules = ( );
+			dependencies = ( );
+			name = SafariSpoofBrowser;
+			productName = SafariSpoofBrowser;
+			productReference = A20000010000000000000099 /* SafariSpoofBrowser.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A50000010000000000000002 /* SafariSpoofBrowserTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000010000000000000002 /* Build configuration list for PBXNativeTarget "SafariSpoofBrowserTests" */;
+			buildPhases = (
+				A60000010000000000000003 /* Sources */,
+				A30000010000000000000002 /* Frameworks */,
+				A60000010000000000000004 /* Resources */,
+			);
+			buildRules = ( );
+			dependencies = (
+				A50000010000000000000003 /* PBXTargetDependency */,
+			);
+			name = SafariSpoofBrowserTests;
+			productName = SafariSpoofBrowserTests;
+			productReference = A20000010000000000000098 /* SafariSpoofBrowserTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A80000010000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A50000010000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					A50000010000000000000002 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = A50000010000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = A70000010000000000000003 /* Build configuration list for PBXProject "SafariSpoofBrowser" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A40000010000000000000001;
+			productRefGroup = A40000010000000000000004 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000010000000000000001 /* SafariSpoofBrowser */,
+				A50000010000000000000002 /* SafariSpoofBrowserTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A60000010000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000010000000000000016 /* Assets.xcassets in Resources */,
+				A10000010000000000000017 /* iphone15pro_ios174.json in Resources */,
+				A10000010000000000000028 /* iphone11_ios265.json in Resources */,
+				A10000010000000000000018 /* navigator.js in Resources */,
+				A10000010000000000000019 /* screen.js in Resources */,
+				A10000010000000000000020 /* webgl.js in Resources */,
+				A10000010000000000000021 /* canvas.js in Resources */,
+				A10000010000000000000022 /* audio.js in Resources */,
+				A10000010000000000000023 /* frameReceiver.js in Resources */,
+				A10000010000000000000024 /* mediaStreamMock.js in Resources */,
+				A10000010000000000000025 /* getUserMedia.js in Resources */,
+				A10000010000000000000026 /* enumerateDevices.js in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A60000010000000000000004 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ( );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A60000010000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000010000000000000001 /* SafariSpoofBrowserApp.swift in Sources */,
+				A10000010000000000000002 /* AppState.swift in Sources */,
+				A10000010000000000000003 /* ContentView.swift in Sources */,
+				A10000010000000000000004 /* SettingsView.swift in Sources */,
+				A10000010000000000000005 /* BrowserCoordinator.swift in Sources */,
+				A10000010000000000000006 /* BrowserView.swift in Sources */,
+				A10000010000000000000007 /* URLNormalizer.swift in Sources */,
+				A10000010000000000000008 /* DeviceProfile.swift in Sources */,
+				A10000010000000000000009 /* ProfileStore.swift in Sources */,
+				A10000010000000000000010 /* InjectionManager.swift in Sources */,
+				A10000010000000000000011 /* InjectionScriptLoader.swift in Sources */,
+				A10000010000000000000012 /* FrameBridge.swift in Sources */,
+				A10000010000000000000013 /* VideoSourceType.swift in Sources */,
+				A10000010000000000000014 /* VideoPipeline.swift in Sources */,
+				A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A60000010000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000010000000000000027 /* DeviceProfileTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A50000010000000000000003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000010000000000000001 /* SafariSpoofBrowser */;
+			targetProxy = A50000010000000000000004 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXContainerItemProxy section */
+		A50000010000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A80000010000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000010000000000000001;
+			remoteInfo = SafariSpoofBrowser;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin XCBuildConfiguration section */
+		A90000010000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A90000010000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A90000010000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SafariSpoofBrowser/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.safarispoof.browser;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A90000010000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SafariSpoofBrowser/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.safarispoof.browser;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A90000010000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.safarispoof.browser.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SafariSpoofBrowser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SafariSpoofBrowser";
+			};
+			name = Debug;
+		};
+		A90000010000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.safarispoof.browser.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SafariSpoofBrowser.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SafariSpoofBrowser";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A70000010000000000000001 /* Build configuration list for PBXNativeTarget "SafariSpoofBrowser" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A90000010000000000000003 /* Debug */,
+				A90000010000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000010000000000000002 /* Build configuration list for PBXNativeTarget "SafariSpoofBrowserTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A90000010000000000000005 /* Debug */,
+				A90000010000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000010000000000000003 /* Build configuration list for PBXProject "SafariSpoofBrowser" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A90000010000000000000001 /* Debug */,
+				A90000010000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A80000010000000000000001 /* Project object */;
+}

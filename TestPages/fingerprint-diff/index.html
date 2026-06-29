@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fingerprint Diff</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 16px; background: #f5f5f7; }
+    pre { background: #fff; padding: 12px; border-radius: 8px; overflow: auto; font-size: 12px; }
+    button { padding: 10px 16px; margin: 4px; border-radius: 8px; border: none; background: #007aff; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Fingerprint Diff</h1>
+  <p>Collect browser signals for Safari baseline comparison.</p>
+  <button onclick="collect()">Collect Signals</button>
+  <button onclick="exportJSON()">Export JSON</button>
+  <pre id="output">Tap Collect Signals</pre>
+  <script>
+    let report = null;
+
+    async function getWebGL() {
+      const canvas = document.createElement('canvas');
+      const gl = canvas.getContext('webgl');
+      if (!gl) return { vendor: null, renderer: null };
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      if (!ext) return { vendor: null, renderer: null };
+      return {
+        vendor: gl.getParameter(ext.UNMASKED_VENDOR_WEBGL),
+        renderer: gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)
+      };
+    }
+
+    async function collect() {
+      const webgl = await getWebGL();
+      report = {
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        vendor: navigator.vendor,
+        maxTouchPoints: navigator.maxTouchPoints,
+        hardwareConcurrency: navigator.hardwareConcurrency,
+        languages: navigator.languages ? Array.from(navigator.languages) : [],
+        cookieEnabled: navigator.cookieEnabled,
+        webdriver: navigator.webdriver,
+        screen: {
+          width: screen.width,
+          height: screen.height,
+          availWidth: screen.availWidth,
+          availHeight: screen.availHeight,
+          colorDepth: screen.colorDepth,
+          devicePixelRatio: window.devicePixelRatio,
+          orientation: screen.orientation ? screen.orientation.type : null
+        },
+        webgl,
+        hasSafariObject: typeof window.safari !== 'undefined',
+        audioSampleRate: (() => {
+          try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            const ctx = new Ctx();
+            const rate = ctx.sampleRate;
+            ctx.close();
+            return rate;
+          } catch (e) { return null; }
+        })(),
+        spoofInstalled: !!window.__safariSpoofInstalled,
+        profileId: window.__SAFARI_SPOOF_CONFIG__ ? window.__SAFARI_SPOOF_CONFIG__.profileId : null
+      };
+      document.getElementById('output').textContent = JSON.stringify(report, null, 2);
+    }
+
+    function exportJSON() {
+      if (!report) { collect().then(exportJSON); return; }
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'fingerprint-report.json';
+      a.click();
+    }
+  </script>
+</body>
+</html>

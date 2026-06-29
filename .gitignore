@@ -1,0 +1,12 @@
+.DS_Store
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+Scripts/certs/
+__pycache__/
+*.pyc
+/tmp/
+.env

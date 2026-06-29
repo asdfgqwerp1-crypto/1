@@ -1,0 +1,103 @@
+{
+  "timestamp": "2026-06-29T04:14:26.298Z",
+  "secureContext": true,
+  "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
+  "devices": [
+    {
+      "kind": "audioinput",
+      "label": "",
+      "deviceId": "",
+      "groupId": ""
+    },
+    {
+      "kind": "videoinput",
+      "label": "",
+      "deviceId": "",
+      "groupId": ""
+    }
+  ],
+  "videoTrack": {
+    "label": "Front Camera",
+    "readyState": "live",
+    "settings": {
+      "aspectRatio": 0.75,
+      "backgroundBlur": false,
+      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "facingMode": "user",
+      "frameRate": 30,
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "height": 640,
+      "powerEfficient": false,
+      "whiteBalanceMode": "continuous",
+      "width": 480,
+      "zoom": 1
+    },
+    "capabilities": {
+      "aspectRatio": {
+        "max": 4032,
+        "min": 0.00033068783068783067
+      },
+      "backgroundBlur": [
+        false
+      ],
+      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "facingMode": [
+        "user"
+      ],
+      "frameRate": {
+        "max": 60,
+        "min": 1
+      },
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+      "height": {
+        "max": 3024,
+        "min": 1
+      },
+      "powerEfficient": [
+        false,
+        true
+      ],
+      "whiteBalanceMode": [
+        "manual",
+        "continuous"
+      ],
+      "width": {
+        "max": 4032,
+        "min": 1
+      },
+      "zoom": {
+        "max": 10,
+        "min": 1
+      }
+    },
+    "constraints": {
+      "facingMode": "user"
+    }
+  },
+  "audioTrack": {
+    "label": "iPhone Microphone",
+    "settings": {
+      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
+      "echoCancellation": true,
+      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF",
+      "sampleRate": 48000,
+      "volume": 1
+    },
+    "capabilities": {
+      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
+      "echoCancellation": [
+        true,
+        false
+      ],
+      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF",
+      "sampleRate": {
+        "max": 96000,
+        "min": 8000
+      },
+      "volume": {
+        "max": 1,
+        "min": 0
+      }
+    }
+  }
+}
