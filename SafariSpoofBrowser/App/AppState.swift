@@ -5,12 +5,6 @@ import AVFoundation
 @MainActor
 final class AppState: ObservableObject, FrameBridgeDelegate {
     @Published var activeProfile: DeviceProfile
-    @Published var frameDeliveryMode: FrameDeliveryFormat {
-        didSet {
-            UserDefaults.standard.set(frameDeliveryMode.rawValue, forKey: Self.frameDeliveryDefaultsKey)
-            videoPipeline.updateProfile(effectiveProfile)
-        }
-    }
     @Published var videoSource: VideoSourceType = .deviceCamera(position: .front)
     @Published var bridgeMetrics = FrameBridgeMetrics()
     @Published var showSettings = false
@@ -21,10 +15,8 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     let frameBridge: FrameBridge
 
     private var cancellables = Set<AnyCancellable>()
-    private static let frameDeliveryDefaultsKey = "com.safarispoof.frameDelivery"
-
     var effectiveProfile: DeviceProfile {
-        activeProfile.withFrameDelivery(frameDeliveryMode)
+        activeProfile.withFrameDelivery(.jpeg)
     }
 
     init() {
@@ -32,12 +24,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         let store = ProfileStore()
         self.profileStore = store
         self.activeProfile = store.defaultProfile
-        if let saved = UserDefaults.standard.string(forKey: Self.frameDeliveryDefaultsKey),
-           let mode = FrameDeliveryFormat(rawValue: saved) {
-            self.frameDeliveryMode = mode
-        } else {
-            self.frameDeliveryMode = store.defaultProfile.resolvedFrameDelivery
-        }
+        UserDefaults.standard.set(FrameDeliveryFormat.jpeg.rawValue, forKey: "com.safarispoof.frameDelivery")
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
         self.frameBridge.delegate = self

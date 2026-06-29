@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v26"
-    static let frameDelivery = "nv12-chunked+jpeg-default"
+    static let marker = "v28"
+    static let frameDelivery = "jpeg-only"
 }

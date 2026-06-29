@@ -194,6 +194,22 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v28: JPEG-only (NV12 отключён в UI)
+
+**Модули:** `AppState.swift`, `SettingsView.swift`, `HomeView.swift`, `BrowserScreenView.swift`
+**Что изменено:** Frame delivery зафиксирован на JPEG; убран переключатель NV12; UserDefaults принудительно jpeg
+**Почему:** NV12 нестабилен на iOS WKWebView; JPEG даёт 15+ fps и проходит все тесты
+**Тесты:** на iPhone не запускались (регрессия не ожидается — v24 jpeg path)
+**Риски:** NV12 код остаётся в репо для возможного будущего транспорта
+
+## 2026-06-29 — v27: NV12 JPEG mirror fallback + sequential chunks
+
+**Модули:** `FrameSchemeHandler.swift`, `FrameBridge.swift`, `VideoPipeline.swift`, `frameReceiver.js`
+**Что изменено:** NV12 mode шлёт параллельно JPEG mirror на `spoofframe://frame/jpeg`; chunks fetch последовательно (iOS не держит 10 parallel scheme); убрана проверка seq на part; при fail/decode error — автоматический JPEG mirror (не зелёный экран)
+**Почему:** NV12 chunked падал молча → placeholder; race seq; parallel fetch на WKURLSchemeHandler
+**Тесты:** Linux frame-pipeline; на iPhone не запускались
+**Риски:** NV12 mode фактически может показывать JPEG mirror если decode не работает
+
 ## 2026-06-29 — v26: Frame Delivery toggle в Settings
 
 **Модули:** `SettingsView.swift`, `AppState.swift`, `DeviceProfile.swift`, `HomeView.swift`, `BrowserScreenView.swift`

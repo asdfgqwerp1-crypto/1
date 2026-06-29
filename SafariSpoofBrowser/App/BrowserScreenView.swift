@@ -113,11 +113,6 @@ struct BrowserScreenView: View {
                 frameBridge: appState.frameBridge
             )
         }
-        .onChange(of: appState.frameDeliveryMode) { _ in
-            coordinator.configure(
-                profile: appState.effectiveProfile,
-                frameBridge: appState.frameBridge
-            )
-        }
+
     }
 }

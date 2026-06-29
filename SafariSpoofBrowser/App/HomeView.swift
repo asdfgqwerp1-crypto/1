@@ -30,7 +30,7 @@ struct HomeView: View {
                     Text("Профилей: \(appState.profileStore.profiles.count)")
                         .font(.caption)
                         .foregroundStyle(.gray)
-                    Text("Кадры: \(appState.frameDeliveryMode.rawValue.uppercased())")
+                    Text("Кадры: JPEG")
                         .font(.caption.monospaced())
                         .foregroundStyle(.gray)
                 }
