@@ -12,6 +12,9 @@
   var pollBaseMs = Math.round(1000 / 16);
   var isDrawing = false;
   var rgbaBuffer = null;
+  var nv12ScratchCanvas = null;
+  var nv12GlRenderer = null;
+  var uvUnpackBuffer = null;
   var lastFrameSeq = 0;
   var lastPtsUs = 0;
   var streamStartPtsUs = 0;
@@ -139,6 +142,156 @@
     return 'jpeg';
   }
 
+  function ensureScratchCanvas(width, height) {
+    if (!nv12ScratchCanvas) {
+      nv12ScratchCanvas = document.createElement('canvas');
+    }
+    if (nv12ScratchCanvas.width !== width || nv12ScratchCanvas.height !== height) {
+      nv12ScratchCanvas.width = width;
+      nv12ScratchCanvas.height = height;
+    }
+    return nv12ScratchCanvas;
+  }
+
+  function createShader(gl, type, source) {
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) return null;
+    return shader;
+  }
+
+  function createNV12GlRenderer(width, height) {
+    var node = document.createElement('canvas');
+    node.width = width;
+    node.height = height;
+    var gl = node.getContext('webgl', { premultipliedAlpha: false, antialias: false });
+    if (!gl) return null;
+
+    var vs = createShader(gl, gl.VERTEX_SHADER, [
+      'attribute vec2 a_pos;',
+      'varying vec2 v_uv;',
+      'void main(){',
+      '  v_uv = vec2(a_pos.x * 0.5 + 0.5, 0.5 - a_pos.y * 0.5);',
+      '  gl_Position = vec4(a_pos, 0.0, 1.0);',
+      '}'
+    ].join('\n'));
+    var fs = createShader(gl, gl.FRAGMENT_SHADER, [
+      'precision mediump float;',
+      'varying vec2 v_uv;',
+      'uniform sampler2D y_tex;',
+      'uniform sampler2D uv_tex;',
+      'void main(){',
+      '  float y = texture2D(y_tex, v_uv).r;',
+      '  vec2 uv = texture2D(uv_tex, v_uv).ra;',
+      '  float c = max(y - 0.06274509803921569, 0.0);',
+      '  float d = uv.r - 0.5;',
+      '  float e = uv.g - 0.5;',
+      '  float r = c + 1.5748 * e;',
+      '  float g = c - 0.187324 * d - 0.468124 * e;',
+      '  float b = c + 1.8556 * d;',
+      '  gl_FragColor = vec4(clamp(r, 0.0, 1.0), clamp(g, 0.0, 1.0), clamp(b, 0.0, 1.0), 1.0);',
+      '}'
+    ].join('\n'));
+    if (!vs || !fs) return null;
+
+    var program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return null;
+    gl.useProgram(program);
+
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    var aPos = gl.getAttribLocation(program, 'a_pos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    var yTex = gl.createTexture();
+    var uvTex = gl.createTexture();
+
+    function setupTex(tex, unit) {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    }
+    setupTex(yTex, 0);
+    setupTex(uvTex, 1);
+    gl.uniform1i(gl.getUniformLocation(program, 'y_tex'), 0);
+    gl.uniform1i(gl.getUniformLocation(program, 'uv_tex'), 1);
+
+    return {
+      canvas: node,
+      gl: gl,
+      width: width,
+      height: height,
+      yTex: yTex,
+      uvTex: uvTex,
+      unpackUV: function (nv12) {
+        var ySize = width * height;
+        var uvSrc = new Uint8Array(nv12, ySize);
+        var uvW = width >> 1;
+        var uvH = height >> 1;
+        var need = uvW * uvH * 2;
+        if (!uvUnpackBuffer || uvUnpackBuffer.length !== need) {
+          uvUnpackBuffer = new Uint8Array(need);
+        }
+        var dst = uvUnpackBuffer;
+        for (var row = 0; row < uvH; row++) {
+          var srcRow = row * width;
+          var dstRow = row * uvW * 2;
+          for (var pair = 0; pair < uvW; pair++) {
+            var src = srcRow + (pair << 1);
+            var dstIdx = dstRow + (pair << 1);
+            dst[dstIdx] = uvSrc[src];
+            dst[dstIdx + 1] = uvSrc[src + 1];
+          }
+        }
+        return dst;
+      },
+      draw: function (nv12) {
+        var ySize = width * height;
+        gl.viewport(0, 0, width, height);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, yTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, width, height, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array(nv12, 0, ySize));
+        var uvData = this.unpackUV(nv12);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, uvTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE_ALPHA, width >> 1, height >> 1, 0, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, uvData);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+    };
+  }
+
+  function ensureNV12GlRenderer(width, height) {
+    if (nv12GlRenderer && nv12GlRenderer.width === width && nv12GlRenderer.height === height) {
+      return nv12GlRenderer;
+    }
+    nv12GlRenderer = createNV12GlRenderer(width, height);
+    return nv12GlRenderer;
+  }
+
+  function blitNV12ToCanvas(buffer, width, height) {
+    var renderer = ensureNV12GlRenderer(width, height);
+    if (renderer) {
+      renderer.draw(buffer);
+      ctx.drawImage(renderer.canvas, 0, 0, width, height);
+      return true;
+    }
+    var image = ensureRgbaBuffer(width, height);
+    nv12ToRGBA(buffer, width, height, image);
+    var scratch = ensureScratchCanvas(width, height);
+    scratch.getContext('2d').putImageData(image, 0, 0);
+    ctx.drawImage(scratch, 0, 0, width, height);
+    return true;
+  }
+
   function drawNV12(buffer, meta) {
     if (!ctx || !canvas) return false;
     var width = meta.width || canvas.width;
@@ -148,9 +301,7 @@
       canvas.width = width;
       canvas.height = height;
     }
-    var image = ensureRgbaBuffer(width, height);
-    nv12ToRGBA(buffer, width, height, image);
-    ctx.putImageData(image, 0, 0);
+    blitNV12ToCanvas(buffer, width, height);
     if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
     if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;
     markFrameDrawn(meta);
@@ -275,14 +426,12 @@
 
   window.__spoofStartFramePoll = function () {
     if (!canvas) window.__spoofResetCanvas();
-    pollActive = false;
-    if (pollTimer) {
-      clearTimeout(pollTimer);
-      pollTimer = null;
-    }
+    if (pollActive) return;
     streamStartPerf = performance.now();
     streamStartPtsUs = 0;
-    drawPlaceholder();
+    if ((window.__spoofFrameCount || 0) === 0) {
+      drawPlaceholder();
+    }
     drawFrame();
     pollActive = true;
     schedulePoll();

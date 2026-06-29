@@ -194,6 +194,14 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v22: NV12 drawImage + WebGL decode (captureStream fix)
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `Scripts/test-frame-pipeline.py`, `Scripts/frame-test-server.py`, `TestPages/frame-pipeline-test/`
+**Что изменено:** NV12 → scratch canvas → `drawImage` (не `putImageData` на stream canvas — WKWebView `captureStream` не обновлялся); WebGL YUV decode + CPU fallback; `__spoofStartFramePoll` идемпотентен, не рисует placeholder поверх кадра; убраны повторные restart 500/1500ms в gUM; Linux-тест frame pipeline (Playwright WebKit)
+**Почему:** v21 — зелёный экран при живом треке: decode мог работать, но video показывал placeholder; poll restart затирал кадр; 1.6 fps из-за тяжёлого JS decode
+**Тесты:** `test-frame-pipeline.py` → 4/4 (16 fps, captureStream rVFC≥15); `validate-injection.py` → 0 failed; на iPhone не запускались
+**Риски:** WebGL path требует GPU; при отсутствии — CPU fallback медленнее
+
 ## 2026-06-29 — v21: NV12 format detection без Content-Type
 
 **Модули:** `frameReceiver.js`, `FrameSchemeHandler.swift`, `BuildInfo.swift`

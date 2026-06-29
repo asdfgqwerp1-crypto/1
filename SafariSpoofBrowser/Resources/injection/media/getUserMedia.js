@@ -47,16 +47,6 @@
     if (window.__spoofStartFramePoll) {
       window.__spoofStartFramePoll();
     }
-    setTimeout(function () {
-      if (window.__spoofStartFramePoll) {
-        window.__spoofStartFramePoll();
-      }
-    }, 500);
-    setTimeout(function () {
-      if (window.__spoofStartFramePoll) {
-        window.__spoofStartFramePoll();
-      }
-    }, 1500);
   }
 
   function waitForFrames(minCount, timeoutMs) {
