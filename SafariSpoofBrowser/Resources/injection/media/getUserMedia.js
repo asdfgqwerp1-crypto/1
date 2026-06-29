@@ -174,7 +174,17 @@
             }
             try {
               var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
-              var stream = canvas.captureStream(fps);
+              var stream;
+              try {
+                stream = canvas.captureStream(fps);
+              } catch (captureErr) {
+                window.__spoofResetCanvas();
+                reject(new DOMException(
+                  captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed',
+                  'SecurityError'
+                ));
+                return;
+              }
               var facingMode = parseFacingMode(constraints);
               var camera = window.__spoofFindCamera(facingMode);
 

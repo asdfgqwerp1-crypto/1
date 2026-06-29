@@ -319,15 +319,25 @@
     return byteLength >= expectedNV12Bytes(width, height);
   }
 
+  function drawBitmap(bitmap, meta, onDone) {
+    if (!ctx || !canvas) {
+      if (bitmap && bitmap.close) bitmap.close();
+      if (onDone) onDone();
+      return;
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    if (bitmap.close) bitmap.close();
+    markFrameDrawn(meta);
+    if (onDone) onDone();
+  }
+
   function drawImageSource(src, revoke, meta, onDone) {
     if (!ctx || !canvas) {
       if (onDone) onDone();
       return;
     }
     var img = new Image();
-    if (/^https?:/i.test(src)) {
-      img.crossOrigin = 'anonymous';
-    }
+    img.crossOrigin = 'anonymous';
     img.onload = function () {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       if (revoke) URL.revokeObjectURL(src);
@@ -342,6 +352,14 @@
   }
 
   function drawBlobAsImage(blob, meta, onDone) {
+    if (typeof createImageBitmap === 'function') {
+      createImageBitmap(blob).then(function (bitmap) {
+        drawBitmap(bitmap, meta, onDone);
+      }).catch(function () {
+        drawImageSource(URL.createObjectURL(blob), true, meta, onDone);
+      });
+      return;
+    }
     drawImageSource(URL.createObjectURL(blob), true, meta, onDone);
   }
 
@@ -374,7 +392,7 @@
       return;
     }
 
-    fetch(frameURL(), { cache: 'no-store' })
+    fetch(frameURL(), { cache: 'no-store', mode: 'cors', credentials: 'omit' })
       .then(function (response) {
         if (!response.ok) throw new Error('bad status');
         var meta = parseFrameHeaders(response);

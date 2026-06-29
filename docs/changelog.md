@@ -194,6 +194,14 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
 
+## 2026-06-29 — v24: fix SecurityError canvas tainted (CORS fetch)
+
+**Модули:** `frameReceiver.js`, `canvas.js`, `getUserMedia.js`
+**Что изменено:** Восстановлен `fetch` с `mode:cors` + `crossOrigin=anonymous` на Image (v14); `createImageBitmap` для blob; `canvas.js` try/catch на tainted getImageData; явная ошибка при падении `captureStream`
+**Почему:** v23 убрал CORS → opaque fetch с `spoofframe://` taint canvas → `captureStream()` SecurityError, media-timing не стартует
+**Тесты:** `test-frame-pipeline.py` + probe `getImageData`; на iPhone не запускались
+**Риски:** —
+
 ## 2026-06-29 — v23: откат на JPEG + blob fetch (v17 path)
 
 **Модули:** `VideoPipeline.swift`, `frameReceiver.js`, `getUserMedia.js`, `iphone11_ios265.json`, `ProfileStore.swift`

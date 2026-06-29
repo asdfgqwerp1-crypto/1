@@ -21,12 +21,14 @@
   HTMLCanvasElement.prototype.toDataURL = function () {
     var ctx = this.getContext('2d');
     if (ctx && this.width > 0 && this.height > 0) {
-      var imageData = ctx.getImageData(0, 0, this.width, this.height);
-      var d = imageData.data;
-      for (var i = 0; i < d.length; i += 4) {
-        d[i] = Math.min(255, Math.max(0, d[i] + noise * 255));
-      }
-      ctx.putImageData(imageData, 0, 0);
+      try {
+        var imageData = ctx.getImageData(0, 0, this.width, this.height);
+        var d = imageData.data;
+        for (var i = 0; i < d.length; i += 4) {
+          d[i] = Math.min(255, Math.max(0, d[i] + noise * 255));
+        }
+        ctx.putImageData(imageData, 0, 0);
+      } catch (e) {}
     }
     return originalToDataURL.apply(this, arguments);
   };

@@ -108,7 +108,25 @@
         px ? ('rgb=' + px.r + ',' + px.g + ',' + px.b) : 'no pixel');
 
       var canvas = window.__spoofCanvas;
-      var stream = canvas.captureStream(16);
+      var untainted = true;
+      try {
+        canvas.getContext('2d').getImageData(0, 0, 1, 1);
+      } catch (e) {
+        untainted = false;
+      }
+      assert('canvas not tainted', untainted);
+
+      var stream;
+      try {
+        stream = canvas.captureStream(16);
+      } catch (e) {
+        assert('captureStream', false, e.message || String(e));
+        stream = null;
+      }
+      if (!stream) {
+        window.__FRAME_PIPELINE_RESULTS__ = results;
+        return;
+      }
       var video = document.getElementById('preview');
       video.srcObject = stream;
       await video.play();
