@@ -39,14 +39,16 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
     private func respondOnMain(task: WKURLSchemeTask, url: URL, frame: SpoofFrame) {
         DispatchQueue.main.async {
             let contentType = frame.format == .nv12 ? Self.nv12ContentType : Self.jpegContentType
+            let formatLabel = frame.format == .nv12 ? "nv12" : "jpeg"
             let headers = [
                 "Content-Type": contentType,
                 "Content-Length": "\(frame.data.count)",
                 "Cache-Control": "no-store, no-cache, must-revalidate",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET",
-                "Access-Control-Expose-Headers": "X-Frame-Seq,X-Frame-PTS-Us,X-Frame-Width,X-Frame-Height",
+                "Access-Control-Expose-Headers": "Content-Type,X-Frame-Format,X-Frame-Seq,X-Frame-PTS-Us,X-Frame-Width,X-Frame-Height",
                 "Cross-Origin-Resource-Policy": "cross-origin",
+                "X-Frame-Format": formatLabel,
                 "X-Frame-Width": "\(frame.width)",
                 "X-Frame-Height": "\(frame.height)",
                 "X-Frame-Seq": "\(frame.sequence)",

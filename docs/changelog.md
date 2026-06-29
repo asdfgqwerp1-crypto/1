@@ -193,3 +193,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** v19 зелёный экран — `useNV12` форсил NV12 decode на JPEG; 1.2 fps; div.clientHeight 362 не попадал в эвристику >500
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** —
+
+## 2026-06-29 — v21: NV12 format detection без Content-Type
+
+**Модули:** `frameReceiver.js`, `FrameSchemeHandler.swift`, `BuildInfo.swift`
+**Что изменено:** Единый `arrayBuffer` путь; определение формата по `X-Frame-Format`, размеру буфера (≥w×h×1.5), JPEG magic `FF D8`, fallback `config.frameDelivery`; заголовок `X-Frame-Format` + `Content-Type` в `Access-Control-Expose-Headers`; убран 900ms lock на NV12 (release сразу после `putImageData`)
+**Почему:** v20 на устройстве — зелёный экран, 1.4 fps: WKWebView fetch на `spoofframe://` не отдаёт `Content-Type` в JS → NV12 (~460KB) шёл в JPEG decode и молча падал
+**Тесты:** validate-injection.py; на iPhone не запускались (ожидается ≥14 fps media-timing, живое превью)
+**Риски:** size-heuristic может ошибиться на очень маленьких JPEG; JPEG magic проверяется первым
