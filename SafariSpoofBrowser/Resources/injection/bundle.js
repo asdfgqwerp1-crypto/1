@@ -150,7 +150,6 @@
     };
   }
 })();
-// --- media/frameReceiver.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -163,22 +162,22 @@
   var ctx = canvas.getContext('2d');
   var pollTimer = null;
   var pollIntervalMs = Math.round(1000 / 10);
-  var frameImage = new Image();
   var isDrawing = false;
 
   canvas.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
-  if (document.documentElement) {
-    document.documentElement.appendChild(canvas);
-  } else {
-    document.addEventListener('DOMContentLoaded', function () {
-      if (canvas.parentNode !== document.documentElement) {
-        document.documentElement.appendChild(canvas);
-      }
-    });
+  function mountCanvas() {
+    if (document.documentElement && canvas.parentNode !== document.documentElement) {
+      document.documentElement.appendChild(canvas);
+    }
+  }
+  mountCanvas();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountCanvas);
   }
 
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
+  window.__spoofFrameCount = 0;
 
   function drawPlaceholder() {
     ctx.fillStyle = '#1b4332';
@@ -195,6 +194,10 @@
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
 
+  function markFrameDrawn() {
+    window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
+  }
+
   function drawFrame() {
     if (isDrawing) return;
     isDrawing = true;
@@ -204,13 +207,45 @@
       released = true;
       isDrawing = false;
     }
-    setTimeout(release, 500);
-    frameImage.onload = function () {
-      ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+    setTimeout(release, 800);
+
+    function onBitmapLoaded(bitmap) {
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      markFrameDrawn();
       release();
-    };
-    frameImage.onerror = release;
-    frameImage.src = frameURL();
+    }
+
+    function drawViaImageUrl(url, revoke) {
+      var img = new Image();
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        markFrameDrawn();
+        if (revoke) URL.revokeObjectURL(url);
+        release();
+      };
+      img.onerror = release;
+      img.src = url;
+    }
+
+    if (typeof fetch === 'function') {
+      fetch(frameURL(), { cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad status');
+          return response.blob();
+        })
+        .then(function (blob) {
+          if (typeof createImageBitmap === 'function') {
+            return createImageBitmap(blob).then(onBitmapLoaded);
+          }
+          drawViaImageUrl(URL.createObjectURL(blob), true);
+        })
+        .catch(function () {
+          drawViaImageUrl(frameURL(), false);
+        });
+      return;
+    }
+
+    drawViaImageUrl(frameURL(), false);
   }
 
   window.__spoofStartFramePoll = function () {
@@ -228,6 +263,7 @@
       clearInterval(pollTimer);
       pollTimer = null;
     }
+    window.__spoofFrameCount = 0;
   };
 
   window.__spoofReceiveFrame = function () {};
@@ -415,23 +451,42 @@
     ctx.fillText('Camera loading…', 16, 32);
   }
 
-  function notifyStreamStart(tracks) {
+  function startNativePipeline() {
     if (window.__spoofStopFramePoll) {
       window.__spoofStopFramePoll();
     }
+    window.__spoofFrameCount = 0;
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
+    }
+    if (window.__spoofStartFramePoll) {
+      window.__spoofStartFramePoll();
     }
     setTimeout(function () {
       if (window.__spoofStartFramePoll) {
         window.__spoofStartFramePoll();
       }
-    }, 80);
+    }, 500);
     setTimeout(function () {
       if (window.__spoofStartFramePoll) {
         window.__spoofStartFramePoll();
       }
-    }, 600);
+    }, 1500);
+  }
+
+  function waitForFrames(minCount, timeoutMs) {
+    return new Promise(function (resolve) {
+      var deadline = Date.now() + timeoutMs;
+      var timer = setInterval(function () {
+        if ((window.__spoofFrameCount || 0) >= minCount || Date.now() >= deadline) {
+          clearInterval(timer);
+          resolve((window.__spoofFrameCount || 0) >= minCount);
+        }
+      }, 40);
+    });
+  }
+
+  function attachTrackStopHandler(tracks) {
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
         if (window.__spoofStopFramePoll) {
@@ -517,42 +572,49 @@
             }
 
             drawPlaceholder(canvas);
+            startNativePipeline();
 
-            var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
-            var stream = canvas.captureStream(fps);
-            var facingMode = parseFacingMode(constraints);
-            var camera = window.__spoofFindCamera(facingMode);
+            waitForFrames(1, 4000).then(function () {
+              try {
+                var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
+                var stream = canvas.captureStream(fps);
+                var facingMode = parseFacingMode(constraints);
+                var camera = window.__spoofFindCamera(facingMode);
 
-            var tracks = stream.getVideoTracks();
-            if (tracks.length > 0) {
-              window.__spoofPatchTrack(tracks[0], camera, 'video');
-              if (typeof tracks[0].requestFrame === 'function') {
-                var track = tracks[0];
-                var frameInterval = Math.max(33, Math.round(1000 / fps));
-                var framePump = setInterval(function () {
-                  if (track.readyState === 'ended') {
-                    clearInterval(framePump);
-                    return;
+                var tracks = stream.getVideoTracks();
+                if (tracks.length > 0) {
+                  window.__spoofPatchTrack(tracks[0], camera, 'video');
+                  if (typeof tracks[0].requestFrame === 'function') {
+                    var track = tracks[0];
+                    var frameInterval = Math.max(33, Math.round(1000 / fps));
+                    var framePump = setInterval(function () {
+                      if (track.readyState === 'ended') {
+                        clearInterval(framePump);
+                        return;
+                      }
+                      try { track.requestFrame(); } catch (e) {}
+                    }, frameInterval);
+                    track.addEventListener('ended', function () { clearInterval(framePump); });
                   }
-                  try { track.requestFrame(); } catch (e) {}
-                }, frameInterval);
-                track.addEventListener('ended', function () { clearInterval(framePump); });
+                }
+
+                attachTrackStopHandler(tracks);
+                mediaPermissionGranted = true;
+
+                if (wantsAudio(constraints)) {
+                  var mic = (config.microphones || [])[0];
+                  var audioTrack = createSyntheticAudioTrack();
+                  if (audioTrack) {
+                    if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
+                    stream.addTrack(audioTrack);
+                  }
+                }
+
+                resolve(stream);
+              } catch (err) {
+                reject(err);
               }
-            }
-
-            notifyStreamStart(tracks);
-            mediaPermissionGranted = true;
-
-            if (wantsAudio(constraints)) {
-              var mic = (config.microphones || [])[0];
-              var audioTrack = createSyntheticAudioTrack();
-              if (audioTrack) {
-                if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
-                stream.addTrack(audioTrack);
-              }
-            }
-
-            resolve(stream);
+            });
           } catch (err) {
             reject(err);
           }

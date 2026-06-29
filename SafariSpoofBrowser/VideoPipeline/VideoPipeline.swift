@@ -13,6 +13,7 @@ final class VideoPipeline: NSObject {
     private var activeProfile: DeviceProfile?
     private var isRunning = false
     private var lastFrameTime: CFAbsoluteTime = 0
+    private var configureAttempts = 0
     private let minFrameInterval: CFAbsoluteTime = 1.0 / 10.0
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
@@ -30,6 +31,7 @@ final class VideoPipeline: NSObject {
         activeProfile = profile
         isRunning = true
         lastFrameTime = 0
+        configureAttempts = 0
 
         switch source {
         case .deviceCamera(let position):
@@ -69,23 +71,19 @@ final class VideoPipeline: NSObject {
     // MARK: - Camera
 
     private func startCamera(position: AVCaptureDevice.Position) {
-        let mediaType = AVMediaType.video
-        switch AVCaptureDevice.authorizationStatus(for: mediaType) {
-        case .authorized:
-            sessionQueue.async { [weak self] in
-                guard let self, self.isRunning else { return }
-                self.configureSession(position: position)
-            }
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: mediaType) { [weak self] granted in
-                guard let self, self.isRunning, granted else { return }
-                self.sessionQueue.async {
-                    guard self.isRunning else { return }
-                    self.configureSession(position: position)
-                }
-            }
-        default:
-            break
+        sessionQueue.async { [weak self] in
+            guard let self, self.isRunning else { return }
+            self.configureSession(position: position)
+        }
+    }
+
+    private func scheduleConfigureRetry(position: AVCaptureDevice.Position) {
+        guard isRunning, configureAttempts < 6 else { return }
+        configureAttempts += 1
+        let delay = Double(configureAttempts) * 0.4
+        sessionQueue.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.isRunning else { return }
+            self.configureSession(position: position)
         }
     }
 
@@ -100,9 +98,16 @@ final class VideoPipeline: NSObject {
         session.inputs.forEach { session.removeInput($0) }
         session.outputs.forEach { session.removeOutput($0) }
 
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            session.commitConfiguration()
+            scheduleConfigureRetry(position: position)
+            return
+        }
+
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: position),
               let input = try? AVCaptureDeviceInput(device: device) else {
             session.commitConfiguration()
+            scheduleConfigureRetry(position: position)
             return
         }
 

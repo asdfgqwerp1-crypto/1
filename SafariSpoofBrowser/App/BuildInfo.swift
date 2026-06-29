@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v12"
-    static let frameDelivery = "camera-restart-fix"
+    static let marker = "v13"
+    static let frameDelivery = "fetch-frames+wait-first"
 }

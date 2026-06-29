@@ -1,7 +1,8 @@
 {
-  "timestamp": "2026-06-29T06:58:55.770Z",
+  "timestamp": "2026-06-29T08:42:12.164Z",
   "secureContext": true,
   "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
+  "testMode": "video+audio",
   "devices": [
     {
       "kind": "audioinput",
@@ -22,10 +23,10 @@
     "settings": {
       "aspectRatio": 0.75,
       "backgroundBlur": false,
-      "deviceId": "3947DD3F74F2E3DDFC44B1489D40C500EA410B98",
+      "deviceId": "CC11D70DA22A5D392FA7CE86A6C85483F9346DB1",
       "facingMode": "user",
       "frameRate": 30,
-      "groupId": "EF49488BE7AF2A4D2CBDB88F2B522B1DE6FD106A",
+      "groupId": "C7C43C251F9ABF76BA04D82CE767170C3EF7F652",
       "height": 640,
       "powerEfficient": false,
       "whiteBalanceMode": "continuous",
@@ -40,7 +41,7 @@
       "backgroundBlur": [
         false
       ],
-      "deviceId": "3947DD3F74F2E3DDFC44B1489D40C500EA410B98",
+      "deviceId": "CC11D70DA22A5D392FA7CE86A6C85483F9346DB1",
       "facingMode": [
         "user"
       ],
@@ -48,7 +49,7 @@
         "max": 60,
         "min": 1
       },
-      "groupId": "EF49488BE7AF2A4D2CBDB88F2B522B1DE6FD106A",
+      "groupId": "C7C43C251F9ABF76BA04D82CE767170C3EF7F652",
       "height": {
         "max": 3024,
         "min": 1
@@ -76,20 +77,21 @@
   },
   "audioTrack": {
     "label": "iPhone Microphone",
+    "readyState": "live",
     "settings": {
-      "deviceId": "15CB3FC1AFB2B2E9E8C66EACC46BCEDA88FD0F5A",
+      "deviceId": "1ED710AE65AEDB735E13F8A3FA0ABA48BE7FB550",
       "echoCancellation": true,
-      "groupId": "DCB72CF1F3CA83440F968FDD958B41B6B9CD68E4",
+      "groupId": "516EF6445D78E21E384DE74D2BAD9332EDED3661",
       "sampleRate": 48000,
       "volume": 1
     },
     "capabilities": {
-      "deviceId": "15CB3FC1AFB2B2E9E8C66EACC46BCEDA88FD0F5A",
+      "deviceId": "1ED710AE65AEDB735E13F8A3FA0ABA48BE7FB550",
       "echoCancellation": [
         true,
         false
       ],
-      "groupId": "DCB72CF1F3CA83440F968FDD958B41B6B9CD68E4",
+      "groupId": "516EF6445D78E21E384DE74D2BAD9332EDED3661",
       "sampleRate": {
         "max": 96000,
         "min": 8000
@@ -99,5 +101,10 @@
         "min": 0
       }
     }
+  },
+  "preview": {
+    "videoWidth": 480,
+    "videoHeight": 640,
+    "readyState": 4
   }
 }

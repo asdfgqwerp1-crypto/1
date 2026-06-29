@@ -33,13 +33,19 @@ struct BrowserScreenView: View {
             .padding(.vertical, 10)
             .background(Color.blue)
 
-            Text(coordinator.statusMessage)
-                .font(.caption)
-                .foregroundStyle(coordinator.statusMessage.contains("Ошибка") || coordinator.statusMessage.contains("Не открылось") ? .red : .secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color(white: 0.96))
+            HStack(spacing: 8) {
+                Text(coordinator.statusMessage)
+                    .foregroundStyle(coordinator.statusMessage.contains("Ошибка") || coordinator.statusMessage.contains("Не открылось") ? .red : .secondary)
+                Spacer(minLength: 8)
+                Text(String(format: "%.0f fps · %d frm", appState.bridgeMetrics.fps, appState.bridgeMetrics.framesSent))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(appState.bridgeMetrics.framesSent > 0 ? .green : .orange)
+            }
+            .font(.caption)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Color(white: 0.96))
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {

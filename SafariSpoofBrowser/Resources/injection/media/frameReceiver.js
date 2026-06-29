@@ -10,22 +10,22 @@
   var ctx = canvas.getContext('2d');
   var pollTimer = null;
   var pollIntervalMs = Math.round(1000 / 10);
-  var frameImage = new Image();
   var isDrawing = false;
 
   canvas.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
-  if (document.documentElement) {
-    document.documentElement.appendChild(canvas);
-  } else {
-    document.addEventListener('DOMContentLoaded', function () {
-      if (canvas.parentNode !== document.documentElement) {
-        document.documentElement.appendChild(canvas);
-      }
-    });
+  function mountCanvas() {
+    if (document.documentElement && canvas.parentNode !== document.documentElement) {
+      document.documentElement.appendChild(canvas);
+    }
+  }
+  mountCanvas();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mountCanvas);
   }
 
   window.__spoofCanvas = canvas;
   window.__spoofCanvasCtx = ctx;
+  window.__spoofFrameCount = 0;
 
   function drawPlaceholder() {
     ctx.fillStyle = '#1b4332';
@@ -42,6 +42,10 @@
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
 
+  function markFrameDrawn() {
+    window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
+  }
+
   function drawFrame() {
     if (isDrawing) return;
     isDrawing = true;
@@ -51,13 +55,45 @@
       released = true;
       isDrawing = false;
     }
-    setTimeout(release, 500);
-    frameImage.onload = function () {
-      ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+    setTimeout(release, 800);
+
+    function onBitmapLoaded(bitmap) {
+      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      markFrameDrawn();
       release();
-    };
-    frameImage.onerror = release;
-    frameImage.src = frameURL();
+    }
+
+    function drawViaImageUrl(url, revoke) {
+      var img = new Image();
+      img.onload = function () {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        markFrameDrawn();
+        if (revoke) URL.revokeObjectURL(url);
+        release();
+      };
+      img.onerror = release;
+      img.src = url;
+    }
+
+    if (typeof fetch === 'function') {
+      fetch(frameURL(), { cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad status');
+          return response.blob();
+        })
+        .then(function (blob) {
+          if (typeof createImageBitmap === 'function') {
+            return createImageBitmap(blob).then(onBitmapLoaded);
+          }
+          drawViaImageUrl(URL.createObjectURL(blob), true);
+        })
+        .catch(function () {
+          drawViaImageUrl(frameURL(), false);
+        });
+      return;
+    }
+
+    drawViaImageUrl(frameURL(), false);
   }
 
   window.__spoofStartFramePoll = function () {
@@ -75,6 +111,7 @@
       clearInterval(pollTimer);
       pollTimer = null;
     }
+    window.__spoofFrameCount = 0;
   };
 
   window.__spoofReceiveFrame = function () {};

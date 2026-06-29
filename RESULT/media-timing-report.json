@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-06-29T08:42:51.866Z",
+  "durationMs": 5000,
+  "method": "requestVideoFrameCallback",
+  "frameCount": 1,
+  "estimatedFps": 0.2,
+  "gapMs": {
+    "avg": 0,
+    "p50": 0,
+    "p95": 0,
+    "min": 0,
+    "max": 0
+  },
+  "settings": {
+    "width": 480,
+    "height": 640,
+    "frameRate": 30,
+    "facingMode": "user",
+    "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+    "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
+    "aspectRatio": 0.75,
+    "backgroundBlur": false,
+    "powerEfficient": false,
+    "whiteBalanceMode": "continuous",
+    "zoom": 1
+  }
+}

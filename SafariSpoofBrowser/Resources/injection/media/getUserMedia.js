@@ -35,23 +35,42 @@
     ctx.fillText('Camera loading…', 16, 32);
   }
 
-  function notifyStreamStart(tracks) {
+  function startNativePipeline() {
     if (window.__spoofStopFramePoll) {
       window.__spoofStopFramePoll();
     }
+    window.__spoofFrameCount = 0;
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
+    }
+    if (window.__spoofStartFramePoll) {
+      window.__spoofStartFramePoll();
     }
     setTimeout(function () {
       if (window.__spoofStartFramePoll) {
         window.__spoofStartFramePoll();
       }
-    }, 80);
+    }, 500);
     setTimeout(function () {
       if (window.__spoofStartFramePoll) {
         window.__spoofStartFramePoll();
       }
-    }, 600);
+    }, 1500);
+  }
+
+  function waitForFrames(minCount, timeoutMs) {
+    return new Promise(function (resolve) {
+      var deadline = Date.now() + timeoutMs;
+      var timer = setInterval(function () {
+        if ((window.__spoofFrameCount || 0) >= minCount || Date.now() >= deadline) {
+          clearInterval(timer);
+          resolve((window.__spoofFrameCount || 0) >= minCount);
+        }
+      }, 40);
+    });
+  }
+
+  function attachTrackStopHandler(tracks) {
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
         if (window.__spoofStopFramePoll) {
@@ -137,42 +156,49 @@
             }
 
             drawPlaceholder(canvas);
+            startNativePipeline();
 
-            var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
-            var stream = canvas.captureStream(fps);
-            var facingMode = parseFacingMode(constraints);
-            var camera = window.__spoofFindCamera(facingMode);
+            waitForFrames(1, 4000).then(function () {
+              try {
+                var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
+                var stream = canvas.captureStream(fps);
+                var facingMode = parseFacingMode(constraints);
+                var camera = window.__spoofFindCamera(facingMode);
 
-            var tracks = stream.getVideoTracks();
-            if (tracks.length > 0) {
-              window.__spoofPatchTrack(tracks[0], camera, 'video');
-              if (typeof tracks[0].requestFrame === 'function') {
-                var track = tracks[0];
-                var frameInterval = Math.max(33, Math.round(1000 / fps));
-                var framePump = setInterval(function () {
-                  if (track.readyState === 'ended') {
-                    clearInterval(framePump);
-                    return;
+                var tracks = stream.getVideoTracks();
+                if (tracks.length > 0) {
+                  window.__spoofPatchTrack(tracks[0], camera, 'video');
+                  if (typeof tracks[0].requestFrame === 'function') {
+                    var track = tracks[0];
+                    var frameInterval = Math.max(33, Math.round(1000 / fps));
+                    var framePump = setInterval(function () {
+                      if (track.readyState === 'ended') {
+                        clearInterval(framePump);
+                        return;
+                      }
+                      try { track.requestFrame(); } catch (e) {}
+                    }, frameInterval);
+                    track.addEventListener('ended', function () { clearInterval(framePump); });
                   }
-                  try { track.requestFrame(); } catch (e) {}
-                }, frameInterval);
-                track.addEventListener('ended', function () { clearInterval(framePump); });
+                }
+
+                attachTrackStopHandler(tracks);
+                mediaPermissionGranted = true;
+
+                if (wantsAudio(constraints)) {
+                  var mic = (config.microphones || [])[0];
+                  var audioTrack = createSyntheticAudioTrack();
+                  if (audioTrack) {
+                    if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
+                    stream.addTrack(audioTrack);
+                  }
+                }
+
+                resolve(stream);
+              } catch (err) {
+                reject(err);
               }
-            }
-
-            notifyStreamStart(tracks);
-            mediaPermissionGranted = true;
-
-            if (wantsAudio(constraints)) {
-              var mic = (config.microphones || [])[0];
-              var audioTrack = createSyntheticAudioTrack();
-              if (audioTrack) {
-                if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
-                stream.addTrack(audioTrack);
-              }
-            }
-
-            resolve(stream);
+            });
           } catch (err) {
             reject(err);
           }

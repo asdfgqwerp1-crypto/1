@@ -129,3 +129,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** После обновления без удаления или повторного gUM камера зависала (pipeline не рестартовал); чёрный квадрат — кадры не доходили до canvas/video
 **Тесты:** validate-injection.py; на iPhone не запускалось
 **Риски:** —
+
+## 2026-06-29 — v13: fix stuck green Camera loading
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `AppState.swift`, `VideoPipeline.swift`, `BrowserScreenView.swift`
+**Что изменено:** fetch+blob для spoofframe; gUM ждёт первый кадр до captureStream; camera permission при открытии браузера; retry AVCapture; FPS в статус-баре
+**Почему:** v12 — зелёный placeholder без видео: spoofframe не грузился через Image, pipeline ждал permission
+**Тесты:** validate-injection.py; на iPhone не запускалось
+**Риски:** до 4с задержка перед ответом getUserMedia

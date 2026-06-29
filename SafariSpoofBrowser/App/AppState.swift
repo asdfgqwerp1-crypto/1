@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import AVFoundation
 
 @MainActor
 final class AppState: ObservableObject, FrameBridgeDelegate {
@@ -13,6 +14,8 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     let videoPipeline: VideoPipeline
     let frameBridge: FrameBridge
 
+    private var cancellables = Set<AnyCancellable>()
+
     init() {
         self.testServerHost = TestServerSettings.host
         let store = ProfileStore()
@@ -21,6 +24,13 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
         self.frameBridge.delegate = self
+
+        frameBridge.metricsPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] metrics in
+                self?.bridgeMetrics = metrics
+            }
+            .store(in: &cancellables)
     }
 
     func selectProfile(_ profile: DeviceProfile) {
@@ -37,11 +47,38 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         videoPipeline.stop()
     }
 
+    func prepareCameraAccess() {
+        Task {
+            await Self.requestCameraAccessIfNeeded()
+        }
+    }
+
     func frameBridgeDidRequestStreamStart() {
-        startVideoPipeline()
+        Task {
+            let granted = await Self.requestCameraAccessIfNeeded()
+            if granted {
+                startVideoPipeline()
+            }
+        }
     }
 
     func frameBridgeDidRequestStreamStop() {
         stopVideoPipeline()
+    }
+
+    private static func requestCameraAccessIfNeeded() async -> Bool {
+        let mediaType = AVMediaType.video
+        switch AVCaptureDevice.authorizationStatus(for: mediaType) {
+        case .authorized:
+            return true
+        case .notDetermined:
+            return await withCheckedContinuation { continuation in
+                AVCaptureDevice.requestAccess(for: mediaType) { granted in
+                    continuation.resume(returning: granted)
+                }
+            }
+        default:
+            return false
+        }
     }
 }

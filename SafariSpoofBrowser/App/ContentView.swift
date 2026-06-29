@@ -31,6 +31,7 @@ struct ContentView: View {
 
     private func openBrowser(url: String) {
         addressText = url
+        appState.prepareCameraAccess()
         showBrowser = true
     }
 }
