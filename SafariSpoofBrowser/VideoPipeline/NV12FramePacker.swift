@@ -4,7 +4,12 @@ import Foundation
 import QuartzCore
 
 enum NV12FramePacker {
-    static func scaledNV12Buffer(from source: CVPixelBuffer, width: Int, height: Int) -> CVPixelBuffer? {
+    static func scaledNV12Buffer(
+        from source: CVPixelBuffer,
+        width: Int,
+        height: Int,
+        transform: CGAffineTransform = .identity
+    ) -> CVPixelBuffer? {
         let attrs: [String: Any] = [
             kCVPixelBufferIOSurfacePropertiesKey as String: [:]
         ]
@@ -19,7 +24,7 @@ enum NV12FramePacker {
         )
         guard status == kCVReturnSuccess, let output else { return nil }
 
-        FrameScaler.renderAspectFill(from: source, to: output)
+        FrameScaler.renderAspectFill(from: source, to: output, transform: transform)
         return output
     }
 

@@ -1,15 +1,15 @@
 {
-  "timestamp": "2026-06-29T10:37:19.495Z",
+  "timestamp": "2026-06-29T12:54:43.049Z",
   "durationMs": 5000,
   "method": "requestVideoFrameCallback",
-  "frameCount": 6,
-  "estimatedFps": 1.2,
+  "frameCount": 128,
+  "estimatedFps": 25.6,
   "gapMs": {
-    "avg": 271.8,
-    "p50": 85.00000000000023,
-    "p95": 1000,
-    "min": 51.99999999999977,
-    "max": 1000
+    "avg": 39.14173228346457,
+    "p50": 39,
+    "p95": 50,
+    "min": 24,
+    "max": 67.99999999999909
   },
   "settings": {
     "width": 480,

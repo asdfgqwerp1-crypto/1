@@ -160,9 +160,10 @@ final class VideoPipeline: NSObject {
     private func startNetworkStream(url: String, profile: DeviceProfile) {
         guard let streamURL = URL(string: url) else { return }
         let player = NetworkVideoPlayer()
-        player.onFrame = { [weak self] pixelBuffer, timestamp in
+        player.onFrame = { [weak self] pixelBuffer, transform, timestamp in
             self?.processPixelBufferIfNeeded(
                 pixelBuffer,
+                transform: transform,
                 presentationTimeUs: UInt64(max(0, timestamp) * 1_000_000),
                 profile: profile
             )
@@ -173,9 +174,10 @@ final class VideoPipeline: NSObject {
 
     private func startFilePlayback(path: String, profile: DeviceProfile) {
         let player = NetworkVideoPlayer()
-        player.onFrame = { [weak self] pixelBuffer, timestamp in
+        player.onFrame = { [weak self] pixelBuffer, transform, timestamp in
             self?.processPixelBufferIfNeeded(
                 pixelBuffer,
+                transform: transform,
                 presentationTimeUs: UInt64(max(0, timestamp) * 1_000_000),
                 profile: profile
             )
@@ -200,6 +202,7 @@ final class VideoPipeline: NSObject {
 
     private func processPixelBufferIfNeeded(
         _ pixelBuffer: CVPixelBuffer,
+        transform: CGAffineTransform = .identity,
         presentationTimeUs: UInt64,
         profile: DeviceProfile
     ) {
@@ -210,11 +213,18 @@ final class VideoPipeline: NSObject {
         guard now - lastFrameTime >= interval else { return }
         lastFrameTime = now
 
-        sendPixelBuffer(pixelBuffer, profile: profile, captureTimestamp: now, presentationTimeUs: presentationTimeUs)
+        sendPixelBuffer(
+            pixelBuffer,
+            transform: transform,
+            profile: profile,
+            captureTimestamp: now,
+            presentationTimeUs: presentationTimeUs
+        )
     }
 
     private func sendPixelBuffer(
         _ pixelBuffer: CVPixelBuffer,
+        transform: CGAffineTransform = .identity,
         profile: DeviceProfile,
         captureTimestamp: CFAbsoluteTime,
         presentationTimeUs: UInt64
@@ -226,9 +236,14 @@ final class VideoPipeline: NSObject {
         frameSequence &+= 1
 
         if useNV12,
-           let nv12Buffer = NV12FramePacker.scaledNV12Buffer(from: pixelBuffer, width: targetWidth, height: targetHeight),
+           let nv12Buffer = NV12FramePacker.scaledNV12Buffer(
+               from: pixelBuffer,
+               width: targetWidth,
+               height: targetHeight,
+               transform: transform
+           ),
            let packed = NV12FramePacker.pack(nv12Buffer) {
-            let jpegMirror = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight)
+            let jpegMirror = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight, transform: transform)
             frameBridge.sendFrame(
                 data: packed,
                 format: .nv12,
@@ -242,7 +257,7 @@ final class VideoPipeline: NSObject {
             return
         }
 
-        guard let jpeg = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight) else { return }
+        guard let jpeg = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight, transform: transform) else { return }
         frameBridge.sendFrame(
             data: jpeg,
             format: .jpeg,
@@ -254,7 +269,12 @@ final class VideoPipeline: NSObject {
         )
     }
 
-    private func jpegData(from pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data? {
+    private func jpegData(
+        from pixelBuffer: CVPixelBuffer,
+        width: Int,
+        height: Int,
+        transform: CGAffineTransform = .identity
+    ) -> Data? {
         let attrs: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
@@ -270,7 +290,7 @@ final class VideoPipeline: NSObject {
         )
         guard status == kCVReturnSuccess, let output = outputBuffer else { return nil }
 
-        FrameScaler.renderAspectFill(from: pixelBuffer, to: output)
+        FrameScaler.renderAspectFill(from: pixelBuffer, to: output, transform: transform)
 
         CVPixelBufferLockBaseAddress(output, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(output, .readOnly) }

@@ -374,6 +374,8 @@
     var srcW = source.width;
     var srcH = source.height;
     if (!srcW || !srcH) return;
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, dstW, dstH);
     if (srcW === dstW && srcH === dstH) {
       ctx.drawImage(source, 0, 0, dstW, dstH);
       return;

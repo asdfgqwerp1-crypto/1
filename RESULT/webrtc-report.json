@@ -1,31 +1,19 @@
 {
-  "timestamp": "2026-06-29T10:36:23.429Z",
+  "timestamp": "2026-06-29T12:54:24.767Z",
   "secureContext": true,
   "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
   "testMode": "video-only",
   "devicesBefore": [
     {
-      "kind": "videoinput",
-      "label": "Front Camera",
-      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
-      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB"
-    },
-    {
-      "kind": "videoinput",
-      "label": "Back Camera",
-      "deviceId": "8A2C4F1B9D3E5670A1B2C3D4E5F60718293A4B5C",
-      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB"
-    },
-    {
       "kind": "audioinput",
-      "label": "iPhone Microphone",
-      "deviceId": "E4106AE4B839EB00F2EF887103F6D500040F6E0E",
-      "groupId": "1E7BD4C66DFD0CCDFC449FAE7C1E73C477D052BF"
+      "label": "",
+      "deviceId": "",
+      "groupId": ""
     },
     {
-      "kind": "audiooutput",
+      "kind": "videoinput",
       "label": "",
-      "deviceId": "default",
+      "deviceId": "",
       "groupId": ""
     }
   ],
