@@ -44,8 +44,12 @@ struct FrameTiming: Codable, Equatable {
             ms *= Double.random(in: (slowdownFactorMin ?? 1.12)...(slowdownFactorMax ?? 1.28))
         }
 
-        let minIntervalMs = 1000.0 / max(minDeliverFps ?? 24, 1)
-        return max(ms, minIntervalMs) / 1000.0
+        if let floor = minDeliverFps, floor > 0,
+           hitchInterval == 0 || frameIndex % hitchInterval != 0 {
+            ms = min(ms, 1000.0 / floor)
+        }
+
+        return ms / 1000.0
     }
 }
 

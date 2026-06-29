@@ -192,16 +192,20 @@
     var timing = config.frameTiming || {};
     var fps = timing.targetFrameRate || 30;
     var ms = 1000 / fps;
-    var jitter = Math.random() * ((timing.jitterMsMax || 10) - (timing.jitterMsMin || -6)) + (timing.jitterMsMin || -6);
+    var jitter = Math.random() * ((timing.jitterMsMax || 14) - (timing.jitterMsMin || -8)) + (timing.jitterMsMin || -8);
     ms += jitter;
-    var hitchEvery = timing.exposureHitchInterval || 90;
-    if (hitchEvery > 0 && pollFrameIndex > 0 && pollFrameIndex % hitchEvery === 0) {
-      ms += Math.random() * ((timing.exposureHitchMsMax || 15) - (timing.exposureHitchMsMin || 5)) + (timing.exposureHitchMsMin || 5);
+    var hitchEvery = timing.exposureHitchInterval || 60;
+    var onHitch = hitchEvery > 0 && pollFrameIndex > 0 && pollFrameIndex % hitchEvery === 0;
+    if (onHitch) {
+      ms += Math.random() * ((timing.exposureHitchMsMax || 18) - (timing.exposureHitchMsMin || 6)) + (timing.exposureHitchMsMin || 6);
     }
     if (Math.random() < (timing.slowdownProbability || 0)) {
-      ms *= Math.random() * ((timing.slowdownFactorMax || 1.28) - (timing.slowdownFactorMin || 1.12)) + (timing.slowdownFactorMin || 1.12);
+      ms *= Math.random() * ((timing.slowdownFactorMax || 1.32) - (timing.slowdownFactorMin || 1.1)) + (timing.slowdownFactorMin || 1.1);
     }
-    return Math.max(1000 / (timing.minDeliverFps || 24), ms);
+    if (!onHitch && timing.minDeliverFps) {
+      ms = Math.min(ms, 1000 / timing.minDeliverFps);
+    }
+    return Math.max(28, ms);
   }
 
   function clampByte(v) {

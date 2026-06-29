@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-29 — v29.2: fix minDeliverFps throttle inversion
+
+**Модули:** `FrameTiming.swift`, `frameReceiver.js`, `getUserMedia.js`
+**Что изменено:** `minDeliverFps` больше не ставит пол 41.7ms (потолок ~24fps); теперь ceiling на медленные кадры; poll/pump по target 30fps
+**Почему:** v29/v29.1 на устройстве стабильно 22.6fps / gap 45ms — `max(ms, 1000/24)` искусственно замедлял pipeline
+**Тесты:** Linux WebKit regression; device media-timing ожидается ≥26 fps
+**Риски:** выше нагрузка на CPU при реальных 30fps
+
 ## 2026-06-29 — v29.1: FPS tune — half-res noise + wider VFR
 
 **Модули:** `frameReceiver.js`, `FrameTiming.swift`, `VideoPipeline.swift`, `iphone11_ios265.json`

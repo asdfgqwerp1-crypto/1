@@ -279,8 +279,8 @@
                     if (!pumpActive || track.readyState === 'ended') return;
                     try { track.requestFrame(); } catch (e) {}
                     var timing = config.frameTiming || {};
-                    var jitter = Math.random() * ((timing.jitterMsMax || 10) - (timing.jitterMsMin || -6)) + (timing.jitterMsMin || -6);
-                    setTimeout(pumpFrame, Math.max(1000 / (timing.minDeliverFps || 24), Math.round(1000 / fps) + jitter));
+                    var jitter = Math.random() * ((timing.jitterMsMax || 14) - (timing.jitterMsMin || -8)) + (timing.jitterMsMin || -8);
+                    setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
                   }
                   pumpFrame();
                   track.addEventListener('ended', function () { pumpActive = false; });
