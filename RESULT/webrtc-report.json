@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-06-29T08:42:12.164Z",
+  "timestamp": "2026-06-29T09:36:25.916Z",
   "secureContext": true,
   "pageUrl": "https://192.168.2.113:8443/webrtc-inspector/",
-  "testMode": "video+audio",
+  "testMode": "video-only",
   "devices": [
     {
       "kind": "audioinput",
@@ -21,38 +21,38 @@
     "label": "Front Camera",
     "readyState": "live",
     "settings": {
+      "width": 480,
+      "height": 640,
+      "frameRate": 30,
+      "facingMode": "user",
+      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
       "aspectRatio": 0.75,
       "backgroundBlur": false,
-      "deviceId": "CC11D70DA22A5D392FA7CE86A6C85483F9346DB1",
-      "facingMode": "user",
-      "frameRate": 30,
-      "groupId": "C7C43C251F9ABF76BA04D82CE767170C3EF7F652",
-      "height": 640,
       "powerEfficient": false,
       "whiteBalanceMode": "continuous",
-      "width": 480,
       "zoom": 1
     },
     "capabilities": {
       "aspectRatio": {
-        "max": 4032,
-        "min": 0.00033068783068783067
+        "min": 0.00033068783068783067,
+        "max": 4032
       },
       "backgroundBlur": [
         false
       ],
-      "deviceId": "CC11D70DA22A5D392FA7CE86A6C85483F9346DB1",
+      "deviceId": "43235B3AEE3C4362D299A1CC7BDC8308989ACDE5",
       "facingMode": [
         "user"
       ],
       "frameRate": {
-        "max": 60,
-        "min": 1
+        "min": 1,
+        "max": 60
       },
-      "groupId": "C7C43C251F9ABF76BA04D82CE767170C3EF7F652",
+      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
       "height": {
-        "max": 3024,
-        "min": 1
+        "min": 1,
+        "max": 3024
       },
       "powerEfficient": [
         false,
@@ -63,45 +63,19 @@
         "continuous"
       ],
       "width": {
-        "max": 4032,
-        "min": 1
+        "min": 1,
+        "max": 4032
       },
       "zoom": {
-        "max": 10,
-        "min": 1
+        "min": 1,
+        "max": 10
       }
     },
     "constraints": {
       "facingMode": "user"
     }
   },
-  "audioTrack": {
-    "label": "iPhone Microphone",
-    "readyState": "live",
-    "settings": {
-      "deviceId": "1ED710AE65AEDB735E13F8A3FA0ABA48BE7FB550",
-      "echoCancellation": true,
-      "groupId": "516EF6445D78E21E384DE74D2BAD9332EDED3661",
-      "sampleRate": 48000,
-      "volume": 1
-    },
-    "capabilities": {
-      "deviceId": "1ED710AE65AEDB735E13F8A3FA0ABA48BE7FB550",
-      "echoCancellation": [
-        true,
-        false
-      ],
-      "groupId": "516EF6445D78E21E384DE74D2BAD9332EDED3661",
-      "sampleRate": {
-        "max": 96000,
-        "min": 8000
-      },
-      "volume": {
-        "max": 1,
-        "min": 0
-      }
-    }
-  },
+  "audioTrack": null,
   "preview": {
     "videoWidth": 480,
     "videoHeight": 640,

@@ -37,7 +37,7 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | Vector | Status | Notes |
 |--------|--------|-------|
 | `getUserMedia` source | Intercepted | Real camera → JPEG → canvas → captureStream |
-| `enumerateDevices` labels | Patched | Pre-permission empty ids; post-gUM profile devices |
+| `enumerateDevices` labels | Patched v16 | Always spoofed; pre-permission empty ids; post-gUM profile devices (never native) |
 | `deviceId` / `groupId` | Patched | Stable per profile; prototype getSettings |
 | `track.getSettings()` | Patched | width, height, frameRate, facingMode, deviceId |
 | `track.getCapabilities()` | Patched | iPhone resolution ranges |
@@ -49,7 +49,9 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | Frame timing regularity | Mitigated v15 | 12fps target + ±12ms jitter native/JS |
 | Frame sensor noise | Mitigated v15 | Subtle per-frame noise from profile seed |
 | Permission prompt timing | Mitigated | 50–200ms delay |
-| Synthetic audio | Risk | Silent oscillator — not real mic spectrum |
+| Synthetic audio | Patched v16 metadata / Risk spectrum | audio-only + video+audio return profile deviceId; silent oscillator — not real mic spectrum |
+| `navigator.mediaDevices` race | Mitigated v16 | Getter hook + prototype patch at documentStart |
+| Legacy `webkitGetUserMedia` | Patched v16 | Routed through spoof handler |
 
 ## WebRTC
 

@@ -64,11 +64,12 @@
       showOutput('Запрос камеры (' + modeLabel + ')...');
 
       try {
-        let devices = [];
+        let devicesBefore = [];
+        let devicesAfter = [];
         try {
-          devices = await navigator.mediaDevices.enumerateDevices();
+          devicesBefore = await navigator.mediaDevices.enumerateDevices();
         } catch (e) {
-          devices = [];
+          devicesBefore = [];
         }
 
         const constraints = { video: { facingMode: 'user' } };
@@ -76,6 +77,12 @@
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         activeStream = stream;
+
+        try {
+          devicesAfter = await navigator.mediaDevices.enumerateDevices();
+        } catch (e) {
+          devicesAfter = [];
+        }
 
         const video = document.getElementById('preview');
         video.srcObject = stream;
@@ -89,7 +96,13 @@
           secureContext: window.isSecureContext,
           pageUrl: location.href,
           testMode: withAudio ? 'video+audio' : 'video-only',
-          devices: devices.map(function (d) {
+          devicesBefore: devicesBefore.map(function (d) {
+            return { kind: d.kind, label: d.label, deviceId: d.deviceId, groupId: d.groupId };
+          }),
+          devicesAfter: devicesAfter.map(function (d) {
+            return { kind: d.kind, label: d.label, deviceId: d.deviceId, groupId: d.groupId };
+          }),
+          devices: devicesAfter.map(function (d) {
             return { kind: d.kind, label: d.label, deviceId: d.deviceId, groupId: d.groupId };
           }),
           videoTrack: videoTrack ? {

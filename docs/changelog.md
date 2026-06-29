@@ -153,3 +153,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Стабильность v14 + защита от canvas-stream / toString probes
 **Тесты:** validate-injection.py; на iPhone не запускалось
 **Риски:** 12fps < 24fps ML liveness target
+
+## 2026-06-29 — v16: media hardening + audio spoof
+
+**Модули:** `media/getUserMedia.js`, `TestPages/webrtc-inspector/`, `BuildInfo.swift`
+**Что изменено:** Патч MediaDevices.prototype + getter-hook на navigator.mediaDevices; перехват audio-only (синтетический mic с profile metadata); video+audio никогда не вызывает native gUM; enumerateDevices всегда из профиля; webkitGetUserMedia legacy; webrtc test — devicesBefore/devicesAfter
+**Почему:** video+audio тест утекал реальные deviceId и 4 камеры; race при поздней инициализации mediaDevices
+**Тесты:** validate-injection.py → 0 failed; на iPhone не запускалось
+**Риски:** синтетический audio — не реальный спектр микрофона (см. detection-vectors)

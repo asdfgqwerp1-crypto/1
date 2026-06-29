@@ -150,6 +150,7 @@
     };
   }
 })();
+// --- media/frameReceiver.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -542,7 +543,15 @@
   var installed = false;
   var mediaPermissionGranted = false;
   var originalGetUserMedia = null;
+  var originalEnumerateDevices = null;
   var installTimer = null;
+
+  function nativeFn(name, impl) {
+    impl.toString = function () {
+      return 'function ' + name + '() { [native code] }';
+    };
+    return impl;
+  }
 
   function parseFacingMode(constraints) {
     if (!constraints || !constraints.video) return 'user';
@@ -554,21 +563,11 @@
   }
 
   function wantsVideo(constraints) {
-    return constraints && constraints.video;
+    return !!(constraints && constraints.video);
   }
 
   function wantsAudio(constraints) {
-    return constraints && constraints.audio;
-  }
-
-  function drawPlaceholder(canvas) {
-    var ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.fillStyle = '#1b4332';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '16px -apple-system, sans-serif';
-    ctx.fillText('Camera loading…', 16, 32);
+    return !!(constraints && constraints.audio);
   }
 
   function startNativePipeline() {
@@ -657,7 +656,7 @@
         toJSON: function () { return this; }
       });
     });
-    devices.push({ deviceId: 'default', groupId: '', kind: 'audiooutput', label: '' });
+    devices.push({ deviceId: 'default', groupId: '', kind: 'audiooutput', label: '', toJSON: function () { return this; } });
     return devices;
   }
 
@@ -668,88 +667,142 @@
     ];
   }
 
-  function installMediaSpoof() {
-    if (installed) return true;
-    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
-      return false;
+  function spoofEnumerateDevices() {
+    return Promise.resolve(mediaPermissionGranted ? buildSpoofDeviceList() : buildPrePermissionDeviceList());
+  }
+
+  function resolveAudioOnlyStream() {
+    return new Promise(function (resolve, reject) {
+      var delay = 50 + Math.floor(Math.random() * 150);
+      setTimeout(function () {
+        try {
+          if (!window.__spoofPatchTrack) {
+            reject(new DOMException('Microphone not available', 'NotFoundError'));
+            return;
+          }
+          var mic = (config.microphones || [])[0];
+          var audioTrack = createSyntheticAudioTrack();
+          if (!audioTrack) {
+            reject(new DOMException('Microphone not available', 'NotFoundError'));
+            return;
+          }
+          if (mic) {
+            window.__spoofPatchTrack(audioTrack, mic, 'audio');
+          }
+          mediaPermissionGranted = true;
+          var stream = new MediaStream();
+          stream.addTrack(audioTrack);
+          resolve(stream);
+        } catch (err) {
+          reject(err);
+        }
+      }, delay);
+    });
+  }
+
+  function resolveVideoStream(constraints) {
+    return new Promise(function (resolve, reject) {
+      var delay = 50 + Math.floor(Math.random() * 150);
+      setTimeout(function () {
+        try {
+          var canvas = window.__spoofCanvas;
+          if (!canvas || !window.__spoofPatchTrack || !window.__spoofFindCamera) {
+            reject(new DOMException('Camera not available', 'NotFoundError'));
+            return;
+          }
+
+          startNativePipeline();
+          canvas = window.__spoofCanvas;
+
+          waitForFrames(1, 4000).then(function () {
+            try {
+              var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
+              var stream = canvas.captureStream(fps);
+              var facingMode = parseFacingMode(constraints);
+              var camera = window.__spoofFindCamera(facingMode);
+
+              var tracks = stream.getVideoTracks();
+              if (tracks.length > 0) {
+                window.__spoofPatchTrack(tracks[0], camera, 'video');
+                if (typeof tracks[0].requestFrame === 'function') {
+                  var track = tracks[0];
+                  var pumpActive = true;
+                  function pumpFrame() {
+                    if (!pumpActive || track.readyState === 'ended') return;
+                    try { track.requestFrame(); } catch (e) {}
+                    var jitter = Math.floor(Math.random() * 18) - 6;
+                    setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
+                  }
+                  pumpFrame();
+                  track.addEventListener('ended', function () { pumpActive = false; });
+                }
+              }
+
+              attachTrackStopHandler(tracks);
+              mediaPermissionGranted = true;
+
+              if (wantsAudio(constraints)) {
+                var mic = (config.microphones || [])[0];
+                var audioTrack = createSyntheticAudioTrack();
+                if (audioTrack) {
+                  if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
+                  stream.addTrack(audioTrack);
+                }
+              }
+
+              resolve(stream);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        } catch (err) {
+          reject(err);
+        }
+      }, delay);
+    });
+  }
+
+  var spoofGetUserMedia = nativeFn('getUserMedia', function (constraints) {
+    if (wantsVideo(constraints)) {
+      return resolveVideoStream(constraints || {});
+    }
+    if (wantsAudio(constraints)) {
+      return resolveAudioOnlyStream();
+    }
+    return Promise.reject(new DOMException('Requested device not found', 'NotFoundError'));
+  });
+
+  var spoofEnumerateDevicesFn = nativeFn('enumerateDevices', function () {
+    return spoofEnumerateDevices();
+  });
+
+  function applyPatchesToMediaDevices(md) {
+    if (!md || md.__spoofMediaPatched) return false;
+    if (typeof md.getUserMedia !== 'function') return false;
+
+    originalGetUserMedia = md.getUserMedia.bind(md);
+    if (typeof md.enumerateDevices === 'function') {
+      originalEnumerateDevices = md.enumerateDevices.bind(md);
     }
 
-    originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    md.getUserMedia = spoofGetUserMedia;
+    md.enumerateDevices = spoofEnumerateDevicesFn;
+    md.__spoofMediaPatched = true;
 
-    navigator.mediaDevices.getUserMedia = function (constraints) {
-      if (!installed) installMediaSpoof();
+    var proto = window.MediaDevices && MediaDevices.prototype;
+    if (proto && !proto.__spoofMediaPatched) {
+      proto.getUserMedia = spoofGetUserMedia;
+      proto.enumerateDevices = spoofEnumerateDevicesFn;
+      proto.__spoofMediaPatched = true;
+    }
 
-      var useSpoof = wantsVideo(constraints);
-      if (!useSpoof) {
-        return originalGetUserMedia(constraints);
-      }
+    return true;
+  }
 
-      return new Promise(function (resolve, reject) {
-        var delay = 50 + Math.floor(Math.random() * 150);
-        setTimeout(function () {
-          try {
-            var canvas = window.__spoofCanvas;
-            if (!canvas || !window.__spoofPatchTrack || !window.__spoofFindCamera) {
-              reject(new DOMException('Camera not available', 'NotFoundError'));
-              return;
-            }
-
-            startNativePipeline();
-            canvas = window.__spoofCanvas;
-
-            waitForFrames(1, 4000).then(function () {
-              try {
-                var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
-                var stream = canvas.captureStream(fps);
-                var facingMode = parseFacingMode(constraints);
-                var camera = window.__spoofFindCamera(facingMode);
-
-                var tracks = stream.getVideoTracks();
-                if (tracks.length > 0) {
-                  window.__spoofPatchTrack(tracks[0], camera, 'video');
-                  if (typeof tracks[0].requestFrame === 'function') {
-                    var track = tracks[0];
-                    var pumpActive = true;
-                    function pumpFrame() {
-                      if (!pumpActive || track.readyState === 'ended') return;
-                      try { track.requestFrame(); } catch (e) {}
-                      var jitter = Math.floor(Math.random() * 18) - 6;
-                      setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
-                    }
-                    pumpFrame();
-                    track.addEventListener('ended', function () { pumpActive = false; });
-                  }
-                }
-
-                attachTrackStopHandler(tracks);
-                mediaPermissionGranted = true;
-
-                if (wantsAudio(constraints)) {
-                  var mic = (config.microphones || [])[0];
-                  var audioTrack = createSyntheticAudioTrack();
-                  if (audioTrack) {
-                    if (mic) window.__spoofPatchTrack(audioTrack, mic, 'audio');
-                    stream.addTrack(audioTrack);
-                  }
-                }
-
-                resolve(stream);
-              } catch (err) {
-                reject(err);
-              }
-            });
-          } catch (err) {
-            reject(err);
-          }
-        }, delay);
-      });
-    };
-
-    navigator.mediaDevices.enumerateDevices = function () {
-      if (!installed) installMediaSpoof();
-      var list = mediaPermissionGranted ? buildSpoofDeviceList() : buildPrePermissionDeviceList();
-      return Promise.resolve(list);
-    };
+  function installMediaSpoof() {
+    if (installed) return true;
+    if (!navigator.mediaDevices) return false;
+    if (!applyPatchesToMediaDevices(navigator.mediaDevices)) return false;
 
     installed = true;
     if (installTimer) {
@@ -759,12 +812,54 @@
     return true;
   }
 
+  function hookNavigatorMediaDevices() {
+    var current = navigator.mediaDevices;
+    if (current) {
+      applyPatchesToMediaDevices(current);
+      installed = true;
+    }
+
+    try {
+      var desc = Object.getOwnPropertyDescriptor(navigator, 'mediaDevices');
+      if (desc && desc.get && !navigator.__spoofMediaDevicesHooked) {
+        var origGet = desc.get;
+        navigator.__spoofMediaDevicesHooked = true;
+        Object.defineProperty(navigator, 'mediaDevices', {
+          configurable: true,
+          enumerable: desc.enumerable !== false,
+          get: function () {
+            var md = origGet.call(navigator);
+            if (md) applyPatchesToMediaDevices(md);
+            return md;
+          }
+        });
+      }
+    } catch (e) {}
+
+    if (navigator.webkitGetUserMedia && !navigator.__spoofWebkitGumPatched) {
+      navigator.__spoofWebkitGumPatched = true;
+      var origWebkit = navigator.webkitGetUserMedia.bind(navigator);
+      navigator.webkitGetUserMedia = function (constraints, success, error) {
+        spoofGetUserMedia(constraints || {}).then(function (stream) {
+          if (success) success(stream);
+        }).catch(function (err) {
+          if (error) error(err);
+        });
+      };
+      navigator.webkitGetUserMedia.toString = function () {
+        return 'function webkitGetUserMedia() { [native code] }';
+      };
+    }
+  }
+
   function scheduleInstall() {
+    hookNavigatorMediaDevices();
     if (installMediaSpoof()) return;
 
     var attempts = 0;
     installTimer = setInterval(function () {
       attempts += 1;
+      hookNavigatorMediaDevices();
       if (installMediaSpoof() || attempts >= 100) {
         clearInterval(installTimer);
         installTimer = null;
@@ -772,14 +867,15 @@
     }, 50);
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', installMediaSpoof);
+      document.addEventListener('DOMContentLoaded', hookNavigatorMediaDevices);
     }
-    window.addEventListener('load', installMediaSpoof);
-    window.addEventListener('pageshow', installMediaSpoof);
+    window.addEventListener('load', hookNavigatorMediaDevices);
+    window.addEventListener('pageshow', hookNavigatorMediaDevices);
   }
 
   scheduleInstall();
 })();
+// --- webrtc/enumerateDevices.js ---
 (function () {
   'use strict';
   // enumerateDevices override is in getUserMedia.js

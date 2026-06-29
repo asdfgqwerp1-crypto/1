@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v15"
-    static let frameDelivery = "12fps-jitter+hardening"
+    static let marker = "v16"
+    static let frameDelivery = "media-hardening+audio-spoof"
 }
