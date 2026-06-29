@@ -3,6 +3,13 @@
   var config = window.__SAFARI_SPOOF_CONFIG__;
   if (!config) return;
 
+  function nativeFn(name, impl) {
+    impl.toString = function () {
+      return 'function ' + name + '() { [native code] }';
+    };
+    return impl;
+  }
+
   function installTrackPrototypePatch() {
     if (window.__spoofTrackProtoPatched) return;
     var proto = window.MediaStreamTrack && MediaStreamTrack.prototype;
@@ -12,30 +19,50 @@
     var origGetSettings = proto.getSettings;
     var origGetCapabilities = proto.getCapabilities;
     var origGetConstraints = proto.getConstraints;
+    var origApplyConstraints = proto.applyConstraints;
+    var origClone = proto.clone;
 
-    proto.getSettings = function () {
+    proto.getSettings = nativeFn('getSettings', function () {
       if (this.__spoofSettings) return Object.assign({}, this.__spoofSettings);
       if (origGetSettings) {
         try { return origGetSettings.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
 
-    proto.getCapabilities = function () {
+    proto.getCapabilities = nativeFn('getCapabilities', function () {
       if (this.__spoofCapabilities) return JSON.parse(JSON.stringify(this.__spoofCapabilities));
       if (origGetCapabilities) {
         try { return origGetCapabilities.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
 
-    proto.getConstraints = function () {
+    proto.getConstraints = nativeFn('getConstraints', function () {
       if (this.__spoofConstraints) return Object.assign({}, this.__spoofConstraints);
       if (origGetConstraints) {
         try { return origGetConstraints.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
+
+    proto.applyConstraints = nativeFn('applyConstraints', function (constraints) {
+      if (this.__spoofPatched) return Promise.resolve();
+      if (origApplyConstraints) {
+        try { return origApplyConstraints.call(this, constraints); } catch (e) {}
+      }
+      return Promise.resolve();
+    });
+
+    if (origClone) {
+      proto.clone = nativeFn('clone', function () {
+        var cloned = origClone.call(this);
+        if (this.__spoofPatched && this.__spoofDevice) {
+          window.__spoofPatchTrack(cloned, this.__spoofDevice, this.__spoofKind || this.kind);
+        }
+        return cloned;
+      });
+    }
   }
 
   installTrackPrototypePatch();
@@ -128,6 +155,8 @@
     track.__spoofCapabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
     track.__spoofConstraints = kind === 'video' ? { facingMode: device.facingMode } : {};
     track.__spoofLabel = device.label;
+    track.__spoofDevice = device;
+    track.__spoofKind = kind;
 
     try {
       Object.defineProperty(track, 'label', {
@@ -136,9 +165,29 @@
       });
     } catch (e) {}
 
+    if (kind === 'video') {
+      try {
+        track.contentHint = 'motion';
+      } catch (e) {}
+    }
+
+    try {
+      Object.defineProperty(track, '__spoofPatched', { value: true, enumerable: false, configurable: true });
+      Object.defineProperty(track, '__spoofSettings', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofCapabilities', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofConstraints', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofLabel', { enumerable: false, configurable: true, writable: true });
+    } catch (e) {}
+
     return track;
   }
 
   window.__spoofPatchTrack = patchTrack;
   window.__spoofFindCamera = findCamera;
+
+  try {
+    Object.defineProperty(window, '__spoofPatchTrack', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofFindCamera', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofTrackProtoPatched', { value: true, enumerable: false, configurable: true });
+  } catch (e) {}
 })();

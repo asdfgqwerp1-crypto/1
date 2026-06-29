@@ -31,7 +31,8 @@ final class FrameBridge: NSObject {
     private(set) var isDeliveryEnabled = false
     private var lastSendTime: CFAbsoluteTime = 0
     private var hasStartedPoll = false
-    private let minInterval: CFAbsoluteTime = 1.0 / 8.0
+    private let minInterval: CFAbsoluteTime = 1.0 / 12.0
+    private var sendJitterMs: Double = 0
 
     var isDelivering: Bool { isDeliveryEnabled }
 
@@ -64,9 +65,11 @@ final class FrameBridge: NSObject {
         guard jpegData.count < 180_000 else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
-        guard now - lastSendTime >= minInterval else { return }
+        let interval = minInterval + (sendJitterMs / 1000.0)
+        guard now - lastSendTime >= interval else { return }
 
         lastSendTime = now
+        sendJitterMs = Double.random(in: -10...14)
         let latency = (now - timestamp) * 1000
         schemeHandler.updateFrame(jpegData)
         updateMetrics(latency: latency)

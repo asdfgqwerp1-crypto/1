@@ -150,7 +150,6 @@
     };
   }
 })();
-// --- media/frameReceiver.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -160,8 +159,11 @@
   var canvas = null;
   var ctx = null;
   var pollTimer = null;
-  var pollIntervalMs = Math.round(1000 / 10);
+  var pollActive = false;
+  var pollBaseMs = Math.round(1000 / 12);
   var isDrawing = false;
+  var noiseSeed = (config.webgl && config.webgl.canvasNoiseSeed) || 284739102;
+  var framesSinceNoise = 0;
 
   function mountCanvas(node) {
     node.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
@@ -194,6 +196,32 @@
 
   function markFrameDrawn() {
     window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
+    framesSinceNoise += 1;
+    if (framesSinceNoise >= 2) {
+      framesSinceNoise = 0;
+      addSubtleNoise();
+    }
+  }
+
+  function addSubtleNoise() {
+    if (!ctx || !canvas) return;
+    try {
+      var w = canvas.width;
+      var h = canvas.height;
+      var imageData = ctx.getImageData(0, 0, w, h);
+      var d = imageData.data;
+      var step = 16;
+      for (var y = 0; y < h; y += step) {
+        for (var x = 0; x < w; x += step) {
+          var i = (y * w + x) * 4;
+          var n = ((noiseSeed + i + window.__spoofFrameCount) % 5) - 2;
+          d[i] = Math.min(255, Math.max(0, d[i] + n));
+          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + n));
+          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + n));
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    } catch (e) {}
   }
 
   function drawFrame() {
@@ -206,13 +234,6 @@
       isDrawing = false;
     }
     setTimeout(release, 800);
-
-    function drawBitmap(bitmap) {
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      if (bitmap.close) bitmap.close();
-      markFrameDrawn();
-      release();
-    }
 
     function drawViaImage(url, revoke) {
       var img = new Image();
@@ -245,12 +266,24 @@
     drawViaImage(frameURL(), false);
   }
 
+  function schedulePoll() {
+    if (!pollActive) return;
+    var jitter = Math.floor(Math.random() * 24) - 12;
+    var delay = Math.max(55, pollBaseMs + jitter);
+    pollTimer = setTimeout(function () {
+      drawFrame();
+      schedulePoll();
+    }, delay);
+  }
+
   window.__spoofResetCanvas = function () {
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     isDrawing = false;
+    framesSinceNoise = 0;
     if (canvas && canvas.parentNode) {
       canvas.parentNode.removeChild(canvas);
     }
@@ -264,18 +297,21 @@
 
   window.__spoofStartFramePoll = function () {
     if (!canvas) window.__spoofResetCanvas();
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     drawPlaceholder();
     drawFrame();
-    pollTimer = setInterval(drawFrame, pollIntervalMs);
+    pollActive = true;
+    schedulePoll();
   };
 
   window.__spoofStopFramePoll = function () {
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     window.__spoofFrameCount = 0;
@@ -286,15 +322,35 @@
   window.__spoofResetCanvas();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      if (!canvas.parentNode) mountCanvas(canvas);
+      if (canvas && !canvas.parentNode) mountCanvas(canvas);
     });
   }
+
+  ['__spoofCanvas', '__spoofCanvasCtx', '__spoofFrameCount', '__spoofStartFramePoll',
+    '__spoofStopFramePoll', '__spoofResetCanvas', '__spoofReceiveFrame'].forEach(function (key) {
+    try {
+      var val = window[key];
+      Object.defineProperty(window, key, {
+        value: val,
+        enumerable: false,
+        configurable: true,
+        writable: true
+      });
+    } catch (e) {}
+  });
 })();
 // --- media/mediaStreamMock.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
   if (!config) return;
+
+  function nativeFn(name, impl) {
+    impl.toString = function () {
+      return 'function ' + name + '() { [native code] }';
+    };
+    return impl;
+  }
 
   function installTrackPrototypePatch() {
     if (window.__spoofTrackProtoPatched) return;
@@ -305,30 +361,50 @@
     var origGetSettings = proto.getSettings;
     var origGetCapabilities = proto.getCapabilities;
     var origGetConstraints = proto.getConstraints;
+    var origApplyConstraints = proto.applyConstraints;
+    var origClone = proto.clone;
 
-    proto.getSettings = function () {
+    proto.getSettings = nativeFn('getSettings', function () {
       if (this.__spoofSettings) return Object.assign({}, this.__spoofSettings);
       if (origGetSettings) {
         try { return origGetSettings.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
 
-    proto.getCapabilities = function () {
+    proto.getCapabilities = nativeFn('getCapabilities', function () {
       if (this.__spoofCapabilities) return JSON.parse(JSON.stringify(this.__spoofCapabilities));
       if (origGetCapabilities) {
         try { return origGetCapabilities.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
 
-    proto.getConstraints = function () {
+    proto.getConstraints = nativeFn('getConstraints', function () {
       if (this.__spoofConstraints) return Object.assign({}, this.__spoofConstraints);
       if (origGetConstraints) {
         try { return origGetConstraints.call(this); } catch (e) {}
       }
       return {};
-    };
+    });
+
+    proto.applyConstraints = nativeFn('applyConstraints', function (constraints) {
+      if (this.__spoofPatched) return Promise.resolve();
+      if (origApplyConstraints) {
+        try { return origApplyConstraints.call(this, constraints); } catch (e) {}
+      }
+      return Promise.resolve();
+    });
+
+    if (origClone) {
+      proto.clone = nativeFn('clone', function () {
+        var cloned = origClone.call(this);
+        if (this.__spoofPatched && this.__spoofDevice) {
+          window.__spoofPatchTrack(cloned, this.__spoofDevice, this.__spoofKind || this.kind);
+        }
+        return cloned;
+      });
+    }
   }
 
   installTrackPrototypePatch();
@@ -421,6 +497,8 @@
     track.__spoofCapabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
     track.__spoofConstraints = kind === 'video' ? { facingMode: device.facingMode } : {};
     track.__spoofLabel = device.label;
+    track.__spoofDevice = device;
+    track.__spoofKind = kind;
 
     try {
       Object.defineProperty(track, 'label', {
@@ -429,11 +507,31 @@
       });
     } catch (e) {}
 
+    if (kind === 'video') {
+      try {
+        track.contentHint = 'motion';
+      } catch (e) {}
+    }
+
+    try {
+      Object.defineProperty(track, '__spoofPatched', { value: true, enumerable: false, configurable: true });
+      Object.defineProperty(track, '__spoofSettings', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofCapabilities', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofConstraints', { enumerable: false, configurable: true, writable: true });
+      Object.defineProperty(track, '__spoofLabel', { enumerable: false, configurable: true, writable: true });
+    } catch (e) {}
+
     return track;
   }
 
   window.__spoofPatchTrack = patchTrack;
   window.__spoofFindCamera = findCamera;
+
+  try {
+    Object.defineProperty(window, '__spoofPatchTrack', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofFindCamera', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofTrackProtoPatched', { value: true, enumerable: false, configurable: true });
+  } catch (e) {}
 })();
 // --- media/getUserMedia.js ---
 (function () {
@@ -596,8 +694,8 @@
               return;
             }
 
-            drawPlaceholder(canvas);
             startNativePipeline();
+            canvas = window.__spoofCanvas;
 
             waitForFrames(1, 4000).then(function () {
               try {
@@ -611,15 +709,15 @@
                   window.__spoofPatchTrack(tracks[0], camera, 'video');
                   if (typeof tracks[0].requestFrame === 'function') {
                     var track = tracks[0];
-                    var frameInterval = Math.max(33, Math.round(1000 / fps));
-                    var framePump = setInterval(function () {
-                      if (track.readyState === 'ended') {
-                        clearInterval(framePump);
-                        return;
-                      }
+                    var pumpActive = true;
+                    function pumpFrame() {
+                      if (!pumpActive || track.readyState === 'ended') return;
                       try { track.requestFrame(); } catch (e) {}
-                    }, frameInterval);
-                    track.addEventListener('ended', function () { clearInterval(framePump); });
+                      var jitter = Math.floor(Math.random() * 18) - 6;
+                      setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
+                    }
+                    pumpFrame();
+                    track.addEventListener('ended', function () { pumpActive = false; });
                   }
                 }
 
@@ -682,7 +780,6 @@
 
   scheduleInstall();
 })();
-// --- webrtc/enumerateDevices.js ---
 (function () {
   'use strict';
   // enumerateDevices override is in getUserMedia.js

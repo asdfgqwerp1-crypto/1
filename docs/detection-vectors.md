@@ -2,6 +2,19 @@
 
 Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers.
 
+## Safari vs WKWebView — что видит сайт
+
+| Уровень проверки | Вердикт для SafariSpoof v15 |
+|------------------|----------------------------|
+| Fingerprint diff (navigator, screen, WebGL, UA) | **Близко к Safari** — PASS на iPhone 11 baseline |
+| WebRTC metadata (deviceId, getSettings, enumerateDevices) | **Как Safari** — при актуальном профиле |
+| Обычный KYC web (getUserMedia + upload selfie) | **Скорее как Safari** — metadata OK, живое видео с реальной камеры |
+| CreepJS / BrowserLeaks fingerprint | **Частично** — нет 100% совпадения WKWebView≡Safari |
+| WebRTC getStats / ML liveness | **Риск** — canvas pipeline, синтетический audio |
+| Native KYC SDK (не web) | **FAIL** — обходит JS, вне scope |
+
+**Вывод:** для типичного сайта, который смотрит UA + fingerprint + camera labels/deviceId — браузер выглядит как Safari на iPhone 11. Продвинутый антифрод может заметить canvas-stream и нестандартный WKWebView.
+
 ## Fingerprint
 
 | Vector | Status | Notes |
@@ -9,7 +22,7 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `navigator.userAgent` | Patched | From profile, synced with WKWebView customUserAgent |
 | `navigator.platform` | Patched | Must be `iPhone` |
 | `navigator.vendor` | Patched | `Apple Computer, Inc.` |
-| `navigator.webdriver` | Patched | Must be undefined |
+| `navigator.webdriver` | Patched | `false` per iOS 26 Safari baseline |
 | `navigator.maxTouchPoints` | Patched | 5 for iPhone |
 | `navigator.hardwareConcurrency` | Patched | Matches SoC core count |
 | `screen.width/height` | Patched | CSS pixels, not physical |
@@ -17,29 +30,35 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | WebGL vendor/renderer | Patched | Apple GPU strings |
 | Canvas hash | Patched | Deterministic noise per profile seed |
 | AudioContext sampleRate | Patched | 48000 Hz typical |
-| `window.safari` | Patched | Stub object present |
+| `window.safari` | Off | Profile `emulateSafariObject: false` matches iPhone 11 baseline |
 
 ## Media / Camera
 
 | Vector | Status | Notes |
 |--------|--------|-------|
-| `getUserMedia` source | Intercepted | Returns canvas.captureStream, not native camera |
-| `enumerateDevices` labels | Patched | iOS-specific: "Front Camera", "Back Triple Camera" |
-| `deviceId` / `groupId` | Patched | Stable per profile |
+| `getUserMedia` source | Intercepted | Real camera → JPEG → canvas → captureStream |
+| `enumerateDevices` labels | Patched | Pre-permission empty ids; post-gUM profile devices |
+| `deviceId` / `groupId` | Patched | Stable per profile; prototype getSettings |
 | `track.getSettings()` | Patched | width, height, frameRate, facingMode, deviceId |
 | `track.getCapabilities()` | Patched | iPhone resolution ranges |
 | `track.label` | Patched | Matches iOS camera name |
-| Canvas default 300x150 | Mitigated | Canvas pre-sized to profile resolution |
-| Frame timing jitter | Mitigated | Native bridge targets 30fps with natural variance |
+| `getSettings.toString()` | Patched v15 | Returns `[native code]` |
+| `applyConstraints` | Patched v15 | Resolves on spoofed tracks |
+| `__spoof*` globals | Mitigated v15 | Non-enumerable on window |
+| Canvas stream origin | Risk | Advanced: canvas.captureStream vs AVFoundation |
+| Frame timing regularity | Mitigated v15 | 12fps target + ±12ms jitter native/JS |
+| Frame sensor noise | Mitigated v15 | Subtle per-frame noise from profile seed |
 | Permission prompt timing | Mitigated | 50–200ms delay |
+| Synthetic audio | Risk | Silent oscillator — not real mic spectrum |
 
 ## WebRTC
 
 | Vector | Status | Notes |
 |--------|--------|-------|
-| SDP codec list | Native | Not modified; WebKit handles |
+| SDP codec list | Native | WebKit handles |
 | ICE candidates | Native | Not modified |
-| Synthetic track detection | Risk | Advanced ML may detect canvas origin |
+| RTCRtpSender.getStats | Risk | May differ canvas vs direct camera |
+| ML liveness (blink, depth) | Risk | Video is real face but re-encoded via JPEG |
 
 ## Known Unfixable (v1)
 
@@ -48,10 +67,11 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | WKWebView internal markers | No jailbreak access to WebKit internals |
 | TrueDepth / Face ID metadata | Not available in web API spoof |
 | Native KYC SDK camera path | Bypasses JavaScript entirely |
+| 100% byte-identical Safari WebKit | Apple does not ship Safari engine to third-party apps |
 
 ## Regression Priority
 
 1. Critical: navigator, screen, WebGL, UA, camera metadata
-2. High: frame timing, permission behavior
-3. Medium: canvas hash stability, audio fingerprint
+2. High: frame timing jitter, permission behavior, repeat gUM
+3. Medium: canvas hash stability, toString hardening
 4. Low: Client Hints (rare on iOS Safari)

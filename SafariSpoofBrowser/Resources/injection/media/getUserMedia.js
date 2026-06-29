@@ -173,15 +173,15 @@
                   window.__spoofPatchTrack(tracks[0], camera, 'video');
                   if (typeof tracks[0].requestFrame === 'function') {
                     var track = tracks[0];
-                    var frameInterval = Math.max(33, Math.round(1000 / fps));
-                    var framePump = setInterval(function () {
-                      if (track.readyState === 'ended') {
-                        clearInterval(framePump);
-                        return;
-                      }
+                    var pumpActive = true;
+                    function pumpFrame() {
+                      if (!pumpActive || track.readyState === 'ended') return;
                       try { track.requestFrame(); } catch (e) {}
-                    }, frameInterval);
-                    track.addEventListener('ended', function () { clearInterval(framePump); });
+                      var jitter = Math.floor(Math.random() * 18) - 6;
+                      setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
+                    }
+                    pumpFrame();
+                    track.addEventListener('ended', function () { pumpActive = false; });
                   }
                 }
 

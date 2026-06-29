@@ -14,7 +14,8 @@ final class VideoPipeline: NSObject {
     private var isRunning = false
     private var lastFrameTime: CFAbsoluteTime = 0
     private var configureAttempts = 0
-    private let minFrameInterval: CFAbsoluteTime = 1.0 / 10.0
+    private let minFrameInterval: CFAbsoluteTime = 1.0 / 12.0
+    private var encodeJitterMs: Double = 0
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
 
     init(frameBridge: FrameBridge) {
@@ -162,8 +163,10 @@ final class VideoPipeline: NSObject {
         guard isRunning, frameBridge.isDelivering else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
-        guard now - lastFrameTime >= minFrameInterval else { return }
+        let interval = minFrameInterval + (encodeJitterMs / 1000.0)
+        guard now - lastFrameTime >= interval else { return }
         lastFrameTime = now
+        encodeJitterMs = Double.random(in: -8...12)
 
         sendPixelBuffer(pixelBuffer, profile: profile, timestamp: captureTimestamp)
     }
@@ -211,7 +214,7 @@ final class VideoPipeline: NSObject {
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let cgImage = context.makeImage() else { return nil }
 
-        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.35)
+        return UIImage(cgImage: cgImage).jpegData(compressionQuality: 0.32)
     }
 }
 

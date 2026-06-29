@@ -145,3 +145,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Повторный тест WebRTC падал с SecurityError — старый canvas tainted после drawImage с spoofframe
 **Тесты:** validate-injection.py; на iPhone не запускалось
 **Риски:** —
+
+## 2026-06-29 — v15: 12fps jitter + anti-detect hardening
+
+**Модули:** `frameReceiver.js`, `mediaStreamMock.js`, `VideoPipeline.swift`, `FrameBridge.swift`, `getUserMedia.js`, `docs/detection-vectors.md`
+**Что изменено:** Единый лимит ~12fps; jitter на encode/send/poll; sensor noise; native toString hardening; non-enumerable spoof globals
+**Почему:** Стабильность v14 + защита от canvas-stream / toString probes
+**Тесты:** validate-injection.py; на iPhone не запускалось
+**Риски:** 12fps < 24fps ML liveness target

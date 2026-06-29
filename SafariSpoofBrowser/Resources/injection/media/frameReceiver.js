@@ -7,8 +7,11 @@
   var canvas = null;
   var ctx = null;
   var pollTimer = null;
-  var pollIntervalMs = Math.round(1000 / 10);
+  var pollActive = false;
+  var pollBaseMs = Math.round(1000 / 12);
   var isDrawing = false;
+  var noiseSeed = (config.webgl && config.webgl.canvasNoiseSeed) || 284739102;
+  var framesSinceNoise = 0;
 
   function mountCanvas(node) {
     node.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
@@ -41,6 +44,32 @@
 
   function markFrameDrawn() {
     window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
+    framesSinceNoise += 1;
+    if (framesSinceNoise >= 2) {
+      framesSinceNoise = 0;
+      addSubtleNoise();
+    }
+  }
+
+  function addSubtleNoise() {
+    if (!ctx || !canvas) return;
+    try {
+      var w = canvas.width;
+      var h = canvas.height;
+      var imageData = ctx.getImageData(0, 0, w, h);
+      var d = imageData.data;
+      var step = 16;
+      for (var y = 0; y < h; y += step) {
+        for (var x = 0; x < w; x += step) {
+          var i = (y * w + x) * 4;
+          var n = ((noiseSeed + i + window.__spoofFrameCount) % 5) - 2;
+          d[i] = Math.min(255, Math.max(0, d[i] + n));
+          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + n));
+          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + n));
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    } catch (e) {}
   }
 
   function drawFrame() {
@@ -53,13 +82,6 @@
       isDrawing = false;
     }
     setTimeout(release, 800);
-
-    function drawBitmap(bitmap) {
-      ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      if (bitmap.close) bitmap.close();
-      markFrameDrawn();
-      release();
-    }
 
     function drawViaImage(url, revoke) {
       var img = new Image();
@@ -92,12 +114,24 @@
     drawViaImage(frameURL(), false);
   }
 
+  function schedulePoll() {
+    if (!pollActive) return;
+    var jitter = Math.floor(Math.random() * 24) - 12;
+    var delay = Math.max(55, pollBaseMs + jitter);
+    pollTimer = setTimeout(function () {
+      drawFrame();
+      schedulePoll();
+    }, delay);
+  }
+
   window.__spoofResetCanvas = function () {
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     isDrawing = false;
+    framesSinceNoise = 0;
     if (canvas && canvas.parentNode) {
       canvas.parentNode.removeChild(canvas);
     }
@@ -111,18 +145,21 @@
 
   window.__spoofStartFramePoll = function () {
     if (!canvas) window.__spoofResetCanvas();
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     drawPlaceholder();
     drawFrame();
-    pollTimer = setInterval(drawFrame, pollIntervalMs);
+    pollActive = true;
+    schedulePoll();
   };
 
   window.__spoofStopFramePoll = function () {
+    pollActive = false;
     if (pollTimer) {
-      clearInterval(pollTimer);
+      clearTimeout(pollTimer);
       pollTimer = null;
     }
     window.__spoofFrameCount = 0;
@@ -133,7 +170,20 @@
   window.__spoofResetCanvas();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      if (!canvas.parentNode) mountCanvas(canvas);
+      if (canvas && !canvas.parentNode) mountCanvas(canvas);
     });
   }
+
+  ['__spoofCanvas', '__spoofCanvasCtx', '__spoofFrameCount', '__spoofStartFramePoll',
+    '__spoofStopFramePoll', '__spoofResetCanvas', '__spoofReceiveFrame'].forEach(function (key) {
+    try {
+      var val = window[key];
+      Object.defineProperty(window, key, {
+        value: val,
+        enumerable: false,
+        configurable: true,
+        writable: true
+      });
+    } catch (e) {}
+  });
 })();
