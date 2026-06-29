@@ -66,8 +66,11 @@ def main() -> int:
         if "spoofframe://" not in frame_js:
             print("FAIL frameReceiver missing spoofframe URL")
             failed += 1
+        elif "__spoofResetCanvas" not in frame_js:
+            print("FAIL frameReceiver missing fresh canvas reset")
+            failed += 1
         else:
-            print("PASS frameReceiver uses spoofframe scheme")
+            print("PASS frameReceiver spoofframe + reset canvas")
 
         _, gum_js = fetch("/injection/media/getUserMedia.js")
         if "__spoofStartFramePoll" not in gum_js:

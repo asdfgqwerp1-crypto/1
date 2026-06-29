@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v13"
-    static let frameDelivery = "fetch-frames+wait-first"
+    static let marker = "v14"
+    static let frameDelivery = "fresh-canvas-per-stream"
 }

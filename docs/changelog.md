@@ -137,3 +137,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** v12 — зелёный placeholder без видео: spoofframe не грузился через Image, pipeline ждал permission
 **Тесты:** validate-injection.py; на iPhone не запускалось
 **Риски:** до 4с задержка перед ответом getUserMedia
+
+## 2026-06-29 — v14: fix SecurityError canvas is tainted on second gUM
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `FrameSchemeHandler.swift`
+**Что изменено:** Новый canvas на каждый запрос камеры (`__spoofResetCanvas`); blob+Image вместо createImageBitmap; `crossOrigin=anonymous`; CORS/CORP headers на spoofframe
+**Почему:** Повторный тест WebRTC падал с SecurityError — старый canvas tainted после drawImage с spoofframe
+**Тесты:** validate-injection.py; на iPhone не запускалось
+**Риски:** —

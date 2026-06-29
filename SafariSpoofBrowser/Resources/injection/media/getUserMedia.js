@@ -39,6 +39,9 @@
     if (window.__spoofStopFramePoll) {
       window.__spoofStopFramePoll();
     }
+    if (window.__spoofResetCanvas) {
+      window.__spoofResetCanvas();
+    }
     window.__spoofFrameCount = 0;
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
@@ -155,8 +158,8 @@
               return;
             }
 
-            drawPlaceholder(canvas);
             startNativePipeline();
+            canvas = window.__spoofCanvas;
 
             waitForFrames(1, 4000).then(function () {
               try {

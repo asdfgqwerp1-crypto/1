@@ -40,7 +40,9 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
                 "Content-Type": "image/jpeg",
                 "Content-Length": "\(data.count)",
                 "Cache-Control": "no-store, no-cache, must-revalidate",
-                "Access-Control-Allow-Origin": "*"
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "GET",
+                "Cross-Origin-Resource-Policy": "cross-origin"
             ]
             guard let response = HTTPURLResponse(
                 url: url,
