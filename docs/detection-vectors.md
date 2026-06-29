@@ -53,8 +53,9 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `applyConstraints` | Patched v15 | Resolves on spoofed tracks |
 | `__spoof*` globals | Mitigated v15 | Non-enumerable on window |
 | Canvas stream origin | Risk | Advanced: canvas.captureStream vs AVFoundation |
-| Frame timing regularity | Mitigated v17 | 16fps target + ±12ms jitter native/JS |
-| Frame sensor noise | Mitigated v15 | Subtle per-frame noise from profile seed |
+| Frame timing regularity | Patched v29 | VFR ~30fps target + exposure hitch + slowdown bursts; min 24fps |
+| Frame sensor noise | Patched v29 | read+shot+chroma noise per frame (profile seed); scratch→drawImage |
+| Resolution presets | Patched v29 | vga/hd/fhd presets; gUM constraints → native encode + getSettings |
 | Permission prompt timing | Mitigated | 50–200ms delay |
 | Synthetic audio | Patched v16 metadata / Risk spectrum | audio-only + video+audio return profile deviceId; silent oscillator — not real mic spectrum |
 | `navigator.mediaDevices` race | Mitigated v16 | Getter hook + prototype patch at documentStart |

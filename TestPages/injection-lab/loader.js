@@ -37,6 +37,9 @@
       cameras: profile.cameras,
       microphones: profile.microphones,
       mediaCapabilities: profile.mediaCapabilities,
+      mediaPresets: profile.mediaPresets,
+      frameTiming: profile.frameTiming,
+      frameNoise: profile.frameNoise,
       videoTrackSpoof: profile.videoTrackSpoof,
       audioTrackSpoof: profile.audioTrackSpoof
     };
@@ -102,6 +105,16 @@
         window.__spoofStopFramePoll();
       }
 
+      var devicesBefore = await navigator.mediaDevices.enumerateDevices();
+      assert('enumerate pre-permission count', devicesBefore.length === 2, 'count=' + devicesBefore.length);
+      assert('enumerate pre-permission empty ids', devicesBefore.every(function (d) { return !d.deviceId; }));
+
+      if (typeof window.__spoofSelectMediaPreset === 'function') {
+        var hdPreset = window.__spoofSelectMediaPreset({ video: { width: 1280, height: 720 } });
+        assert('preset 720p', hdPreset && hdPreset.width === 1280 && hdPreset.height === 720,
+          hdPreset ? (hdPreset.width + 'x' + hdPreset.height) : 'none');
+      }
+
       var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       assert('getUserMedia stream', !!stream && stream.getVideoTracks().length === 1);
       var track = stream.getVideoTracks()[0];
@@ -109,10 +122,6 @@
       assert('track width', settings.width === profile.mediaCapabilities.width, JSON.stringify(settings));
       assert('track deviceId', settings.deviceId === profile.cameras[0].deviceId, JSON.stringify(settings));
       assert('bridge startStream', (window.__MOCK_BRIDGE_EVENTS__ || []).some(function (e) { return e.event === 'startStream'; }));
-
-      var devicesBefore = await navigator.mediaDevices.enumerateDevices();
-      assert('enumerate pre-permission count', devicesBefore.length === 2, 'count=' + devicesBefore.length);
-      assert('enumerate pre-permission empty ids', devicesBefore.every(function (d) { return !d.deviceId; }));
 
       var devices = await navigator.mediaDevices.enumerateDevices();
       var cams = devices.filter(function (d) { return d.kind === 'videoinput'; });

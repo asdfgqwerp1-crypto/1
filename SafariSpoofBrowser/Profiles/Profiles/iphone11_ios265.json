@@ -69,6 +69,32 @@
     "heightMin": 1,
     "heightMax": 3024
   },
+  "mediaPresets": [
+    { "id": "selfie_vga", "width": 480, "height": 640, "frameRate": 30, "aspectRatio": 0.75 },
+    { "id": "selfie_hd", "width": 1280, "height": 720, "frameRate": 30, "aspectRatio": 1.7777777777777777 },
+    { "id": "selfie_fhd", "width": 1920, "height": 1080, "frameRate": 30, "aspectRatio": 1.7777777777777777 }
+  ],
+  "frameTiming": {
+    "targetFrameRate": 30,
+    "minDeliverFps": 24,
+    "jitterMsMin": -6,
+    "jitterMsMax": 10,
+    "exposureHitchInterval": 90,
+    "exposureHitchMsMin": 5,
+    "exposureHitchMsMax": 15,
+    "slowdownProbability": 0.02,
+    "slowdownFactorMin": 1.12,
+    "slowdownFactorMax": 1.28
+  },
+  "frameNoise": {
+    "seed": 284739102,
+    "readSigma": 1.0,
+    "shotScale": 2.5,
+    "chromaR": 1.0,
+    "chromaG": 0.85,
+    "chromaB": 1.3,
+    "enabled": true
+  },
   "videoTrackSpoof": {
     "settings": {
       "aspectRatio": 0.75,

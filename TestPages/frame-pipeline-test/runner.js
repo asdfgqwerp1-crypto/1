@@ -37,6 +37,9 @@
       cameras: profile.cameras,
       microphones: profile.microphones,
       mediaCapabilities: profile.mediaCapabilities,
+      mediaPresets: profile.mediaPresets,
+      frameTiming: profile.frameTiming,
+      frameNoise: profile.frameNoise,
       videoTrackSpoof: profile.videoTrackSpoof,
       audioTrackSpoof: profile.audioTrackSpoof
     };
@@ -55,6 +58,38 @@
   function isPlaceholderGreen(px) {
     if (!px) return true;
     return px.r < 60 && px.g > 40 && px.g < 90 && px.b < 70;
+  }
+
+  function coverCropRect(srcW, srcH, dstW, dstH) {
+    if (!srcW || !srcH || !dstW || !dstH) {
+      return { sx: 0, sy: 0, sw: srcW || dstW, sh: srcH || dstH };
+    }
+    var srcAspect = srcW / srcH;
+    var dstAspect = dstW / dstH;
+    var sw, sh, sx, sy;
+    if (srcAspect > dstAspect) {
+      sh = srcH;
+      sw = srcH * dstAspect;
+      sx = (srcW - sw) * 0.5;
+      sy = 0;
+    } else {
+      sw = srcW;
+      sh = srcW / dstAspect;
+      sx = 0;
+      sy = (srcH - sh) * 0.5;
+    }
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
+  }
+
+  function testCoverCropMath() {
+    var wide = coverCropRect(1920, 1080, 480, 640);
+    assert('cover crop 16:9→3:4 crops width', Math.abs(wide.sw - 810) < 0.1,
+      'sw=' + wide.sw);
+    assert('cover crop 16:9→3:4 centered', Math.abs(wide.sx - 555) < 0.1,
+      'sx=' + wide.sx);
+
+    var same = coverCropRect(1280, 720, 1280, 720);
+    assert('cover crop same size full frame', same.sw === 1280 && same.sh === 720);
   }
 
   function countStreamFrames(video, ms) {
@@ -79,6 +114,7 @@
 
   async function run() {
     logEl.textContent = '';
+    testCoverCropMath();
     try {
       var profileRes = await fetch('/profiles/iphone11_ios265.json');
       var profile = await profileRes.json();
@@ -88,8 +124,8 @@
       window.__SAFARI_SPOOF_CONFIG__.frameDelivery = mode === 'jpeg' ? 'jpeg' : 'nv12';
       window.__SAFARI_SPOOF_FRAME_URL__ = mode === 'jpeg' ? '/frame/jpeg-live' : '/frame/latest';
       if (mode === 'nv12') {
-        window.__spoofPartURL__ = function (seq, index) {
-          return '/frame/part?seq=' + seq + '&p=' + index + '&t=' + Date.now();
+        window.__spoofPartURL__ = function (_seq, index) {
+          return '/frame/part?p=' + index + '&t=' + Date.now();
         };
       }
       window.webkit = {

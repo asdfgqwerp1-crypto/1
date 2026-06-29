@@ -85,6 +85,21 @@ final class ProfileStore {
             widthMin: 1, widthMax: 4032,
             heightMin: 1, heightMax: 3024
         ),
+        mediaPresets: [
+            .init(id: "selfie_vga", width: 480, height: 640, frameRate: 30, aspectRatio: 0.75),
+            .init(id: "selfie_hd", width: 1280, height: 720, frameRate: 30, aspectRatio: 16.0 / 9.0),
+            .init(id: "selfie_fhd", width: 1920, height: 1080, frameRate: 30, aspectRatio: 16.0 / 9.0)
+        ],
+        frameTiming: .iphoneDefault,
+        frameNoise: .init(
+            seed: 284739102,
+            readSigma: 1.0,
+            shotScale: 2.5,
+            chromaR: 1.0,
+            chromaG: 0.85,
+            chromaB: 1.3,
+            enabled: true
+        ),
         videoTrackSpoof: nil,
         audioTrackSpoof: nil
     )

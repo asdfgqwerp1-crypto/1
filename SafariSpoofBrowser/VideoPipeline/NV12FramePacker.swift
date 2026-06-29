@@ -1,12 +1,9 @@
 import AVFoundation
-import CoreImage
 import CoreVideo
 import Foundation
 import QuartzCore
 
 enum NV12FramePacker {
-    private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
-
     static func scaledNV12Buffer(from source: CVPixelBuffer, width: Int, height: Int) -> CVPixelBuffer? {
         let attrs: [String: Any] = [
             kCVPixelBufferIOSurfacePropertiesKey as String: [:]
@@ -22,11 +19,7 @@ enum NV12FramePacker {
         )
         guard status == kCVReturnSuccess, let output else { return nil }
 
-        let image = CIImage(cvPixelBuffer: source)
-        let scaleX = CGFloat(width) / image.extent.width
-        let scaleY = CGFloat(height) / image.extent.height
-        let scaled = image.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-        ciContext.render(scaled, to: output)
+        FrameScaler.renderAspectFill(from: source, to: output)
         return output
     }
 

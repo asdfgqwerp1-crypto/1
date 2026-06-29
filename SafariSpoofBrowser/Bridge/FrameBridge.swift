@@ -9,7 +9,7 @@ struct FrameBridgeMetrics: Equatable {
 }
 
 protocol FrameBridgeDelegate: AnyObject {
-    func frameBridgeDidRequestStreamStart()
+    func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?)
     func frameBridgeDidRequestStreamStop()
 }
 
@@ -33,8 +33,8 @@ final class FrameBridge: NSObject {
     private(set) var isDeliveryEnabled = false
     private var lastSendTime: CFAbsoluteTime = 0
     private var hasStartedPoll = false
-    private let minInterval: CFAbsoluteTime = 1.0 / 16.0
-    private var sendJitterMs: Double = 0
+    private var frameTiming = FrameTiming.iphoneDefault
+    private var sendFrameIndex: UInt64 = 0
 
     var isDelivering: Bool { isDeliveryEnabled }
 
@@ -69,18 +69,19 @@ final class FrameBridge: NSObject {
         height: Int,
         sequence: UInt64,
         presentationTimeUs: UInt64,
-        captureTimestamp: CFAbsoluteTime
+        captureTimestamp: CFAbsoluteTime,
+        jpegMirror: Data? = nil
     ) {
         guard isDeliveryEnabled else { return }
         let maxBytes = format == .nv12 ? Self.maxNV12PayloadBytes : Self.maxJPEGPayloadBytes
         guard data.count <= maxBytes else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
-        let interval = minInterval + (sendJitterMs / 1000.0)
+        let interval = frameTiming.nextIntervalSeconds(frameIndex: sendFrameIndex)
         guard now - lastSendTime >= interval else { return }
 
         lastSendTime = now
-        sendJitterMs = Double.random(in: -10...14)
+        sendFrameIndex &+= 1
         let latency = (now - captureTimestamp) * 1000
 
         if format == .nv12 {
@@ -91,8 +92,18 @@ final class FrameBridge: NSObject {
                 presentationTimeUs: presentationTimeUs,
                 data: data
             )
+            let mirrorFrame = jpegMirror.map {
+                SpoofFrame(
+                    data: $0,
+                    format: .jpeg,
+                    width: width,
+                    height: height,
+                    sequence: sequence,
+                    presentationTimeUs: presentationTimeUs
+                )
+            }
             if chunked.chunkCount > 1 {
-                schemeHandler.updateChunkedNV12(chunked)
+                schemeHandler.updateChunkedNV12(chunked, jpegMirror: mirrorFrame)
             } else {
                 schemeHandler.updateFrame(
                     SpoofFrame(
@@ -165,9 +176,25 @@ extension FrameBridge: WKScriptMessageHandler {
         case "startStream":
             isDeliveryEnabled = true
             hasStartedPoll = false
+            sendFrameIndex = 0
             schemeHandler.clearFrame()
+            let streamConfig = Self.parseStreamConfig(from: body)
+            if let frameRate = streamConfig?.frameRate {
+                frameTiming = FrameTiming(
+                    targetFrameRate: frameRate,
+                    minDeliverFps: frameTiming.minDeliverFps,
+                    jitterMsMin: frameTiming.jitterMsMin,
+                    jitterMsMax: frameTiming.jitterMsMax,
+                    exposureHitchInterval: frameTiming.exposureHitchInterval,
+                    exposureHitchMsMin: frameTiming.exposureHitchMsMin,
+                    exposureHitchMsMax: frameTiming.exposureHitchMsMax,
+                    slowdownProbability: frameTiming.slowdownProbability,
+                    slowdownFactorMin: frameTiming.slowdownFactorMin,
+                    slowdownFactorMax: frameTiming.slowdownFactorMax
+                )
+            }
             DispatchQueue.main.async { [weak self] in
-                self?.delegate?.frameBridgeDidRequestStreamStart()
+                self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
             }
         case "stopStream":
             isDeliveryEnabled = false
@@ -179,5 +206,12 @@ extension FrameBridge: WKScriptMessageHandler {
         default:
             break
         }
+    }
+
+    private static func parseStreamConfig(from body: [String: Any]) -> StreamDeliveryConfig? {
+        guard let width = body["width"] as? Int,
+              let height = body["height"] as? Int else { return nil }
+        let frameRate = (body["frameRate"] as? Double) ?? (body["frameRate"] as? Int).map(Double.init) ?? 30
+        return StreamDeliveryConfig(width: width, height: height, frameRate: frameRate)
     }
 }

@@ -1,6 +1,5 @@
 import AVFoundation
 import UIKit
-import CoreImage
 
 final class VideoPipeline: NSObject {
     private let frameBridge: FrameBridge
@@ -15,9 +14,8 @@ final class VideoPipeline: NSObject {
     private var lastFrameTime: CFAbsoluteTime = 0
     private var configureAttempts = 0
     private var frameSequence: UInt64 = 0
-    private let minFrameInterval: CFAbsoluteTime = 1.0 / 16.0
-    private var encodeJitterMs: Double = 0
-    private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
+    private var frameTiming = FrameTiming.iphoneDefault
+    private var streamDelivery: StreamDeliveryConfig?
 
     init(frameBridge: FrameBridge) {
         self.frameBridge = frameBridge
@@ -26,6 +24,14 @@ final class VideoPipeline: NSObject {
 
     func updateProfile(_ profile: DeviceProfile) {
         activeProfile = profile
+        frameTiming = profile.resolvedFrameTiming
+    }
+
+    func updateStreamDelivery(_ config: StreamDeliveryConfig) {
+        streamDelivery = config
+        if let profile = activeProfile {
+            activeProfile = profile.withStreamDelivery(config)
+        }
     }
 
     func start(source: VideoSourceType, profile: DeviceProfile) {
@@ -52,6 +58,7 @@ final class VideoPipeline: NSObject {
         isRunning = false
         lastFrameTime = 0
         frameSequence = 0
+        streamDelivery = nil
         sessionQueue.async { [weak self] in
             guard let self else { return }
             if self.session.isRunning { self.session.stopRunning() }
@@ -178,10 +185,9 @@ final class VideoPipeline: NSObject {
               let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
-        let interval = minFrameInterval + (encodeJitterMs / 1000.0)
+        let interval = frameTiming.nextIntervalSeconds(frameIndex: frameSequence)
         guard now - lastFrameTime >= interval else { return }
         lastFrameTime = now
-        encodeJitterMs = Double.random(in: -8...12)
 
         let ptsUs = NV12FramePacker.presentationTimeUs(from: sampleBuffer)
         sendPixelBuffer(pixelBuffer, profile: profile, captureTimestamp: now, presentationTimeUs: ptsUs)
@@ -195,10 +201,9 @@ final class VideoPipeline: NSObject {
         guard isRunning, frameBridge.isDelivering else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
-        let interval = minFrameInterval + (encodeJitterMs / 1000.0)
+        let interval = frameTiming.nextIntervalSeconds(frameIndex: frameSequence)
         guard now - lastFrameTime >= interval else { return }
         lastFrameTime = now
-        encodeJitterMs = Double.random(in: -8...12)
 
         sendPixelBuffer(pixelBuffer, profile: profile, captureTimestamp: now, presentationTimeUs: presentationTimeUs)
     }
@@ -209,8 +214,8 @@ final class VideoPipeline: NSObject {
         captureTimestamp: CFAbsoluteTime,
         presentationTimeUs: UInt64
     ) {
-        let targetWidth = profile.mediaCapabilities.width
-        let targetHeight = profile.mediaCapabilities.height
+        let targetWidth = streamDelivery?.width ?? profile.mediaCapabilities.width
+        let targetHeight = streamDelivery?.height ?? profile.mediaCapabilities.height
         let useNV12 = profile.resolvedFrameDelivery == .nv12
 
         frameSequence &+= 1
@@ -218,6 +223,7 @@ final class VideoPipeline: NSObject {
         if useNV12,
            let nv12Buffer = NV12FramePacker.scaledNV12Buffer(from: pixelBuffer, width: targetWidth, height: targetHeight),
            let packed = NV12FramePacker.pack(nv12Buffer) {
+            let jpegMirror = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight)
             frameBridge.sendFrame(
                 data: packed,
                 format: .nv12,
@@ -225,7 +231,8 @@ final class VideoPipeline: NSObject {
                 height: targetHeight,
                 sequence: frameSequence,
                 presentationTimeUs: presentationTimeUs,
-                captureTimestamp: captureTimestamp
+                captureTimestamp: captureTimestamp,
+                jpegMirror: jpegMirror
             )
             return
         }
@@ -258,11 +265,7 @@ final class VideoPipeline: NSObject {
         )
         guard status == kCVReturnSuccess, let output = outputBuffer else { return nil }
 
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let scaleX = CGFloat(width) / ciImage.extent.width
-        let scaleY = CGFloat(height) / ciImage.extent.height
-        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-        ciContext.render(scaled, to: output)
+        FrameScaler.renderAspectFill(from: pixelBuffer, to: output)
 
         CVPixelBufferLockBaseAddress(output, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(output, .readOnly) }

@@ -33,7 +33,81 @@
     return !!(constraints && constraints.audio);
   }
 
-  function startNativePipeline() {
+  function constraintValue(video, key) {
+    if (!video || typeof video !== 'object') return undefined;
+    var v = video[key];
+    if (v === undefined || v === null) return undefined;
+    if (typeof v === 'number') return v;
+    if (typeof v === 'object') {
+      if (v.exact !== undefined) return v.exact;
+      if (v.ideal !== undefined) return v.ideal;
+      if (v.min !== undefined && v.max !== undefined) return (v.min + v.max) / 2;
+      if (v.min !== undefined) return v.min;
+      if (v.max !== undefined) return v.max;
+    }
+    return undefined;
+  }
+
+  function selectMediaPreset(constraints) {
+    var presets = config.mediaPresets || [];
+    var base = {
+      id: 'default',
+      width: config.mediaCapabilities.width,
+      height: config.mediaCapabilities.height,
+      frameRate: config.mediaCapabilities.frameRate,
+      aspectRatio: config.mediaCapabilities.width / config.mediaCapabilities.height
+    };
+    if (!presets.length) return base;
+
+    var video = constraints && constraints.video;
+    var reqW = constraintValue(video, 'width');
+    var reqH = constraintValue(video, 'height');
+    var reqAspect = constraintValue(video, 'aspectRatio');
+
+    var best = null;
+    var bestScore = Infinity;
+    presets.forEach(function (preset) {
+      var aspect = preset.aspectRatio || (preset.width / preset.height);
+      var score = 0;
+      if (reqW) score += Math.abs(preset.width - reqW) * 2;
+      if (reqH) score += Math.abs(preset.height - reqH) * 2;
+      if (reqAspect) score += Math.abs(aspect - reqAspect) * 1000;
+      if (reqW && reqH && preset.width === reqW && preset.height === reqH) score -= 10000;
+      if (score < bestScore) {
+        bestScore = score;
+        best = preset;
+      }
+    });
+    return best || base;
+  }
+
+  function applyMediaPreset(preset) {
+    var active = {
+      id: preset.id || 'default',
+      width: preset.width,
+      height: preset.height,
+      frameRate: preset.frameRate || config.mediaCapabilities.frameRate || 30,
+      aspectRatio: preset.aspectRatio || (preset.width / preset.height)
+    };
+    window.__spoofActiveMediaCapabilities = active;
+    config.mediaCapabilities = Object.assign({}, config.mediaCapabilities, {
+      width: active.width,
+      height: active.height,
+      frameRate: active.frameRate
+    });
+    return active;
+  }
+
+  function activeMediaCapabilities() {
+    return window.__spoofActiveMediaCapabilities || {
+      width: config.mediaCapabilities.width,
+      height: config.mediaCapabilities.height,
+      frameRate: config.mediaCapabilities.frameRate || 30,
+      aspectRatio: config.mediaCapabilities.width / config.mediaCapabilities.height
+    };
+  }
+
+  function startNativePipeline(active) {
     if (window.__spoofStopFramePoll) {
       window.__spoofStopFramePoll();
     }
@@ -42,7 +116,12 @@
     }
     window.__spoofFrameCount = 0;
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
-      window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
+      window.webkit.messageHandlers.spoofFrameBridge.postMessage({
+        event: 'startStream',
+        width: active.width,
+        height: active.height,
+        frameRate: active.frameRate
+      });
     }
     if (window.__spoofStartFramePoll) {
       window.__spoofStartFramePoll();
@@ -164,7 +243,9 @@
             return;
           }
 
-          startNativePipeline();
+          var preset = selectMediaPreset(constraints);
+          var active = applyMediaPreset(preset);
+          startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
           waitForFrames(1, 6000).then(function (gotFrame) {
@@ -173,7 +254,7 @@
               return;
             }
             try {
-              var fps = Math.min(config.mediaCapabilities.frameRate || 30, 30);
+              var fps = Math.min(activeMediaCapabilities().frameRate || 30, 30);
               var stream;
               try {
                 stream = canvas.captureStream(fps);
@@ -197,8 +278,9 @@
                   function pumpFrame() {
                     if (!pumpActive || track.readyState === 'ended') return;
                     try { track.requestFrame(); } catch (e) {}
-                    var jitter = Math.floor(Math.random() * 18) - 6;
-                    setTimeout(pumpFrame, Math.max(28, Math.round(1000 / fps) + jitter));
+                    var timing = config.frameTiming || {};
+                    var jitter = Math.random() * ((timing.jitterMsMax || 10) - (timing.jitterMsMin || -6)) + (timing.jitterMsMin || -6);
+                    setTimeout(pumpFrame, Math.max(1000 / (timing.minDeliverFps || 24), Math.round(1000 / fps) + jitter));
                   }
                   pumpFrame();
                   track.addEventListener('ended', function () { pumpActive = false; });
@@ -339,6 +421,16 @@
     window.addEventListener('load', hookNavigatorMediaDevices);
     window.addEventListener('pageshow', hookNavigatorMediaDevices);
   }
+
+  window.__spoofApplyMediaPreset = applyMediaPreset;
+  window.__spoofGetActiveCaps = activeMediaCapabilities;
+  window.__spoofSelectMediaPreset = selectMediaPreset;
+
+  try {
+    Object.defineProperty(window, '__spoofApplyMediaPreset', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofGetActiveCaps', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofSelectMediaPreset', { enumerable: false, configurable: true, writable: true });
+  } catch (e) {}
 
   scheduleInstall();
 })();

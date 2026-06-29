@@ -26,7 +26,7 @@ struct SettingsView: View {
 
                 Section("Frame Delivery") {
                     LabeledContent("Format", value: "JPEG")
-                    Text("Стабильный путь для iOS WKWebView (~16 fps). NV12 отключён.")
+                    Text("JPEG + VFR ~30 fps. Пресеты 480p/720p/1080p по constraints.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

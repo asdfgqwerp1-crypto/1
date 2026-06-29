@@ -18,6 +18,9 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
     let cameras: [CameraDevice]
     let microphones: [AudioDevice]
     let mediaCapabilities: MediaCapabilities
+    let mediaPresets: [MediaPreset]?
+    let frameTiming: FrameTiming?
+    let frameNoise: FrameNoise?
     let videoTrackSpoof: VideoTrackSpoof?
     let audioTrackSpoof: AudioTrackSpoof?
 
@@ -85,6 +88,24 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         let heightMax: Int
     }
 
+    struct MediaPreset: Codable, Equatable, Identifiable {
+        let id: String
+        let width: Int
+        let height: Int
+        let frameRate: Double?
+        let aspectRatio: Double?
+    }
+
+    struct FrameNoise: Codable, Equatable {
+        let seed: UInt32
+        let readSigma: Double?
+        let shotScale: Double?
+        let chromaR: Double?
+        let chromaG: Double?
+        let chromaB: Double?
+        let enabled: Bool?
+    }
+
     struct VideoTrackSpoof: Codable, Equatable {
         let settings: VideoTrackSettings
         let capabilities: VideoTrackCapabilities
@@ -130,6 +151,10 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         frameDelivery ?? .jpeg
     }
 
+    var resolvedFrameTiming: FrameTiming {
+        frameTiming ?? .iphoneDefault
+    }
+
     func withFrameDelivery(_ format: FrameDeliveryFormat) -> DeviceProfile {
         DeviceProfile(
             id: id,
@@ -144,6 +169,42 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
             cameras: cameras,
             microphones: microphones,
             mediaCapabilities: mediaCapabilities,
+            mediaPresets: mediaPresets,
+            frameTiming: frameTiming,
+            frameNoise: frameNoise,
+            videoTrackSpoof: videoTrackSpoof,
+            audioTrackSpoof: audioTrackSpoof
+        )
+    }
+
+    func withStreamDelivery(_ config: StreamDeliveryConfig) -> DeviceProfile {
+        let caps = MediaCapabilities(
+            width: config.width,
+            height: config.height,
+            frameRate: config.frameRate,
+            minFrameRate: mediaCapabilities.minFrameRate,
+            maxFrameRate: mediaCapabilities.maxFrameRate,
+            widthMin: mediaCapabilities.widthMin,
+            widthMax: mediaCapabilities.widthMax,
+            heightMin: mediaCapabilities.heightMin,
+            heightMax: mediaCapabilities.heightMax
+        )
+        return DeviceProfile(
+            id: id,
+            displayName: displayName,
+            userAgent: userAgent,
+            emulateSafariObject: emulateSafariObject,
+            frameDelivery: resolvedFrameDelivery,
+            navigator: navigator,
+            screen: screen,
+            webgl: webgl,
+            audio: audio,
+            cameras: cameras,
+            microphones: microphones,
+            mediaCapabilities: caps,
+            mediaPresets: mediaPresets,
+            frameTiming: frameTiming,
+            frameNoise: frameNoise,
             videoTrackSpoof: videoTrackSpoof,
             audioTrackSpoof: audioTrackSpoof
         )
@@ -171,6 +232,9 @@ private struct InjectionConfig: Encodable {
     let cameras: [DeviceProfile.CameraDevice]
     let microphones: [DeviceProfile.AudioDevice]
     let mediaCapabilities: DeviceProfile.MediaCapabilities
+    let mediaPresets: [DeviceProfile.MediaPreset]?
+    let frameTiming: FrameTiming?
+    let frameNoise: DeviceProfile.FrameNoise?
     let videoTrackSpoof: DeviceProfile.VideoTrackSpoof?
     let audioTrackSpoof: DeviceProfile.AudioTrackSpoof?
 
@@ -185,6 +249,9 @@ private struct InjectionConfig: Encodable {
         cameras = profile.cameras
         microphones = profile.microphones
         mediaCapabilities = profile.mediaCapabilities
+        mediaPresets = profile.mediaPresets
+        frameTiming = profile.resolvedFrameTiming
+        frameNoise = profile.frameNoise
         videoTrackSpoof = profile.videoTrackSpoof
         audioTrackSpoof = profile.audioTrackSpoof
     }

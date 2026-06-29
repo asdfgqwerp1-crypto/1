@@ -145,6 +145,10 @@ class FrameTestHandler(SimpleHTTPRequestHandler):
     def do_GET(self) -> None:
         global FRAME_SEQ
         clean = unquote(self.path.split("?", 1)[0])
+        if clean == "/frame/jpeg":
+            FRAME_SEQ += 1
+            self._send_frame(JPEG_FRAME, "jpeg", FRAME_WIDTH, FRAME_HEIGHT, FRAME_SEQ, 1)
+            return
         if clean == "/frame/part":
             part = int(self._query("p") or "-1")
             if 0 <= part < len(NV12_CHUNKS):

@@ -57,10 +57,13 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         }
     }
 
-    func frameBridgeDidRequestStreamStart() {
+    func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?) {
         Task {
             let granted = await Self.requestCameraAccessIfNeeded()
             if granted {
+                if let config {
+                    videoPipeline.updateStreamDelivery(config)
+                }
                 startVideoPipeline()
             }
         }

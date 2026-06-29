@@ -76,8 +76,15 @@
     return cameras[0];
   }
 
+  function activeCaps() {
+    if (typeof window.__spoofGetActiveCaps === 'function') {
+      return window.__spoofGetActiveCaps();
+    }
+    return config.mediaCapabilities;
+  }
+
   function buildVideoSettings(device) {
-    var caps = config.mediaCapabilities;
+    var caps = activeCaps();
     var extra = (config.videoTrackSpoof && config.videoTrackSpoof.settings) || {};
     return {
       width: caps.width,
@@ -96,6 +103,7 @@
 
   function buildVideoCapabilities(device) {
     var caps = config.mediaCapabilities;
+    var active = activeCaps();
     var extra = (config.videoTrackSpoof && config.videoTrackSpoof.capabilities) || {};
     return {
       aspectRatio: {

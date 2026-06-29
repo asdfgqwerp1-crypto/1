@@ -9,10 +9,11 @@
   var ctx = null;
   var pollTimer = null;
   var pollActive = false;
-  var pollBaseMs = Math.round(1000 / 16);
+  var pollFrameIndex = 0;
   var isDrawing = false;
   var rgbaBuffer = null;
   var nv12ScratchCanvas = null;
+  var noiseScratchCanvas = null;
   var nv12GlRenderer = null;
   var uvUnpackBuffer = null;
   var lastFrameSeq = 0;
@@ -27,10 +28,18 @@
     }
   }
 
+  function activeCaps() {
+    if (typeof window.__spoofGetActiveCaps === 'function') {
+      return window.__spoofGetActiveCaps();
+    }
+    return caps;
+  }
+
   function makeCanvas() {
+    var active = activeCaps();
     var node = document.createElement('canvas');
-    node.width = caps.width;
-    node.height = caps.height;
+    node.width = active.width;
+    node.height = active.height;
     mountCanvas(node);
     return node;
   }
@@ -51,11 +60,32 @@
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
 
-  function partURL(seq, index) {
+  function partURL(index) {
     if (typeof window.__spoofPartURL__ === 'function') {
-      return window.__spoofPartURL__(seq, index);
+      return window.__spoofPartURL__(0, index);
     }
-    return 'spoofframe://frame/part?seq=' + seq + '&p=' + index + '&t=' + Date.now();
+    return 'spoofframe://frame/part?p=' + index + '&t=' + Date.now();
+  }
+
+  function jpegMirrorURL() {
+    return 'spoofframe://frame/jpeg?t=' + Date.now();
+  }
+
+  function fetchJpegMirror(meta, onDone) {
+    window.__spoofFrameTransport = 'jpeg-mirror-fallback';
+    fetch(jpegMirrorURL(), fetchOptions)
+      .then(function (response) {
+        if (!response.ok) throw new Error('bad jpeg mirror');
+        return response.blob();
+      })
+      .then(function (blob) {
+        drawBlobAsImage(blob, meta, function () {
+          if (onDone) onDone(true);
+        });
+      })
+      .catch(function () {
+        if (onDone) onDone(false);
+      });
   }
 
   function blobToArrayBuffer(blob) {
@@ -72,10 +102,100 @@
 
   function markFrameDrawn(meta) {
     window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
+    pollFrameIndex += 1;
     if (meta) {
       window.__spoofLastFrameSeq = meta.seq;
       window.__spoofLastPtsUs = meta.ptsUs;
     }
+  }
+
+  function seededRng(seed) {
+    var state = seed >>> 0;
+    return function () {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+  }
+
+  function gaussian(rng) {
+    var u = 0;
+    var v = 0;
+    while (u === 0) u = rng();
+    while (v === 0) v = rng();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  function applySensorNoise(ctx, width, height, frameSeed) {
+    var noise = config.frameNoise;
+    if (!noise || noise.enabled === false || !ctx) return;
+    var pixels = width * height;
+    var step = pixels > 1244160 ? 3 : (pixels > 307200 ? 2 : 1);
+    var rng = seededRng(((noise.seed || 0) ^ (frameSeed || 0)) >>> 0);
+    var readSigma = noise.readSigma != null ? noise.readSigma : 1.0;
+    var shotScale = noise.shotScale != null ? noise.shotScale : 2.5;
+    var chromaR = noise.chromaR != null ? noise.chromaR : 1.0;
+    var chromaG = noise.chromaG != null ? noise.chromaG : 0.85;
+    var chromaB = noise.chromaB != null ? noise.chromaB : 1.3;
+    var image = ctx.getImageData(0, 0, width, height);
+    var d = image.data;
+    for (var i = 0; i < d.length; i += 4 * step) {
+      var r = d[i];
+      var g = d[i + 1];
+      var b = d[i + 2];
+      var luma = 0.299 * r + 0.587 * g + 0.114 * b;
+      var shot = shotScale * Math.sqrt(Math.max(luma, 0) / 255);
+      var n = readSigma * gaussian(rng) + shot * gaussian(rng);
+      d[i] = clampByte(r + n * chromaR);
+      d[i + 1] = clampByte(g + n * chromaG);
+      d[i + 2] = clampByte(b + n * chromaB);
+      if (step > 1) {
+        for (var k = 1; k < step && i + 4 * k < d.length; k++) {
+          var j = i + 4 * k;
+          d[j] = d[i];
+          d[j + 1] = d[i + 1];
+          d[j + 2] = d[i + 2];
+        }
+      }
+    }
+    var scratch = ensureNoiseScratchCanvas(width, height);
+    var scratchCtx = scratch.getContext('2d');
+    scratchCtx.putImageData(image, 0, 0);
+    ctx.drawImage(scratch, 0, 0, width, height);
+  }
+
+  function ensureNoiseScratchCanvas(width, height) {
+    if (!noiseScratchCanvas) {
+      noiseScratchCanvas = document.createElement('canvas');
+    }
+    if (noiseScratchCanvas.width !== width || noiseScratchCanvas.height !== height) {
+      noiseScratchCanvas.width = width;
+      noiseScratchCanvas.height = height;
+    }
+    return noiseScratchCanvas;
+  }
+
+  function finishFrame(meta, onDone) {
+    if (ctx && canvas) {
+      applySensorNoise(ctx, canvas.width, canvas.height, meta ? meta.seq : pollFrameIndex);
+    }
+    markFrameDrawn(meta);
+    if (onDone) onDone();
+  }
+
+  function nextPollDelayMs() {
+    var timing = config.frameTiming || {};
+    var fps = timing.targetFrameRate || 30;
+    var ms = 1000 / fps;
+    var jitter = Math.random() * ((timing.jitterMsMax || 10) - (timing.jitterMsMin || -6)) + (timing.jitterMsMin || -6);
+    ms += jitter;
+    var hitchEvery = timing.exposureHitchInterval || 90;
+    if (hitchEvery > 0 && pollFrameIndex > 0 && pollFrameIndex % hitchEvery === 0) {
+      ms += Math.random() * ((timing.exposureHitchMsMax || 15) - (timing.exposureHitchMsMin || 5)) + (timing.exposureHitchMsMin || 5);
+    }
+    if (Math.random() < (timing.slowdownProbability || 0)) {
+      ms *= Math.random() * ((timing.slowdownFactorMax || 1.28) - (timing.slowdownFactorMin || 1.12)) + (timing.slowdownFactorMin || 1.12);
+    }
+    return Math.max(1000 / (timing.minDeliverFps || 24), ms);
   }
 
   function clampByte(v) {
@@ -142,61 +262,57 @@
 
   function fetchChunkedNV12(meta, onDone) {
     var parts = meta.chunkCount;
-    var seq = meta.seq;
     if (!parts || parts < 2) {
       if (onDone) onDone(false);
       return;
     }
     window.__spoofFrameTransport = 'chunked-nv12';
-    var pending = parts;
     var buffers = new Array(parts);
     var failed = false;
 
-    function finish(ok) {
-      if (onDone) onDone(!!ok);
-    }
-
-    function tryAssemble() {
+    function fetchPart(index) {
       if (failed) return;
-      if (pending > 0) return;
-      var total = 0;
-      var i;
-      for (i = 0; i < buffers.length; i++) {
-        if (!buffers[i]) {
-          finish(false);
-          return;
+      if (index >= parts) {
+        var total = 0;
+        var i;
+        for (i = 0; i < buffers.length; i++) {
+          if (!buffers[i]) {
+            fetchJpegMirror(meta, onDone);
+            return;
+          }
+          total += buffers[i].byteLength;
         }
-        total += buffers[i].byteLength;
+        var out = new Uint8Array(total);
+        var offset = 0;
+        for (i = 0; i < buffers.length; i++) {
+          out.set(new Uint8Array(buffers[i]), offset);
+          offset += buffers[i].byteLength;
+        }
+        if (drawNV12(out.buffer, meta)) {
+          if (onDone) onDone(true);
+        } else {
+          fetchJpegMirror(meta, onDone);
+        }
+        return;
       }
-      var out = new Uint8Array(total);
-      var offset = 0;
-      for (i = 0; i < buffers.length; i++) {
-        out.set(new Uint8Array(buffers[i]), offset);
-        offset += buffers[i].byteLength;
-      }
-      finish(drawNV12(out.buffer, meta));
+      fetch(partURL(index), fetchOptions)
+        .then(function (response) {
+          if (!response.ok) throw new Error('bad chunk');
+          return response.blob().then(function (blob) {
+            return blobToArrayBuffer(blob);
+          });
+        })
+        .then(function (buf) {
+          buffers[index] = buf;
+          fetchPart(index + 1);
+        })
+        .catch(function () {
+          failed = true;
+          fetchJpegMirror(meta, onDone);
+        });
     }
 
-    for (var p = 0; p < parts; p++) {
-      (function (index) {
-        fetch(partURL(seq, index), fetchOptions)
-          .then(function (response) {
-            if (!response.ok) throw new Error('bad chunk');
-            return response.blob().then(function (blob) {
-              return blobToArrayBuffer(blob);
-            });
-          })
-          .then(function (buf) {
-            buffers[index] = buf;
-            pending -= 1;
-            tryAssemble();
-          })
-          .catch(function () {
-            failed = true;
-            finish(false);
-          });
-      })(p);
-    }
+    fetchPart(0);
   }
 
   function expectedNV12Bytes(width, height) {
@@ -221,6 +337,39 @@
     if (buffer.byteLength >= expectedNV12Bytes(width, height)) return 'nv12';
     if (preferNV12) return 'nv12';
     return 'jpeg';
+  }
+
+  function coverCropRect(srcW, srcH, dstW, dstH) {
+    if (!srcW || !srcH || !dstW || !dstH) {
+      return { sx: 0, sy: 0, sw: srcW || dstW, sh: srcH || dstH };
+    }
+    var srcAspect = srcW / srcH;
+    var dstAspect = dstW / dstH;
+    var sw, sh, sx, sy;
+    if (srcAspect > dstAspect) {
+      sh = srcH;
+      sw = srcH * dstAspect;
+      sx = (srcW - sw) * 0.5;
+      sy = 0;
+    } else {
+      sw = srcW;
+      sh = srcW / dstAspect;
+      sx = 0;
+      sy = (srcH - sh) * 0.5;
+    }
+    return { sx: sx, sy: sy, sw: sw, sh: sh };
+  }
+
+  function drawImageCover(ctx, source, dstW, dstH) {
+    var srcW = source.width;
+    var srcH = source.height;
+    if (!srcW || !srcH) return;
+    if (srcW === dstW && srcH === dstH) {
+      ctx.drawImage(source, 0, 0, dstW, dstH);
+      return;
+    }
+    var crop = coverCropRect(srcW, srcH, dstW, dstH);
+    ctx.drawImage(source, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, dstW, dstH);
   }
 
   function ensureScratchCanvas(width, height) {
@@ -385,7 +534,7 @@
     blitNV12ToCanvas(buffer, width, height);
     if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
     if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;
-    markFrameDrawn(meta);
+    finishFrame(meta);
     return true;
   }
 
@@ -406,10 +555,9 @@
       if (onDone) onDone();
       return;
     }
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    drawImageCover(ctx, bitmap, canvas.width, canvas.height);
     if (bitmap.close) bitmap.close();
-    markFrameDrawn(meta);
-    if (onDone) onDone();
+    finishFrame(meta, onDone);
   }
 
   function drawImageSource(src, revoke, meta, onDone) {
@@ -420,10 +568,9 @@
     var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      drawImageCover(ctx, img, canvas.width, canvas.height);
       if (revoke) URL.revokeObjectURL(src);
-      markFrameDrawn(meta);
-      if (onDone) onDone();
+      finishFrame(meta, onDone);
     };
     img.onerror = function () {
       if (revoke) URL.revokeObjectURL(src);
@@ -478,10 +625,7 @@
         if (!response.ok) throw new Error('bad status');
         var meta = parseFrameHeaders(response);
         if (meta.chunkCount > 1 && (meta.formatHeader === 'nv12' || preferNV12)) {
-          fetchChunkedNV12(meta, function (ok) {
-            if (!ok && meta.chunkCount > 1) {
-              window.__spoofFrameTransport = 'chunked-nv12-failed';
-            }
+          fetchChunkedNV12(meta, function () {
             release();
           });
           return;
@@ -503,8 +647,7 @@
 
   function schedulePoll() {
     if (!pollActive) return;
-    var jitter = Math.floor(Math.random() * 16) - 8;
-    var delay = Math.max(48, pollBaseMs + jitter);
+    var delay = nextPollDelayMs();
     pollTimer = setTimeout(function () {
       drawFrame();
       schedulePoll();
@@ -520,6 +663,7 @@
     isDrawing = false;
     lastFrameSeq = 0;
     lastPtsUs = 0;
+    pollFrameIndex = 0;
     streamStartPtsUs = 0;
     streamStartPerf = 0;
     if (canvas && canvas.parentNode) {

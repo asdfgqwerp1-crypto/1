@@ -20,18 +20,21 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
     private let queue = DispatchQueue(label: "com.safarispoof.frame.scheme")
     private var latestFrame: SpoofFrame?
     private var latestChunked: ChunkedNV12Frame?
+    private var latestJpegMirror: SpoofFrame?
 
     func updateFrame(_ frame: SpoofFrame) {
         queue.async { [weak self] in
             self?.latestChunked = nil
+            self?.latestJpegMirror = nil
             self?.latestFrame = frame
         }
     }
 
-    func updateChunkedNV12(_ chunked: ChunkedNV12Frame) {
+    func updateChunkedNV12(_ chunked: ChunkedNV12Frame, jpegMirror: SpoofFrame?) {
         queue.async { [weak self] in
             self?.latestChunked = chunked
             self?.latestFrame = chunked.metaFrame()
+            self?.latestJpegMirror = jpegMirror
         }
     }
 
@@ -39,6 +42,7 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
         queue.async { [weak self] in
             self?.latestFrame = nil
             self?.latestChunked = nil
+            self?.latestJpegMirror = nil
         }
     }
 
@@ -57,6 +61,10 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private func respondOnMain(task: WKURLSchemeTask, url: URL) {
         DispatchQueue.main.async { [self] in
+            if isJpegMirrorRequest(url) {
+                respondJpegMirror(task: task, url: url)
+                return
+            }
             if isPartRequest(url) {
                 respondPart(task: task, url: url)
                 return
@@ -77,10 +85,9 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
             return
         }
 
-        let seq = queryUInt64(url, name: "seq") ?? 0
         let partIndex = queryInt(url, name: "p") ?? -1
 
-        guard seq == chunked.sequence, partIndex >= 0, partIndex < chunked.chunkCount else {
+        guard partIndex >= 0, partIndex < chunked.chunkCount else {
             failOnMain(task: task, code: 404, message: "Chunk not found")
             return
         }
@@ -137,6 +144,18 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
         task.didReceive(response)
         task.didReceive(data)
         task.didFinish()
+    }
+
+    private func respondJpegMirror(task: WKURLSchemeTask, url: URL) {
+        let frame = latestJpegMirror ?? latestFrame ?? Self.placeholderFrame()
+        let jpegFrame = frame.format == .jpeg ? frame : Self.placeholderFrame()
+        respond(task: task, url: url, data: jpegFrame.data, frame: jpegFrame, chunkCount: 1, partIndex: nil)
+    }
+
+    private func isJpegMirrorRequest(_ url: URL) -> Bool {
+        if url.path == "/jpeg" || url.path.hasSuffix("/jpeg") { return true }
+        if url.host == "jpeg" { return true }
+        return url.absoluteString.contains("/jpeg")
     }
 
     private func isPartRequest(_ url: URL) -> Bool {
