@@ -26,9 +26,13 @@
 	<string>Camera access is required for video verification workflows.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone access is required for identity verification workflows.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Нужен доступ к тест-серверу в вашей Wi‑Fi сети (VM с TestPages).</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
 	<key>UIUserInterfaceStyle</key>

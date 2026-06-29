@@ -5,6 +5,9 @@ struct HomeView: View {
     @Binding var testServerURL: String
     let onOpenBrowser: () -> Void
 
+    @State private var reachabilityStatus = "Нажмите «Проверить сервер»"
+    @State private var isChecking = false
+
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
@@ -30,15 +33,43 @@ struct HomeView: View {
                         .foregroundStyle(.gray)
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("URL тест-сервера (VM IP):")
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("URL тест-сервера (IP Linux VM):")
                         .font(.caption)
                         .foregroundStyle(.gray)
-                    TextField("https://IP:8443/webrtc-inspector/", text: $testServerURL)
+                    TextField("https://192.168.2.113:8443/webrtc-inspector/", text: $testServerURL)
                         .textFieldStyle(.roundedBorder)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .keyboardType(.URL)
+
+                    HStack(spacing: 8) {
+                        Button("HTTP тест") {
+                            testServerURL = "http://192.168.2.113:8080/fingerprint-diff/"
+                        }
+                        .font(.caption)
+                        Button("HTTPS камера") {
+                            testServerURL = "https://192.168.2.113:8443/webrtc-inspector/"
+                        }
+                        .font(.caption)
+                    }
+
+                    Button {
+                        isChecking = true
+                        Task {
+                            reachabilityStatus = await ServerReachability.check(urlString: testServerURL)
+                            isChecking = false
+                        }
+                    } label: {
+                        Text(isChecking ? "Проверка…" : "Проверить сервер")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .disabled(isChecking)
+
+                    Text(reachabilityStatus)
+                        .font(.caption)
+                        .foregroundStyle(reachabilityStatus.contains("OK") ? .green : .red)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.horizontal, 24)
 
