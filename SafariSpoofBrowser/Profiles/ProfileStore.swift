@@ -29,13 +29,15 @@ final class ProfileStore {
         id: "iphone15pro_ios174",
         displayName: "iPhone 15 Pro (iOS 17.4)",
         userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1",
+        emulateSafariObject: nil,
         navigator: .init(
             platform: "iPhone",
             vendor: "Apple Computer, Inc.",
             maxTouchPoints: 5,
             hardwareConcurrency: 6,
             languages: ["en-US", "en"],
-            cookieEnabled: true
+            cookieEnabled: true,
+            webdriver: nil
         ),
         screen: .init(
             width: 393, height: 852,
@@ -63,6 +65,8 @@ final class ProfileStore {
             frameRate: 30, minFrameRate: 1, maxFrameRate: 60,
             widthMin: 320, widthMax: 1920,
             heightMin: 240, heightMax: 1080
-        )
+        ),
+        videoTrackSpoof: nil,
+        audioTrackSpoof: nil
     )
 }

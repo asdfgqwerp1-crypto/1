@@ -20,7 +20,7 @@ struct ContentView: View {
                 .onDisappear {
                     appState.stopVideoPipeline()
                 }
-                .onChange(of: appState.activeProfile.id) { _, _ in
+                .onChange(of: appState.activeProfile.id) { _ in
                     browserCoordinator.configure(
                         profile: appState.activeProfile,
                         frameBridge: appState.frameBridge

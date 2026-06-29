@@ -30,7 +30,7 @@ struct SettingsView: View {
                         Text("Back Camera").tag(VideoSourceType.deviceCamera(position: .back))
                         Text("Network Stream").tag(VideoSourceType.network)
                     }
-                    .onChange(of: appState.videoSource) { _, _ in
+                    .onChange(of: appState.videoSource) { _ in
                         appState.stopVideoPipeline()
                         appState.startVideoPipeline()
                     }
@@ -60,11 +60,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
+            .navigationBarItems(trailing: Button("Done") { dismiss() })
         }
     }
 }

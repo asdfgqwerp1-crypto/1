@@ -5,8 +5,4 @@ enum VideoSourceType: Equatable, Hashable {
     case networkStream(url: String)
     case network
     case file(path: String)
-
-    static func deviceCamera(position: AVCaptureDevice.Position) -> VideoSourceType {
-        .deviceCamera(position: position)
-    }
 }
