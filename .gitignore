@@ -12,4 +12,5 @@ __pycache__/
 .env
 .env.local
 Scripts/.github-token
-Scripts/node_modules/
+Scripts/node_modules/auto.crt
+auto.key
