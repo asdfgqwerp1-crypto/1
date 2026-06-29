@@ -521,14 +521,14 @@
     var renderer = ensureNV12GlRenderer(width, height);
     if (renderer) {
       renderer.draw(buffer);
-      ctx.drawImage(renderer.canvas, 0, 0, width, height);
+      drawImageCover(ctx, renderer.canvas, canvas.width, canvas.height);
       return true;
     }
     var image = ensureRgbaBuffer(width, height);
     nv12ToRGBA(buffer, width, height, image);
     var scratch = ensureScratchCanvas(width, height);
     scratch.getContext('2d').putImageData(image, 0, 0);
-    ctx.drawImage(scratch, 0, 0, width, height);
+    drawImageCover(ctx, scratch, canvas.width, canvas.height);
     return true;
   }
 
@@ -537,10 +537,6 @@
     var width = meta.width || canvas.width;
     var height = meta.height || canvas.height;
     if (buffer.byteLength < expectedNV12Bytes(width, height)) return false;
-    if (canvas.width !== width || canvas.height !== height) {
-      canvas.width = width;
-      canvas.height = height;
-    }
     blitNV12ToCanvas(buffer, width, height);
     if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
     if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;

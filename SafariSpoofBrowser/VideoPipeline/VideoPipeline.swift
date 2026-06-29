@@ -72,6 +72,11 @@ final class VideoPipeline: NSObject {
 
     func attachPreview(to view: UIView) {
         previewLayer?.removeFromSuperlayer()
+        previewLayer = nil
+        if let networkPlayer {
+            networkPlayer.attachPreview(to: view)
+            return
+        }
         let layer = AVCaptureVideoPreviewLayer(session: session)
         layer.videoGravity = .resizeAspectFill
         layer.frame = view.bounds

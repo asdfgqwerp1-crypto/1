@@ -1,0 +1,25 @@
+# Low-latency HLS for OBS → iPhone relay (MediaMTX v1.19)
+logLevel: info
+
+api: yes
+apiAddress: :9997
+
+rtmp: yes
+rtmpAddress: :1935
+
+hls: yes
+hlsAddress: :8888
+hlsAllowOrigins: ['*']
+hlsVariant: lowLatency
+hlsSegmentCount: 7
+hlsSegmentDuration: 500ms
+hlsPartDuration: 100ms
+
+pathDefaults:
+  source: publisher
+
+paths:
+  live/obs:
+    source: publisher
+  ~^live/.+$:
+    source: publisher

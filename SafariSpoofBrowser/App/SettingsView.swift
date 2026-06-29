@@ -88,5 +88,7 @@ struct VideoPreviewView: UIViewRepresentable {
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        pipeline.attachPreview(to: uiView)
+    }
 }

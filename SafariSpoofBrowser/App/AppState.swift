@@ -43,7 +43,27 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     }
 
     func startVideoPipeline() {
+        if isNetworkVideoSource {
+            frameBridge.setDeliveryEnabled(true)
+            let profile = effectiveProfile
+            videoPipeline.updateStreamDelivery(
+                StreamDeliveryConfig(
+                    width: profile.mediaCapabilities.width,
+                    height: profile.mediaCapabilities.height,
+                    frameRate: profile.mediaCapabilities.frameRate
+                )
+            )
+        }
         videoPipeline.start(source: videoSource, profile: effectiveProfile)
+    }
+
+    private var isNetworkVideoSource: Bool {
+        switch videoSource {
+        case .networkStream, .network:
+            return true
+        default:
+            return false
+        }
     }
 
     func stopVideoPipeline() {
@@ -59,13 +79,12 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
 
     func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?) {
         Task {
-            let granted = await Self.requestCameraAccessIfNeeded()
-            if granted {
-                if let config {
-                    videoPipeline.updateStreamDelivery(config)
-                }
-                startVideoPipeline()
+            let granted = isNetworkVideoSource || await Self.requestCameraAccessIfNeeded()
+            guard granted else { return }
+            if let config {
+                videoPipeline.updateStreamDelivery(config)
             }
+            startVideoPipeline()
         }
     }
 
