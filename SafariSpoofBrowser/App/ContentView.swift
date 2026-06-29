@@ -36,7 +36,7 @@ struct ContentView: View {
             Text(appState.activeProfile.displayName)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text(BuildInfo.marker)
+            Text("\(BuildInfo.marker) \(appState.activeProfile.id)")
                 .font(.caption2.monospaced())
                 .foregroundStyle(.orange)
             Spacer()

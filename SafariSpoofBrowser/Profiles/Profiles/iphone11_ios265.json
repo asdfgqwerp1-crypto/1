@@ -40,13 +40,7 @@
     {
       "deviceId": "8A2C4F1B9D3E5670A1B2C3D4E5F60718293A4B5C",
       "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
-      "label": "Back Dual Camera",
-      "facingMode": "environment"
-    },
-    {
-      "deviceId": "7B1D3E2C8A4F5061B0C1D2E3F4A51627384B5C6D",
-      "groupId": "F5F15701812711DD47DDA7E4B3CDE50BA35BC0DB",
-      "label": "Back Ultra Wide Camera",
+      "label": "Back Camera",
       "facingMode": "environment"
     }
   ],
@@ -60,7 +54,7 @@
   "mediaCapabilities": {
     "width": 480,
     "height": 640,
-    "frameRate": 30,
+    "frameRate": 12,
     "minFrameRate": 1,
     "maxFrameRate": 60,
     "widthMin": 1,

@@ -98,7 +98,7 @@
 
       var devices = await navigator.mediaDevices.enumerateDevices();
       var cams = devices.filter(function (d) { return d.kind === 'videoinput'; });
-      assert('enumerateDevices cameras', cams.length >= 3, 'count=' + cams.length);
+      assert('enumerateDevices cameras', cams.length >= 2, 'count=' + cams.length);
       assert('front camera label', cams.some(function (c) { return c.label === 'Front Camera'; }));
 
       stream.getTracks().forEach(function (t) { t.stop(); });

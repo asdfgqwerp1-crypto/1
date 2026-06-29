@@ -4,16 +4,21 @@ import XCTest
 final class DeviceProfileTests: XCTestCase {
     func testFallbackProfileValid() {
         let profile = ProfileStore.fallbackProfile
-        XCTAssertEqual(profile.id, "iphone15pro_ios174")
+        XCTAssertEqual(profile.id, "iphone11_ios265")
         XCTAssertFalse(profile.userAgent.isEmpty)
-        XCTAssertFalse(profile.cameras.isEmpty)
+        XCTAssertEqual(profile.cameras.count, 2)
+    }
+
+    func testDefaultProfilePrefersIPhone11() {
+        let store = ProfileStore()
+        XCTAssertEqual(store.defaultProfile.id, "iphone11_ios265")
     }
 
     func testInjectionConfigJSON() {
         let profile = ProfileStore.fallbackProfile
         let json = profile.injectionConfigJSON
         XCTAssertTrue(json.contains("profileId"))
-        XCTAssertTrue(json.contains("iphone15pro_ios174"))
+        XCTAssertTrue(json.contains("iphone11_ios265"))
     }
 
     func testURLNormalizer() {

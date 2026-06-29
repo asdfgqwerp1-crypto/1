@@ -9,7 +9,8 @@
   canvas.height = caps.height;
   var ctx = canvas.getContext('2d');
   var pollTimer = null;
-  var pollIntervalMs = Math.round(1000 / 12);
+  var pollIntervalMs = Math.round(1000 / 8);
+  var frameImage = new Image();
   var isDrawing = false;
 
   window.__spoofCanvas = canvas;
@@ -20,45 +21,15 @@
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
 
-  function drawWithImage(url) {
-    return new Promise(function (resolve) {
-      var img = new Image();
-      img.onload = function () {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(true);
-      };
-      img.onerror = function () { resolve(false); };
-      img.src = url;
-    });
-  }
-
-  function drawWithFetch(url) {
-    if (!window.fetch) return Promise.resolve(false);
-    return fetch(url, { cache: 'no-store' })
-      .then(function (r) { return r.blob(); })
-      .then(function (blob) {
-        if (window.createImageBitmap) {
-          return createImageBitmap(blob).then(function (bitmap) {
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            if (bitmap.close) bitmap.close();
-            return true;
-          });
-        }
-        return drawWithImage(URL.createObjectURL(blob));
-      })
-      .catch(function () { return false; });
-  }
-
   function drawFrame() {
     if (isDrawing) return;
     isDrawing = true;
-    var url = frameURL();
-    drawWithFetch(url).then(function (ok) {
-      if (!ok) return drawWithImage(url);
-      return ok;
-    }).finally(function () {
+    frameImage.onload = function () {
+      ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
       isDrawing = false;
-    });
+    };
+    frameImage.onerror = function () { isDrawing = false; };
+    frameImage.src = frameURL();
   }
 
   window.__spoofStartFramePoll = function () {

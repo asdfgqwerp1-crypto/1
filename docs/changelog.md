@@ -89,3 +89,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Smoke-тесты не гоняли WebKit; на iOS оставались чёрное видео (нет HTTP ответа) и краш (30fps JPEG encode на 1080p)
 **Тесты:** test-injection.py Playwright webkit → 12/12 pass; validate-injection.py → 0 failed
 **Риски:** iPhone e2e всё ещё обязателен для финальной проверки
+
+## 2026-06-29 — v4: fix profile bundle load + iPhone 11 two cameras
+
+**Модули:** `Profiles/ProfileStore.swift`, `iphone11_ios265.json`, `VideoPipeline/VideoPipeline.swift`, `FrameBridge.swift`, `getUserMedia.js`
+**Что изменено:** ProfileStore ищет JSON в bundle root (раньше не находил `Profiles/` → падал на fallback iPhone 15 Pro 1080p); default `iphone11_ios265`; профиль 2 камеры (Front/Back); photo capture 8fps вместо video delegate 30fps; poll стартует после первого кадра; UI показывает `v4 iphone11_ios265`
+**Почему:** Пользователь iPhone 11 — приложение могло работать с чужим профилем и перегружать память
+**Тесты:** test-injection.py Playwright webkit; validate-injection.py
+**Риски:** —

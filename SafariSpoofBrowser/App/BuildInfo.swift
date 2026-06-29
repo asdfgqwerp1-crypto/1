@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v3"
-    static let frameDelivery = "spoofframe+HTTPURLResponse"
+    static let marker = "v4"
+    static let frameDelivery = "photo8fps+iphone11"
 }

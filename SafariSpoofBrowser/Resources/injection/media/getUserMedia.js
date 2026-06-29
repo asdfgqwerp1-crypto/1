@@ -26,17 +26,11 @@
   }
 
   function notifyStreamStart(tracks) {
-    if (window.__spoofStartFramePoll) {
-      window.__spoofStartFramePoll();
-    }
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
       window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'startStream' });
     }
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
-        if (window.__spoofStopFramePoll) {
-          window.__spoofStopFramePoll();
-        }
         if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
           window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
         }
@@ -61,7 +55,7 @@
             return;
           }
 
-          var fps = config.mediaCapabilities.frameRate;
+          var fps = Math.min(config.mediaCapabilities.frameRate || 12, 12);
           var stream = canvas.captureStream(fps);
           var facingMode = parseFacingMode(constraints);
           var camera = window.__spoofFindCamera(facingMode);
@@ -72,9 +66,9 @@
           }
 
           if (wantsAudio(constraints)) {
-            originalGetUserMedia({ audio: true }).then(function (audioStream) {
+            var mic = (config.microphones || [])[0];
+            originalGetUserMedia({ audio: true, video: false }).then(function (audioStream) {
               audioStream.getAudioTracks().forEach(function (t) {
-                var mic = (config.microphones || [])[0];
                 if (mic) window.__spoofPatchTrack(t, mic, 'audio');
                 stream.addTrack(t);
               });

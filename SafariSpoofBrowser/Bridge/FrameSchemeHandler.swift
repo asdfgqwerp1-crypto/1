@@ -6,7 +6,6 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private let queue = DispatchQueue(label: "com.safarispoof.frame.scheme")
     private var latestJPEG: Data?
-    private var activeTasks: [ObjectIdentifier: WKURLSchemeTask] = [:]
 
     func updateFrame(_ jpegData: Data) {
         queue.async { [weak self] in
@@ -23,56 +22,46 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
         queue.async { [weak self] in
             guard let self else { return }
-            let taskID = ObjectIdentifier(urlSchemeTask)
-            self.activeTasks[taskID] = urlSchemeTask
-
             guard let url = urlSchemeTask.request.url else {
-                self.fail(task: urlSchemeTask, code: 400, message: "Missing URL")
-                self.activeTasks.removeValue(forKey: taskID)
+                self.failOnMain(task: urlSchemeTask, code: 400, message: "Missing URL")
                 return
             }
 
-            guard let data = self.latestJPEG, !data.isEmpty else {
-                self.respond(task: urlSchemeTask, url: url, data: Self.placeholderJPEG())
-                self.activeTasks.removeValue(forKey: taskID)
+            let data = self.latestJPEG.flatMap { $0.isEmpty ? nil : $0 } ?? Self.placeholderJPEG()
+            self.respondOnMain(task: urlSchemeTask, url: url, data: data)
+        }
+    }
+
+    func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
+
+    private func respondOnMain(task: WKURLSchemeTask, url: URL, data: Data) {
+        DispatchQueue.main.async {
+            let headers = [
+                "Content-Type": "image/jpeg",
+                "Content-Length": "\(data.count)",
+                "Cache-Control": "no-store, no-cache, must-revalidate",
+                "Access-Control-Allow-Origin": "*"
+            ]
+            guard let response = HTTPURLResponse(
+                url: url,
+                statusCode: 200,
+                httpVersion: "HTTP/1.1",
+                headerFields: headers
+            ) else {
+                self.failOnMain(task: task, code: 500, message: "Bad response")
                 return
             }
-
-            self.respond(task: urlSchemeTask, url: url, data: data)
-            self.activeTasks.removeValue(forKey: taskID)
+            task.didReceive(response)
+            task.didReceive(data)
+            task.didFinish()
         }
     }
 
-    func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
-        queue.async { [weak self] in
-            self?.activeTasks.removeValue(forKey: ObjectIdentifier(urlSchemeTask))
+    private func failOnMain(task: WKURLSchemeTask, code: Int, message: String) {
+        DispatchQueue.main.async {
+            let error = NSError(domain: "spoofframe", code: code, userInfo: [NSLocalizedDescriptionKey: message])
+            task.didFailWithError(error)
         }
-    }
-
-    private func respond(task: WKURLSchemeTask, url: URL, data: Data) {
-        let headers = [
-            "Content-Type": "image/jpeg",
-            "Content-Length": "\(data.count)",
-            "Cache-Control": "no-store, no-cache, must-revalidate",
-            "Access-Control-Allow-Origin": "*"
-        ]
-        guard let response = HTTPURLResponse(
-            url: url,
-            statusCode: 200,
-            httpVersion: "HTTP/1.1",
-            headerFields: headers
-        ) else {
-            fail(task: task, code: 500, message: "Bad response")
-            return
-        }
-        task.didReceive(response)
-        task.didReceive(data)
-        task.didFinish()
-    }
-
-    private func fail(task: WKURLSchemeTask, code: Int, message: String) {
-        let error = NSError(domain: "spoofframe", code: code, userInfo: [NSLocalizedDescriptionKey: message])
-        task.didFailWithError(error)
     }
 
     private static func placeholderJPEG() -> Data {
