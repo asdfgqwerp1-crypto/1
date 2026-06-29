@@ -49,3 +49,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** Пользователь собрал эталон на iPhone 11 через Bridged
 **Тесты:** baseline сохранён в docs/safari-diff-baseline/; diff в приложении не запускался
 **Риски:** deviceId задних камер — placeholder до полного enumerateDevices с permission
+
+## 2026-06-29 — Codemagic CI (GitHub Actions disabled)
+
+**Модули:** `codemagic.yaml`, `docs/build-without-actions.md`
+**Что изменено:** Альтернативная облачная сборка IPA через Codemagic
+**Почему:** GitHub заблокировал Actions на аккаунте shlyapa114
+**Тесты:** не запускалось
+**Риски:** нужна регистрация на codemagic.io

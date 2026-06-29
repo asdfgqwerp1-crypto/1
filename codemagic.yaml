@@ -1,0 +1,35 @@
+# Сборка IPA без GitHub Actions
+# https://codemagic.io — бесплатно ~500 мин/мес
+workflows:
+  ios-spoof-build:
+    name: SafariSpoofBrowser IPA
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.safarispoof.browser
+    scripts:
+      - name: Build unsigned app
+        script: |
+          cd SafariSpoofBrowser
+          xcodebuild \
+            -project SafariSpoofBrowser.xcodeproj \
+            -scheme SafariSpoofBrowser \
+            -destination 'generic/platform=iOS' \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            BUILD_DIR="$PWD/build" \
+            build
+      - name: Package IPA
+        script: |
+          cd SafariSpoofBrowser
+          APP_PATH=$(find build -name "SafariSpoofBrowser.app" -type d | head -1)
+          mkdir -p build/ipa/Payload
+          cp -r "$APP_PATH" build/ipa/Payload/
+          cd build/ipa && zip -r ../SafariSpoofBrowser.ipa Payload
+    artifacts:
+      - SafariSpoofBrowser/build/SafariSpoofBrowser.ipa
