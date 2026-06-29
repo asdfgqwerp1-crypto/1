@@ -4,6 +4,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN_DIR="${BIN_DIR:-$HOME/.local/bin}"
+export PATH="$BIN_DIR:$PATH"
 MTX="${BIN_DIR}/mediamtx"
 CFG="${ROOT}/Scripts/mediamtx-obs.yml"
 RELAY_PY="${ROOT}/Scripts/frame-http-relay.py"
@@ -26,9 +27,8 @@ if [ ! -x "$MTX" ]; then
 fi
 
 if ! command -v ffmpeg >/dev/null 2>&1; then
-  echo "ffmpeg required for low-latency relay:"
-  echo "  sudo apt install -y ffmpeg"
-  exit 1
+  echo "ffmpeg not found — installing to $BIN_DIR ..."
+  "$ROOT/Scripts/install-ffmpeg.sh"
 fi
 
 if ! command -v python3 >/dev/null 2>&1; then

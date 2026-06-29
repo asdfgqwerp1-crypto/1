@@ -26,9 +26,22 @@ class FrameStore:
             return self._data
 
 
+def ffmpeg_bin() -> str:
+    import os
+    from pathlib import Path
+
+    env = os.environ.get("FFMPEG_BIN")
+    if env:
+        return env
+    local = Path.home() / ".local" / "bin" / "ffmpeg"
+    if local.is_file():
+        return str(local)
+    return "ffmpeg"
+
+
 def mjpeg_reader(rtsp_url: str, store: FrameStore, vf: str) -> None:
     cmd = [
-        "ffmpeg",
+        ffmpeg_bin(),
         "-hide_banner",
         "-loglevel",
         "error",
@@ -39,6 +52,8 @@ def mjpeg_reader(rtsp_url: str, store: FrameStore, vf: str) -> None:
         "-an",
         "-vf",
         vf,
+        "-pix_fmt",
+        "yuvj420p",
         "-f",
         "mjpeg",
         "pipe:1",
@@ -71,7 +86,13 @@ def mjpeg_reader(rtsp_url: str, store: FrameStore, vf: str) -> None:
 class FrameHandler(http.server.BaseHTTPRequestHandler):
     store: FrameStore | None = None
 
+    def do_HEAD(self) -> None:
+        self._serve_frame(head_only=True)
+
     def do_GET(self) -> None:
+        self._serve_frame(head_only=False)
+
+    def _serve_frame(self, head_only: bool) -> None:
         path = self.path.split("?", 1)[0]
         if path not in ("/frame.jpg", "/"):
             self.send_error(404)
@@ -86,7 +107,8 @@ class FrameHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(data)
+        if not head_only:
+            self.wfile.write(data)
 
     def log_message(self, fmt: str, *args) -> None:
         return
