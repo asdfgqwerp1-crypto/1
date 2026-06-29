@@ -43,7 +43,7 @@ struct SettingsView: View {
                     }
 
                     if case .network = appState.videoSource {
-                        TextField("RTSP or HLS URL (RTSP = lower latency)", text: $networkURL)
+                        TextField("http://IP:8090/frame.jpg (low latency)", text: $networkURL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                         Button("Apply URL") {

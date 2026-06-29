@@ -9,6 +9,7 @@ final class VideoPipeline: NSObject {
     private var videoOutput: AVCaptureVideoDataOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
     private var networkPlayer: NetworkVideoPlayer?
+    private var httpSnapshotPlayer: HttpSnapshotPlayer?
     private var activeProfile: DeviceProfile?
     private var isRunning = false
     private var lastFrameTime: CFAbsoluteTime = 0
@@ -67,12 +68,18 @@ final class VideoPipeline: NSObject {
         }
         networkPlayer?.stop()
         networkPlayer = nil
+        httpSnapshotPlayer?.stop()
+        httpSnapshotPlayer = nil
         videoOutput = nil
     }
 
     func attachPreview(to view: UIView) {
         previewLayer?.removeFromSuperlayer()
         previewLayer = nil
+        if let httpSnapshotPlayer {
+            httpSnapshotPlayer.attachPreview(to: view)
+            return
+        }
         if let networkPlayer {
             networkPlayer.attachPreview(to: view)
             return
@@ -158,6 +165,11 @@ final class VideoPipeline: NSObject {
     // MARK: - Network / file
 
     private func startNetworkStream(url: String, profile: DeviceProfile) {
+        if let frameURL = StreamURLResolver.httpFrameURL(from: url) {
+            startHttpSnapshotStream(url: frameURL, profile: profile)
+            return
+        }
+
         let candidates = StreamURLResolver.playbackCandidates(for: url)
         guard !candidates.isEmpty else { return }
         let player = NetworkVideoPlayer()
@@ -171,6 +183,38 @@ final class VideoPipeline: NSObject {
         }
         networkPlayer = player
         player.play(url: url)
+    }
+
+    private func startHttpSnapshotStream(url: URL, profile: DeviceProfile) {
+        let player = HttpSnapshotPlayer()
+        player.onJPEG = { [weak self] data in
+            self?.sendHTTPJPEG(data, profile: profile)
+        }
+        httpSnapshotPlayer = player
+        player.play(url: url)
+    }
+
+    private func sendHTTPJPEG(_ data: Data, profile: DeviceProfile) {
+        guard isRunning, frameBridge.isDelivering else { return }
+
+        let now = CFAbsoluteTimeGetCurrent()
+        let interval = frameTiming.nextIntervalSeconds(frameIndex: frameSequence)
+        guard now - lastFrameTime >= interval else { return }
+        lastFrameTime = now
+
+        let targetWidth = streamDelivery?.width ?? profile.mediaCapabilities.width
+        let targetHeight = streamDelivery?.height ?? profile.mediaCapabilities.height
+        frameSequence &+= 1
+
+        frameBridge.sendFrame(
+            data: data,
+            format: .jpeg,
+            width: targetWidth,
+            height: targetHeight,
+            sequence: frameSequence,
+            presentationTimeUs: UInt64(now * 1_000_000),
+            captureTimestamp: now
+        )
     }
 
     private func startFilePlayback(path: String, profile: DeviceProfile) {

@@ -31,6 +31,7 @@
 		A10000010000000000000037 /* NV12FramePacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000037; };
 		A10000010000000000000040 /* FrameScaler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000040; };
 		A10000010000000000000042 /* StreamURLResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000042; };
+		A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000043; };
 		A10000010000000000000041 /* FrameTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000041; };
 		A10000010000000000000038 /* SpoofFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000038; };
 		A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000039; };
@@ -76,6 +77,7 @@
 		A20000010000000000000037 /* NV12FramePacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NV12FramePacker.swift; sourceTree = "<group>"; };
 		A20000010000000000000040 /* FrameScaler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameScaler.swift; sourceTree = "<group>"; };
 		A20000010000000000000042 /* StreamURLResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamURLResolver.swift; sourceTree = "<group>"; };
+		A20000010000000000000043 /* HttpSnapshotPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HttpSnapshotPlayer.swift; sourceTree = "<group>"; };
 		A20000010000000000000041 /* FrameTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameTiming.swift; sourceTree = "<group>"; };
 		A20000010000000000000038 /* SpoofFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofFrame.swift; sourceTree = "<group>"; };
 		A20000010000000000000039 /* ChunkedNV12Frame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkedNV12Frame.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 				A20000010000000000000037 /* NV12FramePacker.swift */,
 				A20000010000000000000040 /* FrameScaler.swift */,
 				A20000010000000000000042 /* StreamURLResolver.swift */,
+				A20000010000000000000043 /* HttpSnapshotPlayer.swift */,
 				A20000010000000000000041 /* FrameTiming.swift */,
 				A20000010000000000000015 /* NetworkVideoPlayer.swift */,
 			);
@@ -416,6 +419,7 @@
 				A10000010000000000000037 /* NV12FramePacker.swift in Sources */,
 				A10000010000000000000040 /* FrameScaler.swift in Sources */,
 				A10000010000000000000042 /* StreamURLResolver.swift in Sources */,
+				A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */,
 				A10000010000000000000041 /* FrameTiming.swift in Sources */,
 				A10000010000000000000038 /* SpoofFrame.swift in Sources */,
 				A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */,
