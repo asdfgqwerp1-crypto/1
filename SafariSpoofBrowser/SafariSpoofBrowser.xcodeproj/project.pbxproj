@@ -28,6 +28,8 @@
 		A10000010000000000000036 /* ExportBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000036; };
 		A10000010000000000000013 /* VideoSourceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000013; };
 		A10000010000000000000014 /* VideoPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000014; };
+		A10000010000000000000037 /* NV12FramePacker.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000037; };
+		A10000010000000000000038 /* SpoofFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000038; };
 		A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000015; };
 		A10000010000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016; };
 		A10000010000000000000017 /* iphone15pro_ios174.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017; };
@@ -67,6 +69,8 @@
 		A20000010000000000000030 /* FrameSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSchemeHandler.swift; sourceTree = "<group>"; };
 		A20000010000000000000013 /* VideoSourceType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSourceType.swift; sourceTree = "<group>"; };
 		A20000010000000000000014 /* VideoPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPipeline.swift; sourceTree = "<group>"; };
+		A20000010000000000000037 /* NV12FramePacker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NV12FramePacker.swift; sourceTree = "<group>"; };
+		A20000010000000000000038 /* SpoofFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofFrame.swift; sourceTree = "<group>"; };
 		A20000010000000000000015 /* NetworkVideoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkVideoPlayer.swift; sourceTree = "<group>"; };
 		A20000010000000000000016 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A20000010000000000000017 /* iphone15pro_ios174.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = iphone15pro_ios174.json; sourceTree = "<group>"; };
@@ -202,6 +206,7 @@
 			children = (
 				A20000010000000000000012 /* FrameBridge.swift */,
 				A20000010000000000000030 /* FrameSchemeHandler.swift */,
+				A20000010000000000000038 /* SpoofFrame.swift */,
 				A20000010000000000000036 /* ExportBridge.swift */,
 			);
 			path = Bridge;
@@ -212,6 +217,7 @@
 			children = (
 				A20000010000000000000013 /* VideoSourceType.swift */,
 				A20000010000000000000014 /* VideoPipeline.swift */,
+				A20000010000000000000037 /* NV12FramePacker.swift */,
 				A20000010000000000000015 /* NetworkVideoPlayer.swift */,
 			);
 			path = VideoPipeline;
@@ -395,6 +401,8 @@
 				A10000010000000000000030 /* FrameSchemeHandler.swift in Sources */,
 				A10000010000000000000013 /* VideoSourceType.swift in Sources */,
 				A10000010000000000000014 /* VideoPipeline.swift in Sources */,
+				A10000010000000000000037 /* NV12FramePacker.swift in Sources */,
+				A10000010000000000000038 /* SpoofFrame.swift in Sources */,
 				A10000010000000000000015 /* NetworkVideoPlayer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

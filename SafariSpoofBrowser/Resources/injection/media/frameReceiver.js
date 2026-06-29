@@ -4,14 +4,18 @@
   if (!config) return;
 
   var caps = config.mediaCapabilities;
+  var useNV12 = config.frameDelivery === 'nv12';
   var canvas = null;
   var ctx = null;
   var pollTimer = null;
   var pollActive = false;
   var pollBaseMs = Math.round(1000 / 16);
   var isDrawing = false;
-  var noiseSeed = (config.webgl && config.webgl.canvasNoiseSeed) || 284739102;
-  var framesSinceNoise = 0;
+  var rgbaBuffer = null;
+  var lastFrameSeq = 0;
+  var lastPtsUs = 0;
+  var streamStartPtsUs = 0;
+  var streamStartPerf = 0;
 
   function mountCanvas(node) {
     node.style.cssText = 'position:fixed;width:2px;height:2px;opacity:0.01;pointer-events:none;left:0;bottom:0;z-index:-1';
@@ -42,34 +46,93 @@
     return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
   }
 
-  function markFrameDrawn() {
+  function markFrameDrawn(meta) {
     window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
-    framesSinceNoise += 1;
-    if (framesSinceNoise >= 2) {
-      framesSinceNoise = 0;
-      addSubtleNoise();
+    if (meta) {
+      window.__spoofLastFrameSeq = meta.seq;
+      window.__spoofLastPtsUs = meta.ptsUs;
     }
   }
 
-  function addSubtleNoise() {
-    if (!ctx || !canvas) return;
-    try {
-      var w = canvas.width;
-      var h = canvas.height;
-      var imageData = ctx.getImageData(0, 0, w, h);
-      var d = imageData.data;
-      var step = 16;
-      for (var y = 0; y < h; y += step) {
-        for (var x = 0; x < w; x += step) {
-          var i = (y * w + x) * 4;
-          var n = ((noiseSeed + i + window.__spoofFrameCount) % 5) - 2;
-          d[i] = Math.min(255, Math.max(0, d[i] + n));
-          d[i + 1] = Math.min(255, Math.max(0, d[i + 1] + n));
-          d[i + 2] = Math.min(255, Math.max(0, d[i + 2] + n));
-        }
+  function clampByte(v) {
+    return v < 0 ? 0 : (v > 255 ? 255 : v);
+  }
+
+  function ensureRgbaBuffer(width, height) {
+    if (!rgbaBuffer || rgbaBuffer.width !== width || rgbaBuffer.height !== height) {
+      rgbaBuffer = new ImageData(width, height);
+    }
+    return rgbaBuffer;
+  }
+
+  function nv12ToRGBA(nv12, width, height, out) {
+    var ySize = width * height;
+    var y = new Uint8Array(nv12, 0, ySize);
+    var uv = new Uint8Array(nv12, ySize);
+    var rgba = out.data;
+    var uvWidth = width;
+
+    for (var row = 0; row < height; row++) {
+      var yRow = row * width;
+      var uvRow = (row >> 1) * uvWidth;
+      for (var col = 0; col < width; col++) {
+        var yVal = y[yRow + col];
+        var uvIndex = uvRow + (col & ~1);
+        var u = uv[uvIndex] - 128;
+        var v = uv[uvIndex + 1] - 128;
+        var c = yVal - 16;
+        if (c < 0) c = 0;
+        var r = (298 * c + 409 * v + 128) >> 8;
+        var g = (298 * c - 100 * u - 208 * v + 128) >> 8;
+        var b = (298 * c + 516 * u + 128) >> 8;
+        var i = (yRow + col) * 4;
+        rgba[i] = clampByte(r);
+        rgba[i + 1] = clampByte(g);
+        rgba[i + 2] = clampByte(b);
+        rgba[i + 3] = 255;
       }
-      ctx.putImageData(imageData, 0, 0);
-    } catch (e) {}
+    }
+  }
+
+  function parseFrameHeaders(response) {
+    var get = function (name) {
+      return response.headers.get(name) || response.headers.get(name.toLowerCase());
+    };
+    return {
+      format: (response.headers.get('Content-Type') || '').indexOf('nv12') >= 0 ? 'nv12' : 'jpeg',
+      width: parseInt(get('X-Frame-Width') || String(caps.width), 10),
+      height: parseInt(get('X-Frame-Height') || String(caps.height), 10),
+      seq: parseInt(get('X-Frame-Seq') || '0', 10),
+      ptsUs: parseInt(get('X-Frame-PTS-Us') || '0', 10)
+    };
+  }
+
+  function drawNV12(buffer, meta) {
+    if (!ctx || !canvas) return;
+    var width = meta.width || canvas.width;
+    var height = meta.height || canvas.height;
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    var image = ensureRgbaBuffer(width, height);
+    nv12ToRGBA(buffer, width, height, image);
+    ctx.putImageData(image, 0, 0);
+    if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
+    if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;
+    markFrameDrawn(meta);
+  }
+
+  function drawJPEG(url, revoke, meta) {
+    var img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = function () {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (revoke) URL.revokeObjectURL(url);
+      markFrameDrawn(meta);
+    };
+    img.onerror = function () {};
+    img.src = url;
   }
 
   function drawFrame() {
@@ -81,42 +144,38 @@
       released = true;
       isDrawing = false;
     }
-    setTimeout(release, 800);
+    setTimeout(release, 900);
 
-    function drawViaImage(url, revoke) {
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function () {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        if (revoke) URL.revokeObjectURL(url);
-        markFrameDrawn();
-        release();
-      };
-      img.onerror = release;
-      img.src = url;
-    }
-
-    if (typeof fetch === 'function') {
-      fetch(frameURL(), { cache: 'no-store', mode: 'cors', credentials: 'omit' })
-        .then(function (response) {
-          if (!response.ok) throw new Error('bad status');
-          return response.blob();
-        })
-        .then(function (blob) {
-          drawViaImage(URL.createObjectURL(blob), true);
-        })
-        .catch(function () {
-          drawViaImage(frameURL(), false);
-        });
+    if (typeof fetch !== 'function') {
+      drawJPEG(frameURL(), false, null);
+      release();
       return;
     }
 
-    drawViaImage(frameURL(), false);
+    fetch(frameURL(), { cache: 'no-store', mode: 'cors', credentials: 'omit' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('bad status');
+        var meta = parseFrameHeaders(response);
+        if (meta.format === 'nv12' || useNV12) {
+          return response.arrayBuffer().then(function (buf) {
+            drawNV12(buf, meta);
+            release();
+          });
+        }
+        return response.blob().then(function (blob) {
+          drawJPEG(URL.createObjectURL(blob), true, meta);
+          release();
+        });
+      })
+      .catch(function () {
+        drawJPEG(frameURL(), false, null);
+        release();
+      });
   }
 
   function schedulePoll() {
     if (!pollActive) return;
-    var jitter = Math.floor(Math.random() * 24) - 12;
+    var jitter = Math.floor(Math.random() * 16) - 8;
     var delay = Math.max(48, pollBaseMs + jitter);
     pollTimer = setTimeout(function () {
       drawFrame();
@@ -131,7 +190,10 @@
       pollTimer = null;
     }
     isDrawing = false;
-    framesSinceNoise = 0;
+    lastFrameSeq = 0;
+    lastPtsUs = 0;
+    streamStartPtsUs = 0;
+    streamStartPerf = 0;
     if (canvas && canvas.parentNode) {
       canvas.parentNode.removeChild(canvas);
     }
@@ -150,6 +212,8 @@
       clearTimeout(pollTimer);
       pollTimer = null;
     }
+    streamStartPerf = performance.now();
+    streamStartPtsUs = 0;
     drawPlaceholder();
     drawFrame();
     pollActive = true;

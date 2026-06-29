@@ -26,9 +26,10 @@
   }
 
   function buildConfig(profile) {
-    return {
+      return {
       profileId: profile.id,
       emulateSafariObject: profile.emulateSafariObject,
+      frameDelivery: profile.frameDelivery || 'nv12',
       navigator: profile.navigator,
       screen: profile.screen,
       webgl: profile.webgl,

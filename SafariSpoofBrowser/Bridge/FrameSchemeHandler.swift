@@ -3,19 +3,21 @@ import WebKit
 
 final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
     static let scheme = "spoofframe"
+    static let nv12ContentType = "application/vnd.safarispoof.nv12"
+    static let jpegContentType = "image/jpeg"
 
     private let queue = DispatchQueue(label: "com.safarispoof.frame.scheme")
-    private var latestJPEG: Data?
+    private var latestFrame: SpoofFrame?
 
-    func updateFrame(_ jpegData: Data) {
+    func updateFrame(_ frame: SpoofFrame) {
         queue.async { [weak self] in
-            self?.latestJPEG = jpegData
+            self?.latestFrame = frame
         }
     }
 
     func clearFrame() {
         queue.async { [weak self] in
-            self?.latestJPEG = nil
+            self?.latestFrame = nil
         }
     }
 
@@ -27,22 +29,28 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
                 return
             }
 
-            let data = self.latestJPEG.flatMap { $0.isEmpty ? nil : $0 } ?? Self.placeholderJPEG()
-            self.respondOnMain(task: urlSchemeTask, url: url, data: data)
+            let frame = self.latestFrame ?? Self.placeholderFrame()
+            self.respondOnMain(task: urlSchemeTask, url: url, frame: frame)
         }
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
 
-    private func respondOnMain(task: WKURLSchemeTask, url: URL, data: Data) {
+    private func respondOnMain(task: WKURLSchemeTask, url: URL, frame: SpoofFrame) {
         DispatchQueue.main.async {
+            let contentType = frame.format == .nv12 ? Self.nv12ContentType : Self.jpegContentType
             let headers = [
-                "Content-Type": "image/jpeg",
-                "Content-Length": "\(data.count)",
+                "Content-Type": contentType,
+                "Content-Length": "\(frame.data.count)",
                 "Cache-Control": "no-store, no-cache, must-revalidate",
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET",
-                "Cross-Origin-Resource-Policy": "cross-origin"
+                "Access-Control-Expose-Headers": "X-Frame-Seq,X-Frame-PTS-Us,X-Frame-Width,X-Frame-Height",
+                "Cross-Origin-Resource-Policy": "cross-origin",
+                "X-Frame-Width": "\(frame.width)",
+                "X-Frame-Height": "\(frame.height)",
+                "X-Frame-Seq": "\(frame.sequence)",
+                "X-Frame-PTS-Us": "\(frame.presentationTimeUs)"
             ]
             guard let response = HTTPURLResponse(
                 url: url,
@@ -54,7 +62,7 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
                 return
             }
             task.didReceive(response)
-            task.didReceive(data)
+            task.didReceive(frame.data)
             task.didFinish()
         }
     }
@@ -64,6 +72,17 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
             let error = NSError(domain: "spoofframe", code: code, userInfo: [NSLocalizedDescriptionKey: message])
             task.didFailWithError(error)
         }
+    }
+
+    private static func placeholderFrame() -> SpoofFrame {
+        SpoofFrame(
+            data: placeholderJPEG(),
+            format: .jpeg,
+            width: 2,
+            height: 2,
+            sequence: 0,
+            presentationTimeUs: 0
+        )
     }
 
     private static func placeholderJPEG() -> Data {

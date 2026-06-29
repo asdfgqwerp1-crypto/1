@@ -15,6 +15,8 @@ protocol FrameBridgeDelegate: AnyObject {
 
 final class FrameBridge: NSObject {
     static let handlerName = "spoofFrameBridge"
+    static let maxNV12PayloadBytes = 600_000
+    static let maxJPEGPayloadBytes = 180_000
 
     let schemeHandler = FrameSchemeHandler()
 
@@ -60,9 +62,18 @@ final class FrameBridge: NSObject {
         }
     }
 
-    func sendFrame(jpegData: Data, width: Int, height: Int, timestamp: CFAbsoluteTime) {
+    func sendFrame(
+        data: Data,
+        format: SpoofFrameFormat,
+        width: Int,
+        height: Int,
+        sequence: UInt64,
+        presentationTimeUs: UInt64,
+        captureTimestamp: CFAbsoluteTime
+    ) {
         guard isDeliveryEnabled else { return }
-        guard jpegData.count < 180_000 else { return }
+        let maxBytes = format == .nv12 ? Self.maxNV12PayloadBytes : Self.maxJPEGPayloadBytes
+        guard data.count <= maxBytes else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
         let interval = minInterval + (sendJitterMs / 1000.0)
@@ -70,8 +81,17 @@ final class FrameBridge: NSObject {
 
         lastSendTime = now
         sendJitterMs = Double.random(in: -10...14)
-        let latency = (now - timestamp) * 1000
-        schemeHandler.updateFrame(jpegData)
+        let latency = (now - captureTimestamp) * 1000
+
+        let frame = SpoofFrame(
+            data: data,
+            format: format,
+            width: width,
+            height: height,
+            sequence: sequence,
+            presentationTimeUs: presentationTimeUs
+        )
+        schemeHandler.updateFrame(frame)
         updateMetrics(latency: latency)
         notifyStartFramePollIfNeeded()
     }

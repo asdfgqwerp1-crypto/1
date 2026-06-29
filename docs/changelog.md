@@ -177,3 +177,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** BrowserLeaks: screen.* undefined, div.clientHeight 646, outerHeight должен быть 896 как Safari
 **Тесты:** validate-injection.py; на iPhone не запускались
 **Риски:** эвристика clientHeight для full-width элементов — редкие ложные срабатывания на узких виджетах
+
+## 2026-06-29 — v19: NV12 frame delivery + camera PTS
+
+**Модули:** `NV12FramePacker.swift`, `SpoofFrame.swift`, `FrameSchemeHandler.swift`, `FrameBridge.swift`, `VideoPipeline.swift`, `frameReceiver.js`, `DeviceProfile.swift`
+**Что изменено:** Камера в NV12; scale→pack без JPEG; spoofframe `application/vnd.safarispoof.nv12` + X-Frame-Seq/PTS-Us; JS BT.601 decode→putImageData; убран frame noise для nv12; fallback JPEG при сбое; profile `frameDelivery: nv12`
+**Почему:** Подменённое изображение должно совпадать с реальной камерой без JPEG-артефактов; монотонные PTS с CMSampleBuffer
+**Тесты:** validate-injection.py; на iPhone не запускались
+**Риски:** ~460KB/кадр — выше нагрузка на WebKit; canvas.captureStream origin остаётся

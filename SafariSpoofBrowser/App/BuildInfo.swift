@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v18"
-    static let frameDelivery = "screen-proto+div-clientH"
+    static let marker = "v19"
+    static let frameDelivery = "nv12+pts"
 }

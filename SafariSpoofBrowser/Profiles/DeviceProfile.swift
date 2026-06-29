@@ -1,10 +1,16 @@
 import Foundation
 
+enum FrameDeliveryFormat: String, Codable, Equatable {
+    case nv12
+    case jpeg
+}
+
 struct DeviceProfile: Codable, Identifiable, Equatable {
     let id: String
     let displayName: String
     let userAgent: String
     let emulateSafariObject: Bool?
+    let frameDelivery: FrameDeliveryFormat?
     let navigator: NavigatorProfile
     let screen: ScreenProfile
     let webgl: WebGLProfile
@@ -120,6 +126,10 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         let volumeMax: Double
     }
 
+    var resolvedFrameDelivery: FrameDeliveryFormat {
+        frameDelivery ?? .nv12
+    }
+
     var injectionConfigJSON: String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -134,6 +144,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
 private struct InjectionConfig: Encodable {
     let profileId: String
     let emulateSafariObject: Bool?
+    let frameDelivery: FrameDeliveryFormat
     let navigator: DeviceProfile.NavigatorProfile
     let screen: DeviceProfile.ScreenProfile
     let webgl: DeviceProfile.WebGLProfile
@@ -147,6 +158,7 @@ private struct InjectionConfig: Encodable {
     init(profile: DeviceProfile) {
         profileId = profile.id
         emulateSafariObject = profile.emulateSafariObject
+        frameDelivery = profile.resolvedFrameDelivery
         navigator = profile.navigator
         screen = profile.screen
         webgl = profile.webgl

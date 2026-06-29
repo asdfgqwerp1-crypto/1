@@ -14,6 +14,7 @@ final class VideoPipeline: NSObject {
     private var isRunning = false
     private var lastFrameTime: CFAbsoluteTime = 0
     private var configureAttempts = 0
+    private var frameSequence: UInt64 = 0
     private let minFrameInterval: CFAbsoluteTime = 1.0 / 16.0
     private var encodeJitterMs: Double = 0
     private let ciContext = CIContext(options: [.useSoftwareRenderer: false])
@@ -32,6 +33,7 @@ final class VideoPipeline: NSObject {
         activeProfile = profile
         isRunning = true
         lastFrameTime = 0
+        frameSequence = 0
         configureAttempts = 0
 
         switch source {
@@ -49,6 +51,7 @@ final class VideoPipeline: NSObject {
     func stop() {
         isRunning = false
         lastFrameTime = 0
+        frameSequence = 0
         sessionQueue.async { [weak self] in
             guard let self else { return }
             if self.session.isRunning { self.session.stopRunning() }
@@ -115,7 +118,9 @@ final class VideoPipeline: NSObject {
         if session.canAddInput(input) { session.addInput(input) }
 
         let output = AVCaptureVideoDataOutput()
-        output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
+        output.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        ]
         output.alwaysDiscardsLateVideoFrames = true
         output.setSampleBufferDelegate(self, queue: processingQueue)
 
@@ -144,7 +149,11 @@ final class VideoPipeline: NSObject {
         guard let streamURL = URL(string: url) else { return }
         let player = NetworkVideoPlayer()
         player.onFrame = { [weak self] pixelBuffer, timestamp in
-            self?.processPixelBufferIfNeeded(pixelBuffer, captureTimestamp: timestamp, profile: profile)
+            self?.processPixelBufferIfNeeded(
+                pixelBuffer,
+                presentationTimeUs: UInt64(max(0, timestamp) * 1_000_000),
+                profile: profile
+            )
         }
         networkPlayer = player
         player.play(url: streamURL)
@@ -153,13 +162,36 @@ final class VideoPipeline: NSObject {
     private func startFilePlayback(path: String, profile: DeviceProfile) {
         let player = NetworkVideoPlayer()
         player.onFrame = { [weak self] pixelBuffer, timestamp in
-            self?.processPixelBufferIfNeeded(pixelBuffer, captureTimestamp: timestamp, profile: profile)
+            self?.processPixelBufferIfNeeded(
+                pixelBuffer,
+                presentationTimeUs: UInt64(max(0, timestamp) * 1_000_000),
+                profile: profile
+            )
         }
         networkPlayer = player
         player.playFile(path: path)
     }
 
-    private func processPixelBufferIfNeeded(_ pixelBuffer: CVPixelBuffer, captureTimestamp: CFAbsoluteTime, profile: DeviceProfile) {
+    private func processSampleBufferIfNeeded(_ sampleBuffer: CMSampleBuffer, profile: DeviceProfile) {
+        guard isRunning,
+              frameBridge.isDelivering,
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+
+        let now = CFAbsoluteTimeGetCurrent()
+        let interval = minFrameInterval + (encodeJitterMs / 1000.0)
+        guard now - lastFrameTime >= interval else { return }
+        lastFrameTime = now
+        encodeJitterMs = Double.random(in: -8...12)
+
+        let ptsUs = NV12FramePacker.presentationTimeUs(from: sampleBuffer)
+        sendPixelBuffer(pixelBuffer, profile: profile, captureTimestamp: now, presentationTimeUs: ptsUs)
+    }
+
+    private func processPixelBufferIfNeeded(
+        _ pixelBuffer: CVPixelBuffer,
+        presentationTimeUs: UInt64,
+        profile: DeviceProfile
+    ) {
         guard isRunning, frameBridge.isDelivering else { return }
 
         let now = CFAbsoluteTimeGetCurrent()
@@ -168,48 +200,80 @@ final class VideoPipeline: NSObject {
         lastFrameTime = now
         encodeJitterMs = Double.random(in: -8...12)
 
-        sendPixelBuffer(pixelBuffer, profile: profile, timestamp: captureTimestamp)
+        sendPixelBuffer(pixelBuffer, profile: profile, captureTimestamp: now, presentationTimeUs: presentationTimeUs)
     }
 
-    private func sendPixelBuffer(_ pixelBuffer: CVPixelBuffer, profile: DeviceProfile, timestamp: CFAbsoluteTime) {
+    private func sendPixelBuffer(
+        _ pixelBuffer: CVPixelBuffer,
+        profile: DeviceProfile,
+        captureTimestamp: CFAbsoluteTime,
+        presentationTimeUs: UInt64
+    ) {
         let targetWidth = profile.mediaCapabilities.width
         let targetHeight = profile.mediaCapabilities.height
+        let useNV12 = profile.resolvedFrameDelivery == .nv12
+
+        frameSequence &+= 1
+
+        if useNV12,
+           let nv12Buffer = NV12FramePacker.scaledNV12Buffer(from: pixelBuffer, width: targetWidth, height: targetHeight),
+           let packed = NV12FramePacker.pack(nv12Buffer) {
+            frameBridge.sendFrame(
+                data: packed,
+                format: .nv12,
+                width: targetWidth,
+                height: targetHeight,
+                sequence: frameSequence,
+                presentationTimeUs: presentationTimeUs,
+                captureTimestamp: captureTimestamp
+            )
+            return
+        }
+
+        guard let jpeg = jpegData(from: pixelBuffer, width: targetWidth, height: targetHeight) else { return }
+        frameBridge.sendFrame(
+            data: jpeg,
+            format: .jpeg,
+            width: targetWidth,
+            height: targetHeight,
+            sequence: frameSequence,
+            presentationTimeUs: presentationTimeUs,
+            captureTimestamp: captureTimestamp
+        )
+    }
+
+    private func jpegData(from pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data? {
+        guard let nv12Buffer = NV12FramePacker.scaledNV12Buffer(from: pixelBuffer, width: width, height: height) else {
+            return nil
+        }
 
         let attrs: [String: Any] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
             kCVPixelBufferCGBitmapContextCompatibilityKey as String: true
         ]
-        var outputBuffer: CVPixelBuffer?
+        var bgraBuffer: CVPixelBuffer?
         CVPixelBufferCreate(
             kCFAllocatorDefault,
-            targetWidth,
-            targetHeight,
+            width,
+            height,
             kCVPixelFormatType_32BGRA,
             attrs as CFDictionary,
-            &outputBuffer
+            &bgraBuffer
         )
-        guard let output = outputBuffer else { return }
+        guard let bgra = bgraBuffer else { return nil }
 
-        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
-        let scaleX = CGFloat(targetWidth) / ciImage.extent.width
-        let scaleY = CGFloat(targetHeight) / ciImage.extent.height
-        let scaled = ciImage.transformed(by: CGAffineTransform(scaleX: scaleX, y: scaleY))
-        ciContext.render(scaled, to: output)
+        let ciImage = CIImage(cvPixelBuffer: nv12Buffer)
+        ciContext.render(ciImage, to: bgra)
 
-        guard let jpeg = jpegData(from: output, width: targetWidth, height: targetHeight) else { return }
-        frameBridge.sendFrame(jpegData: jpeg, width: targetWidth, height: targetHeight, timestamp: timestamp)
-    }
-
-    private func jpegData(from pixelBuffer: CVPixelBuffer, width: Int, height: Int) -> Data? {
-        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+        CVPixelBufferLockBaseAddress(bgra, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(bgra, .readOnly) }
 
         guard let context = CGContext(
-            data: CVPixelBufferGetBaseAddress(pixelBuffer),
+            data: CVPixelBufferGetBaseAddress(bgra),
             width: width,
             height: height,
             bitsPerComponent: 8,
-            bytesPerRow: CVPixelBufferGetBytesPerRow(pixelBuffer),
+            bytesPerRow: CVPixelBufferGetBytesPerRow(bgra),
             space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let cgImage = context.makeImage() else { return nil }
@@ -220,12 +284,7 @@ final class VideoPipeline: NSObject {
 
 extension VideoPipeline: AVCaptureVideoDataOutputSampleBufferDelegate {
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
-        guard isRunning,
-              frameBridge.isDelivering,
-              let profile = activeProfile,
-              let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-
-        let timestamp = CFAbsoluteTimeGetCurrent()
-        processPixelBufferIfNeeded(pixelBuffer, captureTimestamp: timestamp, profile: profile)
+        guard let profile = activeProfile else { return }
+        processSampleBufferIfNeeded(sampleBuffer, profile: profile)
     }
 }

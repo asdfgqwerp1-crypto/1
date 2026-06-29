@@ -41,7 +41,9 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 
 | Vector | Status | Notes |
 |--------|--------|-------|
-| `getUserMedia` source | Intercepted | Real camera → JPEG → canvas → captureStream |
+| `getUserMedia` source | Intercepted | Real camera → NV12 (v19) or JPEG fallback → canvas → captureStream |
+| Frame PTS monotonicity | Patched v19 | CMSampleBuffer presentationTime → X-Frame-PTS-Us |
+| JPEG compression artifacts | Mitigated v19 | NV12 path skips JPEG when frameDelivery=nv12 |
 | `enumerateDevices` labels | Patched v16 | Always spoofed; pre-permission empty ids; post-gUM profile devices (never native) |
 | `deviceId` / `groupId` | Patched | Stable per profile; prototype getSettings |
 | `track.getSettings()` | Patched | width, height, frameRate, facingMode, deviceId |

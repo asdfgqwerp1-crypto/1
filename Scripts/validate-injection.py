@@ -79,8 +79,11 @@ def main() -> int:
         elif "__spoofResetCanvas" not in frame_js:
             print("FAIL frameReceiver missing fresh canvas reset")
             failed += 1
+        elif "nv12ToRGBA" not in frame_js:
+            print("FAIL frameReceiver missing NV12 decode path")
+            failed += 1
         else:
-            print("PASS frameReceiver spoofframe + reset canvas")
+            print("PASS frameReceiver spoofframe + NV12 + reset canvas")
 
         _, gum_js = fetch("/injection/media/getUserMedia.js")
         if "__spoofStartFramePoll" not in gum_js:
