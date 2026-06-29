@@ -108,7 +108,6 @@
 				A40000010000000000000011 /* Resources */,
 				A20000010000000000000097 /* Info.plist */,
 			);
-			path = SafariSpoofBrowser;
 			sourceTree = "<group>";
 		};
 		A40000010000000000000003 /* SafariSpoofBrowserTests */ = {
@@ -441,7 +440,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SafariSpoofBrowser/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -462,7 +461,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SafariSpoofBrowser/Info.plist;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
