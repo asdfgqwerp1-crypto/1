@@ -54,7 +54,7 @@
   "mediaCapabilities": {
     "width": 480,
     "height": 640,
-    "frameRate": 12,
+    "frameRate": 30,
     "minFrameRate": 1,
     "maxFrameRate": 60,
     "widthMin": 1,

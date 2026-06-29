@@ -105,3 +105,11 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** На v8 webrtc-inspector зависал на `audio: true` (реальный mic permission), media-timing показывал 125 fps (setInterval), fingerprint OK но превью чёрное
 **Тесты:** validate-injection.py → 0 failed; fingerprint/media-timing от пользователя на v8 — PASS metadata; webrtc — не запускался (ожидается retest на v9)
 **Риски:** Synthetic audio может отличаться от Safari mic fingerprint на глубоком анализе
+
+## 2026-06-29 — v10: deferred mediaDevices spoof + Safari deviceIds
+
+**Модули:** `Resources/injection/media/getUserMedia.js`, `mediaStreamMock.js`, `Profiles/iphone11_ios265.json`, `BuildInfo.swift`, `TestPages/injection-lab/`
+**Что изменено:** Перехват `getUserMedia`/`enumerateDevices` через `scheduleInstall` (retry до появления `navigator.mediaDevices` на iOS); `enumerateDevices` до permission — пустые id как Safari; после gUM — 2 камеры из профиля; `patchTrack` через `defineProperty`; profile frameRate 30
+**Почему:** v9 webrtc утекали реальные deviceId (4 камеры) — injection на `documentStart` иногда выполнялся до `mediaDevices`
+**Тесты:** validate-injection.py; injection-lab deviceId asserts; на iPhone не запускалось
+**Риски:** —

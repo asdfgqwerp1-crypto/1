@@ -79,7 +79,7 @@ final class ProfileStore {
         ],
         mediaCapabilities: .init(
             width: 480, height: 640,
-            frameRate: 12, minFrameRate: 1, maxFrameRate: 30,
+            frameRate: 30, minFrameRate: 1, maxFrameRate: 60,
             widthMin: 1, widthMax: 4032,
             heightMin: 1, heightMax: 3024
         ),

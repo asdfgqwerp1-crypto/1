@@ -66,8 +66,11 @@ def main() -> int:
         if "__spoofStartFramePoll" not in gum_js:
             print("FAIL getUserMedia missing frame poll hook")
             failed += 1
+        elif "scheduleInstall" not in gum_js or "installMediaSpoof" not in gum_js:
+            print("FAIL getUserMedia missing deferred mediaDevices install")
+            failed += 1
         else:
-            print("PASS getUserMedia starts frame poll")
+            print("PASS getUserMedia deferred install + frame poll")
 
         status, html = fetch("/injection-lab/")
         if status != 200 or "loader.js" not in html:

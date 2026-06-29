@@ -89,15 +89,23 @@
     var settings = kind === 'video' ? buildVideoSettings(device) : buildAudioSettings(device);
     var capabilities = kind === 'video' ? buildVideoCapabilities(device) : buildAudioCapabilities(device);
 
+    function defineTrackMethod(name, fn) {
+      try {
+        Object.defineProperty(track, name, { value: fn, configurable: true, writable: true });
+      } catch (e) {
+        track[name] = fn;
+      }
+    }
+
     try {
-      Object.defineProperty(track, 'label', { get: function () { return device.label; } });
+      Object.defineProperty(track, 'label', { get: function () { return device.label; }, configurable: true });
     } catch (e) {}
 
-    track.getSettings = function () { return Object.assign({}, settings); };
-    track.getCapabilities = function () { return JSON.parse(JSON.stringify(capabilities)); };
-    track.getConstraints = function () {
+    defineTrackMethod('getSettings', function () { return Object.assign({}, settings); });
+    defineTrackMethod('getCapabilities', function () { return JSON.parse(JSON.stringify(capabilities)); });
+    defineTrackMethod('getConstraints', function () {
       return kind === 'video' ? { facingMode: device.facingMode } : {};
-    };
+    });
 
     return track;
   }

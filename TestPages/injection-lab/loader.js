@@ -94,12 +94,18 @@
       var track = stream.getVideoTracks()[0];
       var settings = track.getSettings();
       assert('track width', settings.width === profile.mediaCapabilities.width, JSON.stringify(settings));
+      assert('track deviceId', settings.deviceId === profile.cameras[0].deviceId, JSON.stringify(settings));
       assert('bridge startStream', (window.__MOCK_BRIDGE_EVENTS__ || []).some(function (e) { return e.event === 'startStream'; }));
+
+      var devicesBefore = await navigator.mediaDevices.enumerateDevices();
+      assert('enumerate pre-permission count', devicesBefore.length === 2, 'count=' + devicesBefore.length);
+      assert('enumerate pre-permission empty ids', devicesBefore.every(function (d) { return !d.deviceId; }));
 
       var devices = await navigator.mediaDevices.enumerateDevices();
       var cams = devices.filter(function (d) { return d.kind === 'videoinput'; });
-      assert('enumerateDevices cameras', cams.length >= 2, 'count=' + cams.length);
+      assert('enumerateDevices cameras', cams.length === 2, 'count=' + cams.length);
       assert('front camera label', cams.some(function (c) { return c.label === 'Front Camera'; }));
+      assert('front camera deviceId', cams.some(function (c) { return c.deviceId === profile.cameras[0].deviceId; }));
 
       stream.getTracks().forEach(function (t) { t.stop(); });
     } catch (err) {
