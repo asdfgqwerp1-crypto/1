@@ -2,6 +2,7 @@ import AVFoundation
 import CoreImage
 import CoreVideo
 import Foundation
+import QuartzCore
 
 enum NV12FramePacker {
     private static let ciContext = CIContext(options: [.useSoftwareRenderer: false])
@@ -44,11 +45,11 @@ enum NV12FramePacker {
 
         var data = Data(capacity: width * height * 3 / 2)
         for row in 0..<height {
-            data.append(yBase.advanced(by: row * yRowBytes).assumingMemoryBound(to: UInt8.self), count: width)
+            data.append(Data(bytes: yBase.advanced(by: row * yRowBytes), count: width))
         }
         let uvHeight = height / 2
         for row in 0..<uvHeight {
-            data.append(uvBase.advanced(by: row * uvRowBytes).assumingMemoryBound(to: UInt8.self), count: width)
+            data.append(Data(bytes: uvBase.advanced(by: row * uvRowBytes), count: width))
         }
         return data
     }
