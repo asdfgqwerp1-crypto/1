@@ -10,6 +10,7 @@ workflows:
     scripts:
       - name: Build unsigned app
         script: |
+          set -euo pipefail
           cd SafariSpoofBrowser
           xcodebuild \
             -project SafariSpoofBrowser.xcodeproj \
@@ -20,7 +21,12 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             BUILD_DIR="$PWD/build" \
-            build
+            build 2>&1 | tee build.log
+          if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            echo "=== BUILD FAILED — last 80 lines ==="
+            tail -80 build.log
+            exit 65
+          fi
       - name: Package IPA
         script: |
           cd SafariSpoofBrowser

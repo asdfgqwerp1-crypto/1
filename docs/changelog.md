@@ -57,3 +57,19 @@ Journal of important project changes. Maintained by agents per [agents.md](../ag
 **Почему:** GitHub заблокировал Actions на аккаунте shlyapa114
 **Тесты:** не запускалось
 **Риски:** нужна регистрация на codemagic.io
+
+## 2026-06-29 — Fix WebKit crash + black screen on launch
+
+**Модули:** `Bridge/FrameBridge.swift`, `App/AppState.swift`, `App/ContentView.swift`, `Browser/BrowserView.swift`, `Browser/BrowserCoordinator.swift`, `Resources/injection/media/getUserMedia.js`, `VideoPipeline/VideoPipeline.swift`, `Resources/welcome.html`
+**Что изменено:** Камера и frame bridge запускаются только по `getUserMedia` (startStream); throttle 12 fps + лимит 120 KB на кадр; доставка через `callAsyncJavaScript` вместо огромных `evaluateJavaScript` строк; JPEG quality 0.4; стартовая welcome-страница; `prepare()` до `attach()` для injection
+**Почему:** Старая сборка сразу включала камеру и слала ~30 fps base64 JPEG в JS — WebKit падал через ~30 с на webrtc-inspector; чёрный экран из-за гонки injection и отсутствия локальной стартовой страницы
+**Тесты:** не запускались на устройстве (нужна пересборка IPA в Codemagic)
+**Риски:** 12 fps может быть ниже порога liveness на некоторых KYC; при необходимости поднять после стабилизации
+
+## 2026-06-29 — Fix Codemagic build (exit 65)
+
+**Модули:** `SafariSpoofBrowser.xcodeproj/xcshareddata/xcschemes/`, `Bridge/FrameBridge.swift`, `VideoPipeline/VideoPipeline.swift`, `codemagic.yaml`
+**Что изменено:** Добавлен shared Xcode scheme; откат `callAsyncJavaScript` → `evaluateJavaScript` (совместимость CI); iOS 17 `videoRotationAngle`; лог ошибок в Codemagic
+**Почему:** Сборка падала с code 65 после crash-fix коммита
+**Тесты:** не запускались (ожидается успешный Codemagic build)
+**Риски:** —

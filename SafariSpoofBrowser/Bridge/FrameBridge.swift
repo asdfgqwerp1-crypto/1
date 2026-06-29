@@ -71,27 +71,28 @@ final class FrameBridge: NSObject {
 
     private func dispatchFrame(base64JPEG: String, width: Int, height: Int, on webView: WKWebView) {
         isEvaluating = true
-        let finish: () -> Void = { [weak self] in
-            guard let self else { return }
-            self.isEvaluating = false
-            if let pending = self.pendingFrame {
-                self.pendingFrame = nil
-                self.sendFrame(
-                    base64JPEG: pending.base64,
-                    width: pending.width,
-                    height: pending.height,
-                    timestamp: CFAbsoluteTimeGetCurrent()
-                )
-            }
-        }
+        let script = """
+        (function(){
+          if (window.__spoofReceiveFrame) {
+            window.__spoofReceiveFrame('\(base64JPEG.escapedForJS())', \(width), \(height));
+          }
+        })();
+        """
 
-        webView.callAsyncJavaScript(
-            "if (window.__spoofReceiveFrame) { window.__spoofReceiveFrame(arguments[0], arguments[1], arguments[2]); }",
-            arguments: [base64JPEG, width, height],
-            in: nil,
-            in: .page
-        ) { _, _ in
-            finish()
+        DispatchQueue.main.async { [weak self] in
+            webView.evaluateJavaScript(script) { _, _ in
+                guard let self else { return }
+                self.isEvaluating = false
+                if let pending = self.pendingFrame {
+                    self.pendingFrame = nil
+                    self.sendFrame(
+                        base64JPEG: pending.base64,
+                        width: pending.width,
+                        height: pending.height,
+                        timestamp: CFAbsoluteTimeGetCurrent()
+                    )
+                }
+            }
         }
     }
 
@@ -116,13 +117,25 @@ extension FrameBridge: WKScriptMessageHandler {
         switch event {
         case "startStream":
             isDeliveryEnabled = true
-            delegate?.frameBridgeDidRequestStreamStart()
+            DispatchQueue.main.async { [weak self] in
+                self?.delegate?.frameBridgeDidRequestStreamStart()
+            }
         case "stopStream":
             isDeliveryEnabled = false
-            delegate?.frameBridgeDidRequestStreamStop()
+            DispatchQueue.main.async { [weak self] in
+                self?.delegate?.frameBridgeDidRequestStreamStop()
+            }
         default:
             break
         }
+    }
+}
+
+private extension String {
+    func escapedForJS() -> String {
+        replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "'", with: "\\'")
+            .replacingOccurrences(of: "\n", with: "\\n")
     }
 }
 
