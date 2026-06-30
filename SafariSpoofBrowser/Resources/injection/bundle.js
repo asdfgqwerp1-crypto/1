@@ -353,6 +353,7 @@
   }
   window.addEventListener('pageshow', refreshPatches);
 })();
+// --- fingerprint/webgl.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -1899,8 +1900,7 @@
   window.__spoofHookNavigatorMediaDevices = hookNavigatorMediaDevices;
 
   scheduleInstall();
-})();
-// --- webrtc/enumerateDevices.js ---
+})();// --- webrtc/enumerateDevices.js ---
 (function () {
   'use strict';
   // enumerateDevices override is in getUserMedia.js

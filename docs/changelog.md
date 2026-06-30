@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.5: Regula iframe camera permission policy fix
+
+**Модули:** `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`
+**Что изменено:** агрессивный `allow=camera` на все iframe (src setter, interval 10s, native audit/patch); лог `permissions.query camera`; sandbox allow-scripts fallback; native `iframe audit` показывает allow/src каждого frame
+**Почему:** Regula (9 iframe) показывает «allow access to camera», но нет `[gUM]`/`WK grant` — камера в iframe без Permissions-Policy; в WKWebView нет системного диалога, gUM должен пройти через наш intercept
+**Тесты:** не запускались (нет устройства)
+**Риски:** правка sandbox может повлиять на изоляцию iframe (только если sandbox уже был)
+
 ## 2026-06-30 — v29.10.4: Regula iframe allow + guaranteed probe logs
 
 **Модули:** `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`

@@ -128,17 +128,35 @@ extension BrowserCoordinator: WKNavigationDelegate {
                 DebugLogStore.shared.append(level: "error", message: "[native] rehook err: \(error.localizedDescription)")
             }
         }
+        runIframeMaintenance(on: webView, label: "main")
         DebugLogStore.shared.append(level: "info", message: "[native] probe scheduled \(BuildInfo.marker)")
         runInjectionProbe(on: webView, label: "main")
-        for delay in [2.0, 5.0] {
+        for delay in [2.0, 5.0, 10.0] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak webView] in
                 guard let webView else { return }
                 self.runInjectionProbe(on: webView, label: "t+\(Int(delay))s")
-                webView.evaluateJavaScript("document.querySelectorAll('iframe').length") { count, _ in
-                    if let n = count {
-                        DebugLogStore.shared.append(level: "info", message: "[native] iframe count=\(n) @ t+\(Int(delay))s")
-                    }
-                }
+                self.runIframeMaintenance(on: webView, label: "t+\(Int(delay))s")
+            }
+        }
+    }
+
+    private func runIframeMaintenance(on webView: WKWebView, label: String) {
+        webView.evaluateJavaScript(Self.iframeAllowPatchScript) { result, error in
+            if let error {
+                DebugLogStore.shared.append(level: "error", message: "[native] iframe patch(\(label)) err: \(error.localizedDescription)")
+                return
+            }
+            if let json = result as? String, !json.isEmpty {
+                DebugLogStore.shared.append(level: "info", message: "[native] iframe patch(\(label)) \(json)")
+            }
+        }
+        webView.evaluateJavaScript(Self.iframeAuditScript) { result, error in
+            if let error {
+                DebugLogStore.shared.append(level: "error", message: "[native] iframe audit(\(label)) err: \(error.localizedDescription)")
+                return
+            }
+            if let json = result as? String, !json.isEmpty {
+                DebugLogStore.shared.append(level: "info", message: "[native] iframe audit(\(label)) \(json)")
             }
         }
     }
@@ -160,8 +178,32 @@ extension BrowserCoordinator: WKNavigationDelegate {
     private static let rehookInjectionScript = """
     (function(){try{
       if(window.__spoofHookNavigatorMediaDevices)window.__spoofHookNavigatorMediaDevices();
+      if(window.__spoofPatchAllIframes)window.__spoofPatchAllIframes();
       if(window.__spoofTrace)window.__spoofTrace('info','didFinish rehook @ '+(location.href||''),'inject');
     }catch(e){}})();
+    """
+
+    private static let iframeAllowPatchScript = """
+    (function(){try{
+      if(window.__spoofPatchAllIframes)return JSON.stringify(window.__spoofPatchAllIframes());
+      var allow='camera; microphone; autoplay; fullscreen; display-capture';
+      var patched=0,total=0;
+      document.querySelectorAll('iframe').forEach(function(f){
+        total+=1;
+        var prev=f.getAttribute('allow')||'';
+        if(prev.indexOf('camera')<0){f.setAttribute('allow',allow);if(f.allow!==undefined)f.allow=allow;patched+=1;}
+      });
+      return JSON.stringify({patched:patched,total:total,fallback:true});
+    }catch(e){return JSON.stringify({error:String(e)});}})();
+    """
+
+    private static let iframeAuditScript = """
+    (function(){try{
+      var list=Array.from(document.querySelectorAll('iframe')).slice(0,12).map(function(f,i){
+        return {i:i,src:(f.src||f.getAttribute('src')||'').slice(0,72),allow:(f.getAttribute('allow')||'').slice(0,48)};
+      });
+      return JSON.stringify({count:document.querySelectorAll('iframe').length,frames:list});
+    }catch(e){return JSON.stringify({error:String(e)});}})();
     """
 
     private static let injectionProbeScript = """
