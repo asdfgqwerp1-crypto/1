@@ -168,6 +168,21 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
             payload = object
         }
 
+        if payload["message"] == nil,
+           let url = request.url,
+           let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems {
+            for item in items where item.name != "k" {
+                guard let value = item.value else { continue }
+                let decoded = value.removingPercentEncoding ?? value
+                switch item.name {
+                case "level", "message", "source":
+                    payload[item.name] = decoded
+                default:
+                    break
+                }
+            }
+        }
+
         let level = (payload["level"] as? String) ?? "log"
         let message = (payload["message"] as? String) ?? ""
         let source = payload["source"] as? String

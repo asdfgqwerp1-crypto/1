@@ -52,6 +52,7 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         frameBridge.attach(webView: webView)
         webView.customUserAgent = profile.userAgent
         statusMessage = "Браузер готов"
+        DebugLogStore.shared.append(level: "info", message: "[native] browser attach, injection in page world")
     }
 
     func load(urlString: String) {
@@ -116,7 +117,18 @@ extension BrowserCoordinator: WKNavigationDelegate {
         isLoading = false
         statusMessage = webView.url?.host ?? "Загружено"
         updateNavigationState()
+        if let url = webView.url?.absoluteString {
+            DebugLogStore.shared.append(level: "info", message: "[native] didFinish \(url)")
+        }
+        webView.evaluateJavaScript(Self.rehookInjectionScript, completionHandler: nil)
     }
+
+    private static let rehookInjectionScript = """
+    (function(){try{
+      if(window.__spoofHookNavigatorMediaDevices)window.__spoofHookNavigatorMediaDevices();
+      if(window.__spoofTrace)window.__spoofTrace('info','didFinish rehook @ '+(location.href||''),'inject');
+    }catch(e){}})();
+    """
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
         updateNavigationState()
@@ -156,6 +168,18 @@ extension BrowserCoordinator: WKUIDelegate {
         type: WKMediaCaptureType,
         decisionHandler: @escaping (WKPermissionDecision) -> Void
     ) {
+        let kind: String
+        switch type {
+        case .camera: kind = "camera"
+        case .microphone: kind = "microphone"
+        case .cameraAndMicrophone: kind = "camera+mic"
+        @unknown default: kind = "media"
+        }
+        let host = origin.host ?? "?"
+        DebugLogStore.shared.append(
+            level: "info",
+            message: "[native] WK grant \(kind) from \(host) mainFrame=\(frame.isMainFrame)"
+        )
         let delay = Double.random(in: 0.05...0.2)
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             decisionHandler(.grant)

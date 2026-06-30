@@ -98,6 +98,11 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     }
 
     func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?) {
+        let dims = config.map { "\($0.width)x\($0.height)@\($0.frameRate)" } ?? "default"
+        DebugLogStore.shared.append(
+            level: "info",
+            message: "[native] stream/start \(dims) network=\(isNetworkVideoSource)"
+        )
         if let config {
             videoPipeline.updateStreamDelivery(config)
         }

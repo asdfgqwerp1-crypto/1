@@ -483,5 +483,7 @@
     Object.defineProperty(window, '__spoofSelectMediaPreset', { enumerable: false, configurable: true, writable: true });
   } catch (e) {}
 
+  window.__spoofHookNavigatorMediaDevices = hookNavigatorMediaDevices;
+
   scheduleInstall();
 })();

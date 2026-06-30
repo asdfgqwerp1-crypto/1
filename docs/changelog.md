@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.1: fix empty debug logs (GET transport + page world)
+
+**Модули:** `spoofTrace.js`, `debug-console.js`, `ControlSchemeHandler.swift`, `InjectionManager.swift`, `BrowserCoordinator.swift`, `AppState.swift`
+**Что изменено:** Debug/trace через `sendControl` GET+iframe (POST fetch не работал в WKWebView); injection в `WKContentWorld.page`; нативные логи didFinish/media permission/stream/start; rehook media на didFinish
+**Почему:** пустая debug панель на Daon — `sendControlPost` не доходил до native; возможный isolated content world — gUM patch не видел странице
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.10.0: Daon fixes + debug ladybug always visible
 
 **Модули:** `permissions.js`, `spoofTrace.js`, `webkit-stealth.js`, `SchemeAuthValidator.swift`, `BrowserScreenView.swift`, `getUserMedia.js`

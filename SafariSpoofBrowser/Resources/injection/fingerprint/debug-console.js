@@ -23,12 +23,18 @@
   }
 
   function emit(level, message, source) {
-    if (!window.__spoofSendControlPost) return;
-    window.__spoofSendControlPost('debug/log', {
+    var payload = {
       level: level,
       message: truncate(message),
       source: source || 'page'
-    });
+    };
+    if (window.__spoofSendControl) {
+      window.__spoofSendControl('debug/log', payload);
+      return;
+    }
+    if (window.__spoofSendControlPost) {
+      window.__spoofSendControlPost('debug/log', payload);
+    }
   }
 
   function wrapConsole(level, original) {

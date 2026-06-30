@@ -27,7 +27,8 @@ final class InjectionManager {
             let script = WKUserScript(
                 source: source,
                 injectionTime: .atDocumentStart,
-                forMainFrameOnly: false
+                forMainFrameOnly: false,
+                in: .page
             )
             controller.addUserScript(script)
         }
