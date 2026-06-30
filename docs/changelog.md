@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.5: Daon infinite load — bytes=0 false frame ready
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `bundle.js`
+**Что изменено:** `noteRealFrame` требует bytes>512 И decode ≥64px (убран hasPicture-only); FHD wait 12s + poll delay 200ms после resize canvas; NV12 path передаёт byteLength
+**Почему:** Daon 1920×1080 — gUM `frames ready bytes=0`, canvas пустой → SDK крутит спиннер; Regula-class false ready regression
+**Тесты:** не запускались (нет устройства)
+**Риски:** gUM на медленном relay может ждать до 12s на FHD
+
 ## 2026-07-01 — v29.13.4: CI fix — AppState resolvedProfile local
 
 **Модули:** `AppState.swift`, `BuildInfo.swift`

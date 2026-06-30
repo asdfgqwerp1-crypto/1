@@ -170,9 +170,13 @@
         frameRate: active.frameRate
       });
     }
+    var pollDelayMs = 0;
+    if (sizeChanged) {
+      pollDelayMs = active.width >= 1280 ? 200 : 80;
+    }
     setTimeout(function () {
       if (window.__spoofStartFramePoll) window.__spoofStartFramePoll();
-    }, sizeChanged ? 80 : 0);
+    }, pollDelayMs);
   }
 
   var MIN_READY_FRAME_BYTES = 512;
@@ -347,7 +351,7 @@
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
-          var frameWaitMs = 8000;
+          var frameWaitMs = active.width >= 1920 ? 12000 : 8000;
           waitForFrames(1, frameWaitMs).then(function (gotFrame) {
             if (!gotFrame) {
               traceMedia('waitForFrames timeout bytes=' + (window.__spoofLastFrameBytes || 0), 'error');

@@ -119,13 +119,10 @@
     var bytes = payloadBytes || 0;
     var w = pixelW || 0;
     var h = pixelH || 0;
-    var hasBytes = bytes > MIN_REAL_FRAME_BYTES;
-    var hasPicture = w >= 64 && h >= 64;
-    if (hasBytes || hasPicture) {
+    if (bytes <= MIN_REAL_FRAME_BYTES) return;
+    if (w >= 64 && h >= 64) {
       window.__spoofGotRealFrame = true;
-      if (bytes > 0) {
-        window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
-      }
+      window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
     }
   }
 
@@ -576,7 +573,7 @@
     blitNV12ToCanvas(buffer, width, height);
     if (meta.seq > lastFrameSeq) lastFrameSeq = meta.seq;
     if (meta.ptsUs >= lastPtsUs) lastPtsUs = meta.ptsUs;
-    finishFrame(meta);
+    finishFrame(meta, null, buffer.byteLength, width, height);
     return true;
   }
 
