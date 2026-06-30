@@ -13,6 +13,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     let profileStore: ProfileStore
     let videoPipeline: VideoPipeline
     let frameBridge: FrameBridge
+    let tabCoordinator: TabCoordinator
 
     private var cancellables = Set<AnyCancellable>()
     var effectiveProfile: DeviceProfile {
@@ -23,12 +24,26 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         self.testServerHost = TestServerSettings.host
         let store = ProfileStore()
         self.profileStore = store
-        self.activeProfile = store.defaultProfile
+        if let savedProfileID = BrowserSessionSettings.activeProfileID,
+           let savedProfile = store.profile(id: savedProfileID) {
+            self.activeProfile = savedProfile
+        } else if let snapshot = BrowserSessionStore.load(),
+                  let snapshotProfile = store.profile(id: snapshot.activeProfileID) {
+            self.activeProfile = snapshotProfile
+        } else {
+            self.activeProfile = store.defaultProfile
+        }
         UserDefaults.standard.set(FrameDeliveryFormat.jpeg.rawValue, forKey: "com.safarispoof.frameDelivery")
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
         self.frameBridge.delegate = self
         self.frameBridge.setSchemeAuthKey(activeProfile.schemeAuthKey)
+
+        let initialProfile = self.activeProfile
+        self.tabCoordinator = TabCoordinator(
+            profileProvider: { [weak self] in self?.effectiveProfile ?? initialProfile },
+            profileIDProvider: { [weak self] in self?.activeProfile.id ?? initialProfile.id }
+        )
 
         if let savedURL = NetworkStreamSettings.url, !savedURL.isEmpty {
             self.videoSource = .networkStream(url: savedURL)
@@ -40,12 +55,21 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
                 self?.bridgeMetrics = metrics
             }
             .store(in: &cancellables)
+
+        tabCoordinator.objectWillChange
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+            }
+            .store(in: &cancellables)
     }
 
     func selectProfile(_ profile: DeviceProfile) {
         activeProfile = profile
         frameBridge.setSchemeAuthKey(profile.schemeAuthKey)
         videoPipeline.updateProfile(effectiveProfile)
+        BrowserSessionSettings.activeProfileID = profile.id
+        tabCoordinator.persistNow()
     }
 
     func startVideoPipeline() {

@@ -22,6 +22,8 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     private var controlMessageHandler: SpoofControlMessageHandler?
     private var activeProfile: DeviceProfile?
 
+    var onPageUpdate: ((String, String?) -> Void)?
+
     var exportBridgeForSetup: ExportBridge { exportBridge }
 
     func retainControlMessageHandler(_ handler: SpoofControlMessageHandler) {
@@ -42,7 +44,7 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         reinjectScripts()
     }
 
-    func attach(webView: WKWebView) {
+    func attach(webView: WKWebView, frameBridgeActive: Bool = true) {
         self.webView = webView
         webView.navigationDelegate = self
         webView.uiDelegate = self
@@ -56,7 +58,9 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         exportBridge.attach(webView: webView)
 
         manager.install(into: webView)
-        frameBridge.attach(webView: webView)
+        if frameBridgeActive {
+            frameBridge.attach(webView: webView)
+        }
         webView.customUserAgent = profile.userAgent
         statusMessage = "Браузер готов"
         DebugLogStore.shared.append(
@@ -129,6 +133,7 @@ extension BrowserCoordinator: WKNavigationDelegate {
         updateNavigationState()
         if let url = webView.url?.absoluteString {
             DebugLogStore.shared.append(level: "info", message: "[native] didFinish \(url)")
+            onPageUpdate?(url, webView.title)
         }
         webView.evaluateJavaScript(Self.rehookInjectionScript) { _, error in
             if let error {

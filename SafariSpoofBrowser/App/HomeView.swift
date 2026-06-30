@@ -33,6 +33,11 @@ struct HomeView: View {
                     Text("Кадры: JPEG")
                         .font(.caption.monospaced())
                         .foregroundStyle(.gray)
+                    if let snapshot = BrowserSessionStore.load(), !snapshot.tabs.isEmpty {
+                        Text("Сессия: \(snapshot.tabs.count) вкл. · профиль сохранён")
+                            .font(.caption)
+                            .foregroundStyle(.green)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 8) {

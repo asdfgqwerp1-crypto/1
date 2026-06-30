@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.0: Anti-detect browser sessions — tabs, cookies, restore
+
+**Модули:** `TabCoordinator`, `TabSession`, `TabDataStoreRegistry`, `BrowserSessionStore`, `BrowserView`, `BrowserScreenView`, `AppState`
+**Что изменено:** Мультивкладки с изолированным `WKWebsiteDataStore` (iOS 17+); приватные вкладки (`nonPersistent`); автосохранение URL/заголовков/активной вкладки и профиля; восстановление сессии после перезапуска; очистка cookies/storage по вкладке (context menu); WebView в памяти при переключении вкладок
+**Почему:** Готовый вид антидетект-браузера — отдельные identity per tab, persistent cookies/localStorage, session restore
+**Тесты:** не запускались (нет устройства)
+**Риски:** iOS 16 fallback — общий default data store для всех вкладок; память растёт с числом вкладок
+
 ## 2026-07-01 — v29.12.1: stream/stop handler regression fix
 
 **Модули:** `SpoofControlMessageHandler.swift`, `getUserMedia.js`, `frameReceiver.js`, `FrameBridge.swift`, `VideoPipeline.swift`

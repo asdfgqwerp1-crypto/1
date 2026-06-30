@@ -35,6 +35,10 @@
 		A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000044; };
 		A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000045; };
 		A10000010000000000000056 /* SpoofControlMessageHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000056; };
+		A10000010000000000000057 /* TabSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000057; };
+		A10000010000000000000058 /* TabDataStoreRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000058; };
+		A10000010000000000000059 /* BrowserSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000059; };
+		A10000010000000000000060 /* TabCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000060; };
 		A10000010000000000000047 /* DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000047; };
 		A10000010000000000000048 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000048; };
 		A10000010000000000000049 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000049; };
@@ -94,6 +98,10 @@
 		A20000010000000000000044 /* CameraIndicatorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraIndicatorSession.swift; sourceTree = "<group>"; };
 		A20000010000000000000045 /* ControlSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSchemeHandler.swift; sourceTree = "<group>"; };
 		A20000010000000000000056 /* SpoofControlMessageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofControlMessageHandler.swift; sourceTree = "<group>"; };
+		A20000010000000000000057 /* TabSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSession.swift; sourceTree = "<group>"; };
+		A20000010000000000000058 /* TabDataStoreRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabDataStoreRegistry.swift; sourceTree = "<group>"; };
+		A20000010000000000000059 /* BrowserSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSessionStore.swift; sourceTree = "<group>"; };
+		A20000010000000000000060 /* TabCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabCoordinator.swift; sourceTree = "<group>"; };
 		A20000010000000000000046 /* webkit-stealth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webkit-stealth.js; sourceTree = "<group>"; };
 		A20000010000000000000047 /* DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogStore.swift; sourceTree = "<group>"; };
 		A20000010000000000000048 /* DebugOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugOverlayView.swift; sourceTree = "<group>"; };
@@ -208,6 +216,10 @@
 				A20000010000000000000005 /* BrowserCoordinator.swift */,
 				A20000010000000000000006 /* BrowserView.swift */,
 				A20000010000000000000007 /* URLNormalizer.swift */,
+				A20000010000000000000057 /* TabSession.swift */,
+				A20000010000000000000058 /* TabDataStoreRegistry.swift */,
+				A20000010000000000000059 /* BrowserSessionStore.swift */,
+				A20000010000000000000060 /* TabCoordinator.swift */,
 			);
 			path = Browser;
 			sourceTree = "<group>";
@@ -454,6 +466,10 @@
 				A10000010000000000000004 /* SettingsView.swift in Sources */,
 				A10000010000000000000005 /* BrowserCoordinator.swift in Sources */,
 				A10000010000000000000006 /* BrowserView.swift in Sources */,
+				A10000010000000000000057 /* TabSession.swift in Sources */,
+				A10000010000000000000058 /* TabDataStoreRegistry.swift in Sources */,
+				A10000010000000000000059 /* BrowserSessionStore.swift in Sources */,
+				A10000010000000000000060 /* TabCoordinator.swift in Sources */,
 				A10000010000000000000007 /* URLNormalizer.swift in Sources */,
 				A10000010000000000000008 /* DeviceProfile.swift in Sources */,
 				A10000010000000000000051 /* ProfileSchemeAuth.swift in Sources */,
