@@ -10,8 +10,8 @@ final class TabCoordinator: ObservableObject {
     let dataStoreRegistry = TabDataStoreRegistry()
 
     private var saveWorkItem: DispatchWorkItem?
-    private let profileProvider: () -> DeviceProfile
-    private let profileIDProvider: () -> String
+    private var profileProvider: () -> DeviceProfile
+    private var profileIDProvider: () -> String
 
     var activeTab: TabSession? {
         tabs.first { $0.id == activeTabID }
@@ -39,6 +39,14 @@ final class TabCoordinator: ObservableObject {
 
         tabs.forEach { ensureCoordinator(for: $0) }
         scheduleSave()
+    }
+
+    func setProfileProviders(
+        profileProvider: @escaping () -> DeviceProfile,
+        profileIDProvider: @escaping () -> String
+    ) {
+        self.profileProvider = profileProvider
+        self.profileIDProvider = profileIDProvider
     }
 
     func coordinator(for tabID: UUID) -> BrowserCoordinator {

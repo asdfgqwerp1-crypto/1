@@ -36,11 +36,16 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         UserDefaults.standard.set(FrameDeliveryFormat.jpeg.rawValue, forKey: "com.safarispoof.frameDelivery")
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
+
+        let initialProfile = activeProfile
+        self.tabCoordinator = TabCoordinator(
+            profileProvider: { initialProfile.withFrameDelivery(.jpeg) },
+            profileIDProvider: { initialProfile.id }
+        )
+
         self.frameBridge.delegate = self
         self.frameBridge.setSchemeAuthKey(activeProfile.schemeAuthKey)
-
-        let initialProfile = self.activeProfile
-        self.tabCoordinator = TabCoordinator(
+        tabCoordinator.setProfileProviders(
             profileProvider: { [weak self] in self?.effectiveProfile ?? initialProfile },
             profileIDProvider: { [weak self] in self?.activeProfile.id ?? initialProfile.id }
         )

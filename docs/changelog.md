@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.3: CI fix — AppState init order
+
+**Модули:** `AppState.swift`, `TabCoordinator.swift`, `BuildInfo.swift`
+**Что изменено:** `tabCoordinator` инициализируется до `frameBridge.delegate = self`; провайдеры профиля с `[weak self]` подключаются через `setProfileProviders` после полной инициализации
+**Почему:** Xcode 26 — `variable 'self.tabCoordinator' used before being initialized` в `AppState.init`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.2: CI fix — correct WKWebsiteDataStore(forIdentifier:)
 
 **Модули:** `TabDataStoreRegistry.swift`, `BuildInfo.swift`
