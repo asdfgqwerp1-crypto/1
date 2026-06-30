@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.3: build marker in debug log + pbxproj dedup
+
+**Модули:** `BuildInfo.swift`, `BrowserCoordinator.swift`, `project.pbxproj`, `bundle.js`
+**Что изменено:** `[native] browser attach v29.10.3` в debug панели для проверки установленной сборки; убраны дубликаты `frameReporter.js` в Xcode project; пересобран `bundle.js`
+**Почему:** на Regula видны только старые логи без probe — нужно однозначно видеть версию IPA на устройстве
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.10.2: Regula iframe probe + native injection diagnostics
 
 **Модули:** `frameReporter.js`, `permissions.js`, `InjectionManager.swift`, `BrowserCoordinator.swift`, `BrowserView.swift`

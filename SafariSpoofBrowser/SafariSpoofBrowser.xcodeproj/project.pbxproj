@@ -51,7 +51,6 @@
 		A10000010000000000000053 /* permissions.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000053; };
 		A10000010000000000000054 /* spoofTrace.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000054; };
 		A10000010000000000000055 /* frameReporter.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000055; };
-		A10000010000000000000055 /* frameReporter.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000055; };
 		A10000010000000000000018 /* navigator.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018; };
 		A10000010000000000000019 /* screen.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019; };
 		A10000010000000000000020 /* webgl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000020; };
@@ -102,7 +101,6 @@
 		A20000010000000000000052 /* SchemeAuthValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchemeAuthValidator.swift; sourceTree = "<group>"; };
 		A20000010000000000000053 /* permissions.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = permissions.js; sourceTree = "<group>"; };
 		A20000010000000000000054 /* spoofTrace.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = spoofTrace.js; sourceTree = "<group>"; };
-		A20000010000000000000055 /* frameReporter.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = frameReporter.js; sourceTree = "<group>"; };
 		A20000010000000000000055 /* frameReporter.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = frameReporter.js; sourceTree = "<group>"; };
 		A20000010000000000000041 /* FrameTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameTiming.swift; sourceTree = "<group>"; };
 		A20000010000000000000038 /* SpoofFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofFrame.swift; sourceTree = "<group>"; };

@@ -52,7 +52,10 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         frameBridge.attach(webView: webView)
         webView.customUserAgent = profile.userAgent
         statusMessage = "Браузер готов"
-        DebugLogStore.shared.append(level: "info", message: "[native] browser attach, injection in page world")
+        DebugLogStore.shared.append(
+            level: "info",
+            message: "[native] browser attach \(BuildInfo.marker), injection in page world"
+        )
     }
 
     func load(urlString: String) {
