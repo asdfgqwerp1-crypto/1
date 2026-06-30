@@ -76,6 +76,24 @@
     hideGlobal('__SAFARI_SPOOF_CONFIG__');
   }
 
+  function sendControlViaFrame(url) {
+    try {
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px;border:0';
+      iframe.src = url;
+      var root = document.body || document.documentElement;
+      if (!root) return false;
+      root.appendChild(iframe);
+      setTimeout(function () {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      }, 1500);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function sendControl(path, params) {
     var query = '';
     if (params) {
@@ -92,12 +110,11 @@
         cache: 'no-store',
         keepalive: true
       }).catch(function () {});
-      return;
     } catch (e) {}
-    try {
-      var img = new Image();
-      img.src = url;
-    } catch (e2) {}
+    // WKWebView occasionally drops custom-scheme fetch; iframe backup reaches native reliably.
+    setTimeout(function () {
+      sendControlViaFrame(url);
+    }, 80);
   }
 
   function sendControlPost(path, payload) {

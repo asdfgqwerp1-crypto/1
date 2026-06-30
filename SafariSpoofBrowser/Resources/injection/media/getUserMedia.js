@@ -115,6 +115,7 @@
       window.__spoofResetCanvas();
     }
     window.__spoofFrameCount = 0;
+    window.__spoofLastFrameSeq = 0;
     if (window.__spoofSendControl) {
       window.__spoofSendControl('stream/start', {
         width: active.width,
@@ -122,18 +123,31 @@
         frameRate: active.frameRate
       });
     }
-    if (window.__spoofStartFramePoll) {
-      window.__spoofStartFramePoll();
-    }
+    setTimeout(function () {
+      if (window.__spoofStartFramePoll) {
+        window.__spoofStartFramePoll();
+      }
+    }, 60);
+  }
+
+  function hasRealFrame() {
+    var count = window.__spoofFrameCount || 0;
+    var seq = window.__spoofLastFrameSeq || 0;
+    return count > 0 && seq > 0;
   }
 
   function waitForFrames(minCount, timeoutMs) {
     return new Promise(function (resolve) {
       var deadline = Date.now() + timeoutMs;
       var timer = setInterval(function () {
-        if ((window.__spoofFrameCount || 0) >= minCount || Date.now() >= deadline) {
+        var ready = hasRealFrame() && (window.__spoofFrameCount || 0) >= minCount;
+        if (ready || Date.now() >= deadline) {
           clearInterval(timer);
-          resolve((window.__spoofFrameCount || 0) >= minCount);
+          if (!ready) {
+            console.error('[spoof] waitForFrames timeout frames=' + (window.__spoofFrameCount || 0)
+              + ' seq=' + (window.__spoofLastFrameSeq || 0));
+          }
+          resolve(ready);
         }
       }, 40);
     });

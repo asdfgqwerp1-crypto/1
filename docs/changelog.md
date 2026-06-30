@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.8: fix WebRTC no frames (thread + placeholder)
+
+**Модули:** `HttpSnapshotPlayer.swift`, `VideoPipeline.swift`, `getUserMedia.js`, `webkit-stealth.js`
+**Что изменено:** `onJPEG` и `sendHTTPJPEG` на main thread (fix race `isDelivering`); `waitForFrames` ждёт реальный кадр `seq>0`, не placeholder 2×2; задержка poll после `stream/start`; iframe backup для `spoofcontrol://`
+**Почему:** превью в Settings работало (UIImage на main), но кадры в `spoofframe://` не уходили — `isDelivering` читался из background URLSession callback; gUM принимал placeholder и отдавал чёрный/пустой video
+**Тесты:** не запускались (нет устройства)
+**Риски:** двойной `stream/start` (fetch+iframe) — идемпотентно
+
 ## 2026-06-30 — v29.9.7: fix WebRTC black video with network stream
 
 **Модули:** `AppState.swift`, `VideoPipeline.swift`

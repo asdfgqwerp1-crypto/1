@@ -247,6 +247,17 @@ final class VideoPipeline: NSObject {
     }
 
     private func sendHTTPJPEG(_ data: Data, profile: DeviceProfile) {
+        guard isRunning else { return }
+        if Thread.isMainThread {
+            deliverHTTPJPEG(data, profile: profile)
+        } else {
+            DispatchQueue.main.async { [weak self] in
+                self?.deliverHTTPJPEG(data, profile: profile)
+            }
+        }
+    }
+
+    private func deliverHTTPJPEG(_ data: Data, profile: DeviceProfile) {
         guard isRunning, frameBridge.isDelivering else { return }
 
         let now = CFAbsoluteTimeGetCurrent()

@@ -72,8 +72,8 @@ final class HttpSnapshotPlayer: NSObject {
                   http.statusCode == 200 else { return }
             DispatchQueue.main.async {
                 self.previewImageView?.image = UIImage(data: data)
+                self.onJPEG?(data)
             }
-            self.onJPEG?(data)
         }.resume()
     }
 
