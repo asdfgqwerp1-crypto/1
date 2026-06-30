@@ -9,6 +9,7 @@ struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
     @State private var networkURL = ""
+    @State private var cameraAccessDenied = false
 
     private var sourcePickerValue: SourcePickerChoice {
         switch appState.videoSource {
@@ -113,6 +114,11 @@ struct SettingsView: View {
                     VideoPreviewView(pipeline: appState.videoPipeline)
                         .frame(height: 200)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
+                    if cameraAccessDenied && !appState.usesNetworkVideoSource {
+                        Text("Нет доступа к камере. Настройки → SafariSpoof → Камера → Вкл.")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
                 }
             }
             .navigationTitle("Settings")
@@ -121,7 +127,17 @@ struct SettingsView: View {
                 if let saved = NetworkStreamSettings.url, !saved.isEmpty {
                     networkURL = saved
                 }
-                appState.startVideoPipeline()
+                Task {
+                    if !appState.usesNetworkVideoSource {
+                        let granted = await AppState.requestCameraPermission()
+                        await MainActor.run {
+                            cameraAccessDenied = !granted
+                            if granted { appState.startVideoPipeline() }
+                        }
+                    } else {
+                        appState.startVideoPipeline()
+                    }
+                }
             }
             .onDisappear {
                 if !appState.usesNetworkVideoSource {
@@ -132,17 +148,29 @@ struct SettingsView: View {
     }
 }
 
+private final class PreviewHostView: UIView {
+    var pipeline: VideoPipeline?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard let pipeline else { return }
+        pipeline.updatePreviewLayout(in: self)
+    }
+}
+
 struct VideoPreviewView: UIViewRepresentable {
     let pipeline: VideoPipeline
 
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
+    func makeUIView(context: Context) -> PreviewHostView {
+        let view = PreviewHostView()
         view.backgroundColor = .black
+        view.pipeline = pipeline
         pipeline.attachPreview(to: view)
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {
+    func updateUIView(_ uiView: PreviewHostView, context: Context) {
+        uiView.pipeline = pipeline
         pipeline.attachPreview(to: uiView)
     }
 }

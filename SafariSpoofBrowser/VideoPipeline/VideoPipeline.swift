@@ -8,6 +8,7 @@ final class VideoPipeline: NSObject {
     private let processingQueue = DispatchQueue(label: "com.safarispoof.video.processing")
     private var videoOutput: AVCaptureVideoDataOutput?
     private var previewLayer: AVCaptureVideoPreviewLayer?
+    private weak var previewContainer: UIView?
     private var networkPlayer: NetworkVideoPlayer?
     private var httpSnapshotPlayer: HttpSnapshotPlayer?
     private var cameraIndicator: CameraIndicatorSession?
@@ -102,6 +103,20 @@ final class VideoPipeline: NSObject {
     }
 
     func attachPreview(to view: UIView) {
+        previewContainer = view
+        reinstallPreview(on: view)
+        updatePreviewLayout(in: view)
+    }
+
+    func updatePreviewLayout(in view: UIView) {
+        let bounds = view.bounds
+        guard bounds.width > 1, bounds.height > 1 else { return }
+        previewLayer?.frame = bounds
+        httpSnapshotPlayer?.updatePreviewLayout(in: view)
+        networkPlayer?.updatePreviewLayout(in: view)
+    }
+
+    private func reinstallPreview(on view: UIView) {
         previewLayer?.removeFromSuperlayer()
         previewLayer = nil
         if let httpSnapshotPlayer {
@@ -115,7 +130,7 @@ final class VideoPipeline: NSObject {
         let layer = AVCaptureVideoPreviewLayer(session: session)
         layer.videoGravity = .resizeAspectFill
         layer.frame = view.bounds
-        view.layer.addSublayer(layer)
+        view.layer.insertSublayer(layer, at: 0)
         previewLayer = layer
     }
 
@@ -188,6 +203,10 @@ final class VideoPipeline: NSObject {
 
         session.commitConfiguration()
         if !session.isRunning { session.startRunning() }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let view = self.previewContainer else { return }
+            self.updatePreviewLayout(in: view)
+        }
     }
 
     // MARK: - Network / file

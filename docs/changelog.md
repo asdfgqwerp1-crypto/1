@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.4: fix Settings preview black square (camera + network)
+
+**Модули:** `SettingsView.swift`, `AppState.swift`, `VideoPipeline.swift`, `HttpSnapshotPlayer.swift`, `NetworkVideoPlayer.swift`
+**Что изменено:** Запрос разрешения камеры перед preview; `PreviewHostView` обновляет frame слоя при layout; подсказка если камера запрещена
+**Почему:** preview layer создавался с bounds 0×0; Settings не вызывал requestAccess — сессия не стартовала
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.9.3: fix mediaDevices + network preview black square
 
 **Модули:** `getUserMedia.js`, `SettingsView.swift`, `VideoPipeline.swift`, `common.js`

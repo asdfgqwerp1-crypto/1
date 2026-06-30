@@ -41,8 +41,13 @@ final class HttpSnapshotPlayer: NSObject {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         imageView.backgroundColor = .black
-        view.addSubview(imageView)
+        view.insertSubview(imageView, at: 0)
         previewImageView = imageView
+    }
+
+    func updatePreviewLayout(in view: UIView) {
+        guard view.bounds.width > 1, view.bounds.height > 1 else { return }
+        previewImageView?.frame = view.bounds
     }
 
     func stop() {

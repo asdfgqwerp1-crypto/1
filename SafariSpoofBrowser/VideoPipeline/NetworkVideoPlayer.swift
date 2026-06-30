@@ -37,8 +37,13 @@ final class NetworkVideoPlayer: NSObject {
         let layer = AVPlayerLayer(player: player)
         layer.videoGravity = .resizeAspectFill
         layer.frame = view.bounds
-        view.layer.addSublayer(layer)
+        view.layer.insertSublayer(layer, at: 0)
         playerLayer = layer
+    }
+
+    func updatePreviewLayout(in view: UIView) {
+        guard view.bounds.width > 1, view.bounds.height > 1 else { return }
+        playerLayer?.frame = view.bounds
     }
 
     func stop() {
