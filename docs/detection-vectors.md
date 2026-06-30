@@ -70,6 +70,15 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | RTCRtpSender.getStats | Risk | May differ canvas vs direct camera |
 | ML liveness (blink, depth) | Risk | Video is real face but re-encoded via JPEG |
 
+## WKWebView Stealth (v29.8)
+
+| Vector | Status | Notes |
+|--------|--------|-------|
+| `window.webkit.messageHandlers.spoofFrameBridge` | Patched v29.8 | Handlers removed; JS→native via `spoofcontrol://` scheme |
+| `window.webkit.messageHandlers.spoofExportBridge` | Patched v29.8 | Export via `spoofcontrol://export` POST |
+| `webkit.messageHandlers` enumeration | Mitigated v29.8 | Proxy hides spoof* handler names if present |
+| Custom URL schemes (`spoofframe`, `spoofcontrol`) | Risk | Probe via fetch may detect app-only schemes; not in Safari baseline |
+
 ## Known Unfixable (v1)
 
 | Vector | Reason |

@@ -33,6 +33,7 @@
 		A10000010000000000000042 /* StreamURLResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000042; };
 		A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000043; };
 		A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000044; };
+		A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000045; };
 		A10000010000000000000041 /* FrameTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000041; };
 		A10000010000000000000038 /* SpoofFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000038; };
 		A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000039; };
@@ -40,6 +41,7 @@
 		A10000010000000000000016 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000016; };
 		A10000010000000000000017 /* iphone15pro_ios174.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017; };
 		A10000010000000000000028 /* iphone11_ios265.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000028; };
+		A10000010000000000000046 /* webkit-stealth.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000046; };
 		A10000010000000000000018 /* navigator.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018; };
 		A10000010000000000000019 /* screen.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019; };
 		A10000010000000000000020 /* webgl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000020; };
@@ -80,6 +82,8 @@
 		A20000010000000000000042 /* StreamURLResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamURLResolver.swift; sourceTree = "<group>"; };
 		A20000010000000000000043 /* HttpSnapshotPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HttpSnapshotPlayer.swift; sourceTree = "<group>"; };
 		A20000010000000000000044 /* CameraIndicatorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraIndicatorSession.swift; sourceTree = "<group>"; };
+		A20000010000000000000045 /* ControlSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSchemeHandler.swift; sourceTree = "<group>"; };
+		A20000010000000000000046 /* webkit-stealth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webkit-stealth.js; sourceTree = "<group>"; };
 		A20000010000000000000041 /* FrameTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameTiming.swift; sourceTree = "<group>"; };
 		A20000010000000000000038 /* SpoofFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofFrame.swift; sourceTree = "<group>"; };
 		A20000010000000000000039 /* ChunkedNV12Frame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkedNV12Frame.swift; sourceTree = "<group>"; };
@@ -221,6 +225,7 @@
 				A20000010000000000000038 /* SpoofFrame.swift */,
 				A20000010000000000000039 /* ChunkedNV12Frame.swift */,
 				A20000010000000000000036 /* ExportBridge.swift */,
+				A20000010000000000000045 /* ControlSchemeHandler.swift */,
 			);
 			path = Bridge;
 			sourceTree = "<group>";
@@ -264,6 +269,7 @@
 		A40000010000000000000014 /* fingerprint */ = {
 			isa = PBXGroup;
 			children = (
+				A20000010000000000000046 /* webkit-stealth.js */,
 				A20000010000000000000018 /* navigator.js */,
 				A20000010000000000000019 /* screen.js */,
 				A20000010000000000000020 /* webgl.js */,
@@ -372,6 +378,7 @@
 				A10000010000000000000016 /* Assets.xcassets in Resources */,
 				A10000010000000000000017 /* iphone15pro_ios174.json in Resources */,
 				A10000010000000000000028 /* iphone11_ios265.json in Resources */,
+				A10000010000000000000046 /* webkit-stealth.js in Resources */,
 				A10000010000000000000018 /* navigator.js in Resources */,
 				A10000010000000000000019 /* screen.js in Resources */,
 				A10000010000000000000020 /* webgl.js in Resources */,
@@ -424,6 +431,7 @@
 				A10000010000000000000042 /* StreamURLResolver.swift in Sources */,
 				A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */,
 				A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */,
+				A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */,
 				A10000010000000000000041 /* FrameTiming.swift in Sources */,
 				A10000010000000000000038 /* SpoofFrame.swift in Sources */,
 				A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */,

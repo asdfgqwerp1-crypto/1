@@ -2,6 +2,7 @@ import Foundation
 
 final class InjectionScriptLoader {
     private let moduleOrder = [
+        "fingerprint/webkit-stealth",
         "bootstrap",
         "fingerprint/navigator",
         "fingerprint/screen",

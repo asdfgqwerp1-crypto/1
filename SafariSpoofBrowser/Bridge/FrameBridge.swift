@@ -14,11 +14,11 @@ protocol FrameBridgeDelegate: AnyObject {
 }
 
 final class FrameBridge: NSObject {
-    static let handlerName = "spoofFrameBridge"
     static let maxNV12PayloadBytes = 600_000
     static let maxJPEGPayloadBytes = 180_000
 
     let schemeHandler = FrameSchemeHandler()
+    let controlSchemeHandler = ControlSchemeHandler()
 
     weak var delegate: FrameBridgeDelegate?
 
@@ -38,16 +38,14 @@ final class FrameBridge: NSObject {
 
     var isDelivering: Bool { isDeliveryEnabled }
 
-    func registerScheme(on configuration: WKWebViewConfiguration) {
+    override init() {
+        super.init()
+        controlSchemeHandler.frameBridge = self
+    }
+
+    func registerSchemes(on configuration: WKWebViewConfiguration) {
         configuration.setURLSchemeHandler(schemeHandler, forURLScheme: FrameSchemeHandler.scheme)
-    }
-
-    func register(with controller: WKUserContentController) {
-        controller.add(self, name: Self.handlerName)
-    }
-
-    func unregister(from controller: WKUserContentController) {
-        controller.removeScriptMessageHandler(forName: Self.handlerName)
+        configuration.setURLSchemeHandler(controlSchemeHandler, forURLScheme: ControlSchemeHandler.scheme)
     }
 
     func attach(webView: WKWebView) {
@@ -59,6 +57,45 @@ final class FrameBridge: NSObject {
         if !enabled {
             hasStartedPoll = false
             schemeHandler.clearFrame()
+        }
+    }
+
+    func handleControlMessage(_ body: [String: Any]) {
+        guard let event = body["event"] as? String else { return }
+
+        switch event {
+        case "startStream":
+            isDeliveryEnabled = true
+            hasStartedPoll = false
+            sendFrameIndex = 0
+            schemeHandler.clearFrame()
+            let streamConfig = Self.parseStreamConfig(from: body)
+            if let frameRate = streamConfig?.frameRate {
+                frameTiming = FrameTiming(
+                    targetFrameRate: frameRate,
+                    minDeliverFps: frameTiming.minDeliverFps,
+                    jitterMsMin: frameTiming.jitterMsMin,
+                    jitterMsMax: frameTiming.jitterMsMax,
+                    exposureHitchInterval: frameTiming.exposureHitchInterval,
+                    exposureHitchMsMin: frameTiming.exposureHitchMsMin,
+                    exposureHitchMsMax: frameTiming.exposureHitchMsMax,
+                    slowdownProbability: frameTiming.slowdownProbability,
+                    slowdownFactorMin: frameTiming.slowdownFactorMin,
+                    slowdownFactorMax: frameTiming.slowdownFactorMax
+                )
+            }
+            DispatchQueue.main.async { [weak self] in
+                self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
+            }
+        case "stopStream":
+            isDeliveryEnabled = false
+            schemeHandler.clearFrame()
+            notifyStopFramePoll()
+            DispatchQueue.main.async { [weak self] in
+                self?.delegate?.frameBridgeDidRequestStreamStop()
+            }
+        default:
+            break
         }
     }
 
@@ -163,49 +200,6 @@ final class FrameBridge: NSObject {
         metrics.latencyMs = latency
         metrics.fps = Double(frameTimestamps.count)
         metricsSubject.send(metrics)
-    }
-}
-
-extension FrameBridge: WKScriptMessageHandler {
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == Self.handlerName,
-              let body = message.body as? [String: Any],
-              let event = body["event"] as? String else { return }
-
-        switch event {
-        case "startStream":
-            isDeliveryEnabled = true
-            hasStartedPoll = false
-            sendFrameIndex = 0
-            schemeHandler.clearFrame()
-            let streamConfig = Self.parseStreamConfig(from: body)
-            if let frameRate = streamConfig?.frameRate {
-                frameTiming = FrameTiming(
-                    targetFrameRate: frameRate,
-                    minDeliverFps: frameTiming.minDeliverFps,
-                    jitterMsMin: frameTiming.jitterMsMin,
-                    jitterMsMax: frameTiming.jitterMsMax,
-                    exposureHitchInterval: frameTiming.exposureHitchInterval,
-                    exposureHitchMsMin: frameTiming.exposureHitchMsMin,
-                    exposureHitchMsMax: frameTiming.exposureHitchMsMax,
-                    slowdownProbability: frameTiming.slowdownProbability,
-                    slowdownFactorMin: frameTiming.slowdownFactorMin,
-                    slowdownFactorMax: frameTiming.slowdownFactorMax
-                )
-            }
-            DispatchQueue.main.async { [weak self] in
-                self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
-            }
-        case "stopStream":
-            isDeliveryEnabled = false
-            schemeHandler.clearFrame()
-            notifyStopFramePoll()
-            DispatchQueue.main.async { [weak self] in
-                self?.delegate?.frameBridgeDidRequestStreamStop()
-            }
-        default:
-            break
-        }
     }
 
     private static func parseStreamConfig(from body: [String: Any]) -> StreamDeliveryConfig? {

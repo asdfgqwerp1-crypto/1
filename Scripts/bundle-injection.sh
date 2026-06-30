@@ -6,6 +6,7 @@ INJECTION="$ROOT/SafariSpoofBrowser/Resources/injection"
 OUT="$ROOT/SafariSpoofBrowser/Resources/injection/bundle.js"
 
 MODULES=(
+  "fingerprint/webkit-stealth.js"
   "fingerprint/navigator.js"
   "fingerprint/screen.js"
   "fingerprint/webgl.js"

@@ -115,9 +115,8 @@
       window.__spoofResetCanvas();
     }
     window.__spoofFrameCount = 0;
-    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
-      window.webkit.messageHandlers.spoofFrameBridge.postMessage({
-        event: 'startStream',
+    if (window.__spoofSendControl) {
+      window.__spoofSendControl('stream/start', {
         width: active.width,
         height: active.height,
         frameRate: active.frameRate
@@ -146,8 +145,8 @@
         if (window.__spoofStopFramePoll) {
           window.__spoofStopFramePoll();
         }
-        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofFrameBridge) {
-          window.webkit.messageHandlers.spoofFrameBridge.postMessage({ event: 'stopStream' });
+        if (window.__spoofSendControl) {
+          window.__spoofSendControl('stream/stop');
         }
       });
     }

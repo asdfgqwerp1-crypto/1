@@ -2,31 +2,13 @@ import UIKit
 import WebKit
 
 final class ExportBridge: NSObject {
-    static let handlerName = "spoofExportBridge"
-
     private weak var webView: WKWebView?
-
-    func register(with controller: WKUserContentController) {
-        controller.add(self, name: Self.handlerName)
-    }
-
-    func unregister(from controller: WKUserContentController) {
-        controller.removeScriptMessageHandler(forName: Self.handlerName)
-    }
 
     func attach(webView: WKWebView) {
         self.webView = webView
     }
-}
 
-extension ExportBridge: WKScriptMessageHandler {
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == Self.handlerName,
-              let body = message.body as? [String: Any],
-              let json = body["json"] as? String else { return }
-
-        let filename = (body["filename"] as? String) ?? "report.json"
-
+    func handleExport(filename: String, json: String) {
         DispatchQueue.main.async { [weak self] in
             self?.presentShareSheet(json: json, filename: filename)
         }

@@ -18,8 +18,6 @@ final class InjectionManager {
     func install(into webView: WKWebView) {
         let controller = webView.configuration.userContentController
         controller.removeAllUserScripts()
-        frameBridge.unregister(from: controller)
-        frameBridge.register(with: controller)
 
         let scripts = scriptLoader.loadBundledScripts(configJSON: profile.injectionConfigJSON)
         for source in scripts {

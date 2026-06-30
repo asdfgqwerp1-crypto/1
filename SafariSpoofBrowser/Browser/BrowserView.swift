@@ -12,7 +12,7 @@ struct BrowserView: UIViewRepresentable {
         configuration.websiteDataStore = .default()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
-        frameBridge.registerScheme(on: configuration)
+        frameBridge.registerSchemes(on: configuration)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.isOpaque = true

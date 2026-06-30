@@ -1,0 +1,185 @@
+import Foundation
+import WebKit
+
+final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
+    static let scheme = "spoofcontrol"
+
+    weak var frameBridge: FrameBridge?
+    weak var exportBridge: ExportBridge?
+
+    func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
+        guard let url = urlSchemeTask.request.url else {
+            fail(task: urlSchemeTask, code: 400, message: "Missing URL")
+            return
+        }
+
+        let route = Self.parseRoute(url)
+        switch route.kind {
+        case "export":
+            handleExport(task: urlSchemeTask, request: urlSchemeTask.request, url: url)
+        case "stream":
+            switch route.action {
+            case "start":
+                handleStreamStart(task: urlSchemeTask, url: url)
+            case "stop":
+                handleStreamStop(task: urlSchemeTask)
+            default:
+                fail(task: urlSchemeTask, code: 404, message: "Unknown stream action")
+            }
+        default:
+            fail(task: urlSchemeTask, code: 404, message: "Unknown control route")
+        }
+    }
+
+    func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {}
+
+    private static func parseRoute(_ url: URL) -> (kind: String, action: String) {
+        let host = (url.host ?? "").lowercased()
+        var path = url.path.lowercased()
+        if path.hasPrefix("/") {
+            path = String(path.dropFirst())
+        }
+
+        if host == "export" || path == "export" {
+            return ("export", "")
+        }
+
+        if host == "stream" {
+            return ("stream", path.isEmpty ? "start" : path)
+        }
+
+        if path.hasPrefix("stream/") {
+            return ("stream", String(path.dropFirst("stream/".count)))
+        }
+
+        if path == "start" || path.hasSuffix("/start") {
+            return ("stream", "start")
+        }
+
+        if path == "stop" || path.hasSuffix("/stop") {
+            return ("stream", "stop")
+        }
+
+        return ("", "")
+    }
+
+    private func handleStreamStart(task: WKURLSchemeTask, url: URL) {
+        let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        var params: [String: Any] = ["event": "startStream"]
+        components?.queryItems?.forEach { item in
+            guard let value = item.value else { return }
+            switch item.name {
+            case "width", "height":
+                if let intValue = Int(value) {
+                    params[item.name] = intValue
+                }
+            case "frameRate":
+                if let doubleValue = Double(value) {
+                    params[item.name] = doubleValue
+                }
+            default:
+                break
+            }
+        }
+        DispatchQueue.main.async { [weak self] in
+            self?.frameBridge?.handleControlMessage(params)
+            self?.respondOK(task: task)
+        }
+    }
+
+    private func handleStreamStop(task: WKURLSchemeTask) {
+        DispatchQueue.main.async { [weak self] in
+            self?.frameBridge?.handleControlMessage(["event": "stopStream"])
+            self?.respondOK(task: task)
+        }
+    }
+
+    private func handleExport(task: WKURLSchemeTask, request: URLRequest, url: URL) {
+        var filename = "report.json"
+        var json: String?
+
+        if let body = request.httpBody, !body.isEmpty {
+            json = String(data: body, encoding: .utf8)
+        } else if let stream = request.httpBodyStream {
+            json = String(data: Data(reading: stream), encoding: .utf8)
+        }
+
+        if let json, let data = json.data(using: .utf8),
+           let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            if let nested = object["json"] as? String {
+                json = nested
+            }
+            if let name = object["filename"] as? String, !name.isEmpty {
+                filename = name
+            }
+        }
+
+        if json == nil {
+            if let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
+                components.queryItems?.forEach { item in
+                    if item.name == "filename", let value = item.value, !value.isEmpty {
+                        filename = value
+                    }
+                }
+            }
+            if let fragment = url.fragment, !fragment.isEmpty {
+                json = fragment.removingPercentEncoding ?? fragment
+            }
+        }
+
+        guard let json else {
+            fail(task: urlSchemeTask, code: 400, message: "Missing export payload")
+            return
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.exportBridge?.handleExport(filename: filename, json: json)
+            self?.respondOK(task: task)
+        }
+    }
+
+    private func respondOK(task: WKURLSchemeTask) {
+        guard let url = task.request.url,
+              let response = HTTPURLResponse(
+                url: url,
+                statusCode: 204,
+                httpVersion: "HTTP/1.1",
+                headerFields: [
+                    "Content-Length": "0",
+                    "Cache-Control": "no-store"
+                ]
+              ) else {
+            fail(task: task, code: 500, message: "Bad response")
+            return
+        }
+        task.didReceive(response)
+        task.didFinish()
+    }
+
+    private func fail(task: WKURLSchemeTask, code: Int, message: String) {
+        DispatchQueue.main.async {
+            let error = NSError(
+                domain: Self.scheme,
+                code: code,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
+            task.didFailWithError(error)
+        }
+    }
+}
+
+private extension Data {
+    init(reading stream: InputStream) {
+        self.init()
+        stream.open()
+        defer { stream.close() }
+        let bufferSize = 16_384
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate() }
+        while stream.hasBytesAvailable {
+            let read = stream.read(buffer, maxLength: bufferSize)
+            if read <= 0 { break }
+            append(buffer, count: read)
+        }
+    }
+}

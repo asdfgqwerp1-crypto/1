@@ -24,6 +24,7 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     func prepare(profile: DeviceProfile, frameBridge: FrameBridge) {
         self.activeProfile = profile
         self.frameBridge = frameBridge
+        frameBridge.controlSchemeHandler.exportBridge = exportBridge
     }
 
     func configure(profile: DeviceProfile, frameBridge: FrameBridge) {
@@ -44,8 +45,6 @@ final class BrowserCoordinator: NSObject, ObservableObject {
         }
         let manager = InjectionManager(profile: profile, frameBridge: frameBridge)
         injectionManager = manager
-        exportBridge.unregister(from: webView.configuration.userContentController)
-        exportBridge.register(with: webView.configuration.userContentController)
         exportBridge.attach(webView: webView)
 
         manager.install(into: webView)

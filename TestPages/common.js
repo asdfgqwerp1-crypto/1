@@ -31,9 +31,10 @@ async function exportReport(report, filename) {
 
   const json = JSON.stringify(report, null, 2);
 
-  if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.spoofExportBridge) {
-    window.webkit.messageHandlers.spoofExportBridge.postMessage({ filename: filename, json: json });
-    return;
+  if (window.__spoofSendControlPost) {
+    if (window.__spoofSendControlPost('export', { filename: filename, json: json })) {
+      return;
+    }
   }
 
   if (navigator.share) {
