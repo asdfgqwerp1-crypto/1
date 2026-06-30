@@ -148,7 +148,7 @@ struct SettingsView: View {
     }
 }
 
-private final class PreviewHostView: UIView {
+fileprivate final class PreviewHostView: UIView {
     var pipeline: VideoPipeline?
 
     override func layoutSubviews() {
