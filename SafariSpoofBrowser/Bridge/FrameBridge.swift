@@ -8,6 +8,7 @@ struct FrameBridgeMetrics: Equatable {
     var framesSent: Int = 0
 }
 
+@MainActor
 protocol FrameBridgeDelegate: AnyObject {
     func frameBridgeDidRequestStreamStart(config: StreamDeliveryConfig?)
     func frameBridgeDidRequestStreamStop()

@@ -138,7 +138,7 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
         }
 
         guard let exportJson = json else {
-            fail(task: urlSchemeTask, code: 400, message: "Missing export payload")
+            fail(task: task, code: 400, message: "Missing export payload")
             return
         }
 

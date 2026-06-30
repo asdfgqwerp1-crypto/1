@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.2: fix Xcode 26 Swift 6 concurrency + typo
+
+**Модули:** `FrameBridge.swift`, `ControlSchemeHandler.swift`
+**Что изменено:** `FrameBridgeDelegate` помечен `@MainActor`; `fail(task: task)` вместо `urlSchemeTask` в handleExport
+**Почему:** Codemagic Xcode 26.4 — ошибки concurrency isolation и cannot find urlSchemeTask in scope
+**Тесты:** не запускались
+**Риски:** нет
+
 ## 2026-06-30 — v29.9.1: fix DebugLogStore missing Combine import
 
 **Модули:** `DebugLogStore.swift`, `ControlSchemeHandler.swift`
