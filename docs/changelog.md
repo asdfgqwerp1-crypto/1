@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.2: CI fix — correct WKWebsiteDataStore(forIdentifier:)
+
+**Модули:** `TabDataStoreRegistry.swift`, `BuildInfo.swift`
+**Что изменено:** `WKWebsiteDataStore(forIdentifier:)` sync init + `remove(forIdentifier:)` async; убраны несуществующие `dataStore(forIdentifier:)` / `removeDataStore(forIdentifier:)`; MainActor-isolated store cache
+**Почему:** v29.13.1 всё ещё не компилировался — неверные имена API (WebKit blog + WKWebsiteDataStore.h)
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.1: CI fix — WKWebsiteDataStore API
 
 **Модули:** `TabDataStoreRegistry.swift`, `BrowserView.swift`, `TabCoordinator.swift`

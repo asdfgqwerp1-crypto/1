@@ -1,61 +1,34 @@
 import WebKit
 
 final class TabDataStoreRegistry {
-    private var stores: [UUID: WKWebsiteDataStore] = [:]
-    private var pending: Set<UUID> = []
-    private let lock = NSLock()
+    @MainActor private var stores: [UUID: WKWebsiteDataStore] = [:]
 
     func dataStore(for id: UUID, ephemeral: Bool, completion: @escaping (WKWebsiteDataStore) -> Void) {
-        if ephemeral {
-            DispatchQueue.main.async {
+        Task { @MainActor in
+            if ephemeral {
                 completion(.nonPersistent())
+                return
             }
-            return
-        }
-
-        lock.lock()
-        if let existing = stores[id] {
-            lock.unlock()
-            DispatchQueue.main.async { completion(existing) }
-            return
-        }
-        if pending.contains(id) {
-            lock.unlock()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
-                self?.dataStore(for: id, ephemeral: ephemeral, completion: completion)
+            if let existing = stores[id] {
+                completion(existing)
+                return
             }
-            return
-        }
-        pending.insert(id)
-        lock.unlock()
-
-        if #available(iOS 17.0, *) {
-            Task {
-                let store = await WKWebsiteDataStore.dataStore(forIdentifier: id)
-                lock.lock()
-                pending.remove(id)
-                stores[id] = store
-                lock.unlock()
-                DispatchQueue.main.async { completion(store) }
+            let store: WKWebsiteDataStore
+            if #available(iOS 17.0, *) {
+                store = WKWebsiteDataStore(forIdentifier: id)
+            } else {
+                store = .default()
             }
-        } else {
-            lock.lock()
-            let store = WKWebsiteDataStore.default()
             stores[id] = store
-            pending.remove(id)
-            lock.unlock()
-            DispatchQueue.main.async { completion(store) }
+            completion(store)
         }
     }
 
     func removeDataStore(id: UUID) {
-        lock.lock()
-        stores.removeValue(forKey: id)
-        lock.unlock()
-        if #available(iOS 17.0, *) {
-            Task {
-                await WKWebsiteDataStore.removeDataStore(forIdentifier: id)
-            }
+        Task { @MainActor in
+            stores.removeValue(forKey: id)
+            guard #available(iOS 17.0, *) else { return }
+            try? await WKWebsiteDataStore.remove(forIdentifier: id)
         }
     }
 
