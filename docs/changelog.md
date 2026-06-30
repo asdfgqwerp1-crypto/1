@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.6: Frame bridge bytes=0 — delivery lifecycle + HTTP diagnostics
+
+**Модули:** `AppState.swift`, `FrameBridge.swift`, `VideoPipeline.swift`, `HttpSnapshotPlayer.swift`, `frameReceiver.js`, `bundle.js`
+**Что изменено:** `stream/stop` больше не отключает `isDelivering` и не чистит spoofframe buffer; на каждый `stream/start` принудительный рестарт HTTP ingest + `setDeliveryEnabled(true)`; `VideoPipeline.stop()` сохраняет `streamDelivery`; логи `[http]`/`[native] first JPEG deliver` при успехе и warn при ошибках fetch; JS poll — timeout 3s, recovery от зависшего `isDrawing`, trace `[frame] poll fail`
+**Почему:** webrtc-inspector и Onfido — `waitForFrames timeout frames=0 bytes=0`: native ingest или JS poll мертвы; `stream/stop` между preWarm и gUM глушил delivery при живом HttpSnapshotPlayer
+**Тесты:** не запускались (нет устройства)
+**Риски:** force-restart HTTP на каждый stream/start — краткий gap ~33ms; если iPhone не видит VM, в логах будет `[http] error: …`
+
 ## 2026-07-01 — v29.13.5: Daon infinite load — bytes=0 false frame ready
 
 **Модули:** `frameReceiver.js`, `getUserMedia.js`, `bundle.js`

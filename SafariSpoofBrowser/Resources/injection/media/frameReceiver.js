@@ -56,6 +56,38 @@
   // WKWebView often hides X-Frame-* headers even with Access-Control-Expose-Headers.
   var fetchOptions = { cache: 'no-store', credentials: 'omit' };
   var MIN_REAL_FRAME_BYTES = 512;
+  var POLL_FETCH_TIMEOUT_MS = 3000;
+  var pollFailCount = 0;
+  var lastPollFailLog = 0;
+
+  function traceFrame(message, level) {
+    if (typeof window.__spoofTrace === 'function') {
+      window.__spoofTrace(level || 'info', message, 'frame');
+    }
+  }
+
+  function fetchWithTimeout(url, options, timeoutMs) {
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () {
+        reject(new Error('poll timeout'));
+      }, timeoutMs);
+      fetch(url, options).then(function (response) {
+        clearTimeout(timer);
+        resolve(response);
+      }).catch(function (err) {
+        clearTimeout(timer);
+        reject(err);
+      });
+    });
+  }
+
+  function logPollFail(reason) {
+    pollFailCount += 1;
+    var now = Date.now();
+    if (now - lastPollFailLog < 2000) return;
+    lastPollFailLog = now;
+    traceFrame('poll fail #' + pollFailCount + ': ' + reason, 'warn');
+  }
 
   function schemeAuthKey() {
     return (config && config.schemeAuthKey) || '';
@@ -665,9 +697,17 @@
   };
 
   function drawFrame() {
-    if (!ctx || !canvas || isDrawing) return;
+    if (!ctx || !canvas) return;
+    if (isDrawing) {
+      if (Date.now() - (window.__spoofDrawStartedAt || 0) > POLL_FETCH_TIMEOUT_MS + 500) {
+        isDrawing = false;
+      } else {
+        return;
+      }
+    }
     if (Date.now() - (window.__spoofLastNativePush || 0) < 30) return;
     isDrawing = true;
+    window.__spoofDrawStartedAt = Date.now();
     var released = false;
     function release() {
       if (released) return;
@@ -680,9 +720,9 @@
       return;
     }
 
-    fetch(frameURL(), fetchOptions)
+    fetchWithTimeout(frameURL(), fetchOptions, POLL_FETCH_TIMEOUT_MS)
       .then(function (response) {
-        if (!response.ok) throw new Error('bad status');
+        if (!response.ok) throw new Error('bad status ' + response.status);
         var meta = parseFrameHeaders(response);
         if (meta.chunkCount > 1 && (meta.formatHeader === 'nv12' || preferNV12)) {
           fetchChunkedNV12(meta, function () {
@@ -700,7 +740,8 @@
           drawBlobAsImage(blob, meta, release);
         });
       })
-      .catch(function () {
+      .catch(function (err) {
+        logPollFail(err && err.message ? err.message : 'fetch failed');
         drawImageSource(frameURL(), false, null, release);
       });
   }
@@ -741,7 +782,13 @@
 
   window.__spoofStartFramePoll = function () {
     if (!canvas) window.__spoofResetCanvas();
-    if (pollActive) return;
+    if (pollActive) {
+      if (!pollTimer && !isDrawing) {
+        schedulePoll();
+      }
+      return;
+    }
+    traceFrame('poll start ' + (canvas ? canvas.width + 'x' + canvas.height : 'no-canvas'), 'info');
     streamStartPerf = performance.now();
     streamStartPtsUs = 0;
     if ((window.__spoofFrameCount || 0) === 0) {

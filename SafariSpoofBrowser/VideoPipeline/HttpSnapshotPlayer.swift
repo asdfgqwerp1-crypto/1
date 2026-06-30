@@ -10,6 +10,8 @@ final class HttpSnapshotPlayer: NSObject {
     private var isFetching = false
     private var frameURL: URL?
     private var previewImageView: UIImageView?
+    private var lastErrorLog: CFAbsoluteTime = 0
+    private var fetchSuccessCount = 0
 
     override init() {
         let config = URLSessionConfiguration.ephemeral
@@ -24,6 +26,10 @@ final class HttpSnapshotPlayer: NSObject {
     func play(url: URL) {
         stop()
         frameURL = url
+        fetchSuccessCount = 0
+        DispatchQueue.main.async {
+            DebugLogStore.shared.append(level: "info", message: "[http] start poll \(url.absoluteString)")
+        }
         let timer = DispatchSource.makeTimerSource(queue: pollQueue)
         timer.schedule(deadline: .now(), repeating: .milliseconds(33), leeway: .milliseconds(2))
         timer.setEventHandler { [weak self] in
@@ -64,17 +70,49 @@ final class HttpSnapshotPlayer: NSObject {
         isFetching = true
         var request = URLRequest(url: cacheBustedURL(frameURL))
         request.cachePolicy = .reloadIgnoringLocalCacheData
-        session.dataTask(with: request) { [weak self] data, response, _ in
+        session.dataTask(with: request) { [weak self] data, response, error in
             defer { self?.isFetching = false }
-            guard let self,
-                  let data, !data.isEmpty,
-                  let http = response as? HTTPURLResponse,
-                  http.statusCode == 200 else { return }
+            guard let self else { return }
+            if let error {
+                self.logFetchIssue("error: \(error.localizedDescription)")
+                return
+            }
+            guard let data, !data.isEmpty else {
+                self.logFetchIssue("empty body")
+                return
+            }
+            guard let http = response as? HTTPURLResponse else {
+                self.logFetchIssue("non-http response")
+                return
+            }
+            guard http.statusCode == 200 else {
+                self.logFetchIssue("HTTP \(http.statusCode)")
+                return
+            }
+            self.fetchSuccessCount += 1
+            if self.fetchSuccessCount == 1 {
+                DispatchQueue.main.async {
+                    DebugLogStore.shared.append(
+                        level: "info",
+                        message: "[http] first frame bytes=\(data.count)"
+                    )
+                }
+            }
             DispatchQueue.main.async {
                 self.previewImageView?.image = UIImage(data: data)
                 self.onJPEG?(data)
             }
         }.resume()
+    }
+
+    private func logFetchIssue(_ detail: String) {
+        let now = CFAbsoluteTimeGetCurrent()
+        guard now - lastErrorLog > 2 else { return }
+        lastErrorLog = now
+        let urlText = frameURL?.absoluteString ?? "?"
+        DispatchQueue.main.async {
+            DebugLogStore.shared.append(level: "warn", message: "[http] \(detail) url=\(urlText)")
+        }
     }
 
     private func cacheBustedURL(_ url: URL) -> URL {

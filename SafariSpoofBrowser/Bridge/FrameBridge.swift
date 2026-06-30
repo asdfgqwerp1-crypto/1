@@ -93,8 +93,7 @@ final class FrameBridge: NSObject {
                 self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
             }
         case "stopStream":
-            isDeliveryEnabled = false
-            schemeHandler.clearFrame()
+            // Keep delivery enabled — network ingest should keep filling spoofframe buffer.
             notifyStopFramePoll()
             DispatchQueue.main.async { [weak self] in
                 self?.delegate?.frameBridgeDidRequestStreamStop()

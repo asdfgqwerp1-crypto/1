@@ -20,6 +20,8 @@ final class VideoPipeline: NSObject {
     private var frameSequence: UInt64 = 0
     private var frameTiming = FrameTiming.iphoneDefault
     private var streamDelivery: StreamDeliveryConfig?
+    private var lastDeliverBlockLog: CFAbsoluteTime = 0
+    private var loggedFirstDeliver = false
 
     /// True when HTTP snapshot or network player is actively polling (preview or browser).
     var isNetworkStreamActive: Bool {
@@ -53,7 +55,9 @@ final class VideoPipeline: NSObject {
     }
 
     func start(source: VideoSourceType, profile: DeviceProfile) {
+        let preservedDelivery = streamDelivery
         stop()
+        streamDelivery = preservedDelivery
         activeProfile = profile
         isRunning = true
         lastFrameTime = 0
@@ -78,7 +82,7 @@ final class VideoPipeline: NSObject {
         isRunning = false
         lastFrameTime = 0
         frameSequence = 0
-        streamDelivery = nil
+        loggedFirstDeliver = false
         sessionQueue.async { [weak self] in
             guard let self else { return }
             if self.session.isRunning { self.session.stopRunning() }
@@ -258,7 +262,20 @@ final class VideoPipeline: NSObject {
     }
 
     private func deliverHTTPJPEG(_ data: Data, profile: DeviceProfile) {
-        guard isRunning, frameBridge.isDelivering else { return }
+        guard isRunning else { return }
+        guard frameBridge.isDelivering else {
+            let now = CFAbsoluteTimeGetCurrent()
+            if now - lastDeliverBlockLog > 3 {
+                lastDeliverBlockLog = now
+                DispatchQueue.main.async {
+                    DebugLogStore.shared.append(
+                        level: "warn",
+                        message: "[native] deliver blocked isDelivering=false bytes=\(data.count)"
+                    )
+                }
+            }
+            return
+        }
 
         let now = CFAbsoluteTimeGetCurrent()
         let interval = frameTiming.nextIntervalSeconds(frameIndex: frameSequence)
@@ -285,6 +302,15 @@ final class VideoPipeline: NSObject {
             presentationTimeUs: UInt64(now * 1_000_000),
             captureTimestamp: now
         )
+        if !loggedFirstDeliver {
+            loggedFirstDeliver = true
+            DispatchQueue.main.async {
+                DebugLogStore.shared.append(
+                    level: "info",
+                    message: "[native] first JPEG deliver \(targetWidth)x\(targetHeight) bytes=\(payload.count)"
+                )
+            }
+        }
     }
 
     private func scaledJPEGData(from data: Data, width: Int, height: Int, quality: CGFloat) -> Data? {
