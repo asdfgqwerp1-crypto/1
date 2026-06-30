@@ -277,7 +277,7 @@ extension BrowserCoordinator: WKUIDelegate {
         case .cameraAndMicrophone: kind = "camera+mic"
         @unknown default: kind = "media"
         }
-        let host = origin.host ?? "?"
+        let host = origin.host
         DebugLogStore.shared.append(
             level: "info",
             message: "[native] WK grant \(kind) from \(host) mainFrame=\(frame.isMainFrame)"

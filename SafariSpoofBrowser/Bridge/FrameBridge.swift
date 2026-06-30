@@ -202,7 +202,7 @@ final class FrameBridge: NSObject {
         DispatchQueue.main.async {
             webView.callAsyncJavaScript(
                 "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);",
-                arguments: [payload],
+                arguments: ["p": payload],
                 in: nil,
                 in: .page,
                 completionHandler: nil

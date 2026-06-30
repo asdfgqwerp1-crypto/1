@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.11.1: CI compile fix (callAsyncJavaScript arguments)
+
+**Модули:** `FrameBridge.swift`, `BrowserCoordinator.swift`, `BuildInfo.swift`
+**Что изменено:** `callAsyncJavaScript` arguments `["p": payload]` вместо `[payload]` (API ожидает `[String: Any]` dict); убран лишний `??` на `origin.host`
+**Почему:** Codemagic/Xcode 26.4 build failed — Swift интерпретировал `[payload]` как dict literal, не массив
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.11.0: Regula CSP fix — messageHandler + native frame push
 
 **Модули:** `SpoofControlMessageHandler.swift`, `FrameBridge.swift`, `BrowserView.swift`, `webkit-stealth.js`, `frameReceiver.js`, `bundle.js`
