@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.3: fix mediaDevices + network preview black square
+
+**Модули:** `getUserMedia.js`, `SettingsView.swift`, `VideoPipeline.swift`, `common.js`
+**Что изменено:** Синтез `navigator.mediaDevices` если WebKit не даёт API (HTTP/ранний init); Network Stream сразу применяет URL `:8090/frame.jpg`; `.network` fallback на сохранённый URL; подсказки в Settings и test pages
+**Почему:** permission-behavior писал «mediaDevices недоступен»; чёрное превью при выборе Network без Apply URL / без OBS relay
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.9.2: fix Xcode 26 Swift 6 concurrency + typo
 
 **Модули:** `FrameBridge.swift`, `ControlSchemeHandler.swift`

@@ -3,8 +3,20 @@ function isSecureContextForMedia() {
 }
 
 function checkMediaEnvironment() {
+  if (!window.__safariSpoofInstalled && !window.__SAFARI_SPOOF_CONFIG__) {
+    return {
+      ok: false,
+      message: 'Injection не загружен (страница открыта вне SafariSpoofBrowser?).'
+    };
+  }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    return { ok: false, message: 'mediaDevices API недоступен в этом браузере.' };
+    return {
+      ok: false,
+      message: 'mediaDevices API недоступен.\n\n'
+        + 'Откройте через SafariSpoofBrowser.\n'
+        + 'Для камеры нужен HTTPS: https://IP:8443/permission-behavior/\n'
+        + '(не http://8080)'
+    };
   }
   if (!isSecureContextForMedia()) {
     return {

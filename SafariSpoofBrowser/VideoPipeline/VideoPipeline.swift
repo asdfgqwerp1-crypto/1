@@ -60,7 +60,9 @@ final class VideoPipeline: NSObject {
         case .networkStream(let url):
             startNetworkStream(url: url, profile: profile)
         case .network:
-            break
+            if let saved = NetworkStreamSettings.url, !saved.isEmpty {
+                startNetworkStream(url: saved, profile: profile)
+            }
         case .file(let path):
             startFilePlayback(path: path, profile: profile)
         }

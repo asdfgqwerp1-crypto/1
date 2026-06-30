@@ -324,11 +324,31 @@
     return spoofEnumerateDevices();
   });
 
+  function ensureNavigatorMediaDevices() {
+    var md = navigator.mediaDevices;
+    if (md) return md;
+
+    var proto = window.MediaDevices && MediaDevices.prototype;
+    md = proto ? Object.create(proto) : {};
+    try {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        enumerable: true,
+        writable: true,
+        value: md
+      });
+    } catch (e) {
+      navigator.mediaDevices = md;
+    }
+    return md;
+  }
+
   function applyPatchesToMediaDevices(md) {
     if (!md || md.__spoofMediaPatched) return false;
-    if (typeof md.getUserMedia !== 'function') return false;
 
-    originalGetUserMedia = md.getUserMedia.bind(md);
+    if (typeof md.getUserMedia === 'function') {
+      originalGetUserMedia = md.getUserMedia.bind(md);
+    }
     if (typeof md.enumerateDevices === 'function') {
       originalEnumerateDevices = md.enumerateDevices.bind(md);
     }
@@ -349,8 +369,8 @@
 
   function installMediaSpoof() {
     if (installed) return true;
-    if (!navigator.mediaDevices) return false;
-    if (!applyPatchesToMediaDevices(navigator.mediaDevices)) return false;
+    var md = ensureNavigatorMediaDevices();
+    if (!applyPatchesToMediaDevices(md)) return false;
 
     installed = true;
     if (installTimer) {
@@ -361,9 +381,8 @@
   }
 
   function hookNavigatorMediaDevices() {
-    var current = navigator.mediaDevices;
-    if (current) {
-      applyPatchesToMediaDevices(current);
+    var current = ensureNavigatorMediaDevices();
+    if (applyPatchesToMediaDevices(current)) {
       installed = true;
     }
 
@@ -376,8 +395,8 @@
           configurable: true,
           enumerable: desc.enumerable !== false,
           get: function () {
-            var md = origGet.call(navigator);
-            if (md) applyPatchesToMediaDevices(md);
+            var md = origGet.call(navigator) || ensureNavigatorMediaDevices();
+            applyPatchesToMediaDevices(md);
             return md;
           }
         });
