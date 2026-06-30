@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.9: fix WebRTC getUserMedia timeout (seq headers)
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `AppState.swift`, `FrameBridge.swift`
+**Что изменено:** Реальный кадр определяется по размеру JPEG (>512 B), не по `X-Frame-Seq` (WKWebView не отдаёт custom headers); pre-warm delivery в `prepareForBrowser`; не очищать буфер при повторном `stream/start`; timeout 12 s
+**Почему:** v29.9.8 ломал gUM — `waitForFrames` ждал `seq>0`, заголовки всегда 0 → `NotReadableError` «камера не работает»
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.9.8: fix WebRTC no frames (thread + placeholder)
 
 **Модули:** `HttpSnapshotPlayer.swift`, `VideoPipeline.swift`, `getUserMedia.js`, `webkit-stealth.js`

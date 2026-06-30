@@ -66,10 +66,13 @@ final class FrameBridge: NSObject {
 
         switch event {
         case "startStream":
+            let wasDelivering = isDeliveryEnabled
             isDeliveryEnabled = true
             hasStartedPoll = false
             sendFrameIndex = 0
-            schemeHandler.clearFrame()
+            if !wasDelivering {
+                schemeHandler.clearFrame()
+            }
             let streamConfig = Self.parseStreamConfig(from: body)
             if let frameRate = streamConfig?.frameRate {
                 frameTiming = FrameTiming(

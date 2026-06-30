@@ -53,7 +53,9 @@
     ctx.fillText('Camera loading…', 16, 32);
   }
 
-  var fetchOptions = { cache: 'no-store', mode: 'cors', credentials: 'omit' };
+  // WKWebView often hides X-Frame-* headers even with Access-Control-Expose-Headers.
+  var fetchOptions = { cache: 'no-store', credentials: 'omit' };
+  var MIN_REAL_FRAME_BYTES = 512;
 
   function frameURL() {
     var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
@@ -100,13 +102,24 @@
     });
   }
 
-  function markFrameDrawn(meta) {
+  function noteRealFrame(meta, payloadBytes, pixelW, pixelH) {
+    var bytes = payloadBytes || 0;
+    var w = pixelW || 0;
+    var h = pixelH || 0;
+    if (bytes > MIN_REAL_FRAME_BYTES || (w > 32 && h > 32) || (meta && meta.seq > 0)) {
+      window.__spoofGotRealFrame = true;
+      window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
+    }
+  }
+
+  function markFrameDrawn(meta, payloadBytes, pixelW, pixelH) {
     window.__spoofFrameCount = (window.__spoofFrameCount || 0) + 1;
     pollFrameIndex += 1;
     if (meta) {
       window.__spoofLastFrameSeq = meta.seq;
       window.__spoofLastPtsUs = meta.ptsUs;
     }
+    noteRealFrame(meta, payloadBytes, pixelW, pixelH);
   }
 
   function seededRng(seed) {
@@ -180,11 +193,11 @@
     return noiseScratchCanvas;
   }
 
-  function finishFrame(meta, onDone) {
+  function finishFrame(meta, onDone, payloadBytes, pixelW, pixelH) {
     if (ctx && canvas) {
       applySensorNoise(ctx, canvas.width, canvas.height, meta ? meta.seq : pollFrameIndex);
     }
-    markFrameDrawn(meta);
+    markFrameDrawn(meta, payloadBytes, pixelW, pixelH);
     if (onDone) onDone();
   }
 
@@ -557,7 +570,7 @@
     return byteLength >= expectedNV12Bytes(width, height);
   }
 
-  function drawBitmap(bitmap, meta, onDone) {
+  function drawBitmap(bitmap, meta, onDone, payloadBytes) {
     if (!ctx || !canvas) {
       if (bitmap && bitmap.close) bitmap.close();
       if (onDone) onDone();
@@ -565,10 +578,10 @@
     }
     drawImageCover(ctx, bitmap, canvas.width, canvas.height);
     if (bitmap.close) bitmap.close();
-    finishFrame(meta, onDone);
+    finishFrame(meta, onDone, payloadBytes || 0, bitmap.width, bitmap.height);
   }
 
-  function drawImageSource(src, revoke, meta, onDone) {
+  function drawImageSource(src, revoke, meta, onDone, payloadBytes) {
     if (!ctx || !canvas) {
       if (onDone) onDone();
       return;
@@ -578,7 +591,7 @@
     img.onload = function () {
       drawImageCover(ctx, img, canvas.width, canvas.height);
       if (revoke) URL.revokeObjectURL(src);
-      finishFrame(meta, onDone);
+      finishFrame(meta, onDone, payloadBytes || 0, img.naturalWidth, img.naturalHeight);
     };
     img.onerror = function () {
       if (revoke) URL.revokeObjectURL(src);
@@ -588,15 +601,16 @@
   }
 
   function drawBlobAsImage(blob, meta, onDone) {
+    var blobSize = blob && blob.size ? blob.size : 0;
     if (typeof createImageBitmap === 'function') {
       createImageBitmap(blob).then(function (bitmap) {
-        drawBitmap(bitmap, meta, onDone);
+        drawBitmap(bitmap, meta, onDone, blobSize);
       }).catch(function () {
-        drawImageSource(URL.createObjectURL(blob), true, meta, onDone);
+        drawImageSource(URL.createObjectURL(blob), true, meta, onDone, blobSize);
       });
       return;
     }
-    drawImageSource(URL.createObjectURL(blob), true, meta, onDone);
+    drawImageSource(URL.createObjectURL(blob), true, meta, onDone, blobSize);
   }
 
   function handleBuffer(buffer, meta, release) {
@@ -682,6 +696,8 @@
     window.__spoofCanvas = canvas;
     window.__spoofCanvasCtx = ctx;
     window.__spoofFrameCount = 0;
+    window.__spoofGotRealFrame = false;
+    window.__spoofLastFrameBytes = 0;
     drawPlaceholder();
   };
 

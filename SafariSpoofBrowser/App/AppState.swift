@@ -120,6 +120,8 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         guard isNetworkVideoSource else { return }
         videoPipeline.setCameraIndicatorActive(false)
         ensureNetworkStreamRunning()
+        // Pre-warm spoofframe buffer so getUserMedia is not blocked on first poll.
+        frameBridge.setDeliveryEnabled(true)
     }
 
     func frameBridgeDidRequestStreamStop() {

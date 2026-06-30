@@ -116,6 +116,8 @@
     }
     window.__spoofFrameCount = 0;
     window.__spoofLastFrameSeq = 0;
+    window.__spoofGotRealFrame = false;
+    window.__spoofLastFrameBytes = 0;
     if (window.__spoofSendControl) {
       window.__spoofSendControl('stream/start', {
         width: active.width,
@@ -127,13 +129,11 @@
       if (window.__spoofStartFramePoll) {
         window.__spoofStartFramePoll();
       }
-    }, 60);
+    }, 100);
   }
 
   function hasRealFrame() {
-    var count = window.__spoofFrameCount || 0;
-    var seq = window.__spoofLastFrameSeq || 0;
-    return count > 0 && seq > 0;
+    return window.__spoofGotRealFrame === true;
   }
 
   function waitForFrames(minCount, timeoutMs) {
@@ -145,7 +145,8 @@
           clearInterval(timer);
           if (!ready) {
             console.error('[spoof] waitForFrames timeout frames=' + (window.__spoofFrameCount || 0)
-              + ' seq=' + (window.__spoofLastFrameSeq || 0));
+              + ' bytes=' + (window.__spoofLastFrameBytes || 0)
+              + ' real=' + !!window.__spoofGotRealFrame);
           }
           resolve(ready);
         }
@@ -261,9 +262,12 @@
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
-          waitForFrames(1, 6000).then(function (gotFrame) {
+          waitForFrames(1, 12000).then(function (gotFrame) {
             if (!gotFrame) {
-              reject(new DOMException('Camera failed to produce frames', 'NotReadableError'));
+              reject(new DOMException(
+                'Camera failed to produce frames (bridge bytes=' + (window.__spoofLastFrameBytes || 0) + ')',
+                'NotReadableError'
+              ));
               return;
             }
             try {
