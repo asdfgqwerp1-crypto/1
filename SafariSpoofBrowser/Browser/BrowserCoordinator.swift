@@ -199,10 +199,14 @@ extension BrowserCoordinator: WKNavigationDelegate {
 
     private static let iframeAuditScript = """
     (function(){try{
-      var list=Array.from(document.querySelectorAll('iframe')).slice(0,12).map(function(f,i){
+      var frames=Array.from(document.querySelectorAll('iframe')).filter(function(f){
+        var s=(f.src||f.getAttribute('src')||'');
+        return s.indexOf('spoofcontrol://')!==0;
+      });
+      var list=frames.slice(0,12).map(function(f,i){
         return {i:i,src:(f.src||f.getAttribute('src')||'').slice(0,72),allow:(f.getAttribute('allow')||'').slice(0,48)};
       });
-      return JSON.stringify({count:document.querySelectorAll('iframe').length,frames:list});
+      return JSON.stringify({count:frames.length,frames:list});
     }catch(e){return JSON.stringify({error:String(e)});}})();
     """
 

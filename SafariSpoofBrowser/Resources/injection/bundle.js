@@ -1,6 +1,5 @@
 // Auto-generated injection bundle
 
-// --- fingerprint/webkit-stealth.js ---
 (function () {
   'use strict';
 
@@ -1628,14 +1627,53 @@
   }
 
   function buildPrePermissionDeviceList() {
-    return [
-      { deviceId: '', groupId: '', kind: 'audioinput', label: '', toJSON: function () { return this; } },
-      { deviceId: '', groupId: '', kind: 'videoinput', label: '', toJSON: function () { return this; } }
-    ];
+    var devices = [];
+    (config.cameras || []).forEach(function (c) {
+      devices.push({
+        deviceId: '',
+        groupId: '',
+        kind: 'videoinput',
+        label: c.label || '',
+        toJSON: function () { return this; }
+      });
+    });
+    if (!devices.length) {
+      devices.push({
+        deviceId: '',
+        groupId: '',
+        kind: 'videoinput',
+        label: '',
+        toJSON: function () { return this; }
+      });
+    }
+    (config.microphones || []).forEach(function (m) {
+      devices.push({
+        deviceId: '',
+        groupId: '',
+        kind: 'audioinput',
+        label: m.label || '',
+        toJSON: function () { return this; }
+      });
+    });
+    if (!devices.some(function (d) { return d.kind === 'audioinput'; })) {
+      devices.push({
+        deviceId: '',
+        groupId: '',
+        kind: 'audioinput',
+        label: '',
+        toJSON: function () { return this; }
+      });
+    }
+    return devices;
   }
 
   function spoofEnumerateDevices() {
-    return Promise.resolve(mediaPermissionGranted ? buildSpoofDeviceList() : buildPrePermissionDeviceList());
+    var list = mediaPermissionGranted ? buildSpoofDeviceList() : buildPrePermissionDeviceList();
+    traceMedia(
+      'enumerateDevices count=' + list.length + ' granted=' + mediaPermissionGranted,
+      'info'
+    );
+    return Promise.resolve(list);
   }
 
   function resolveAudioOnlyStream() {
@@ -1900,7 +1938,8 @@
   window.__spoofHookNavigatorMediaDevices = hookNavigatorMediaDevices;
 
   scheduleInstall();
-})();// --- webrtc/enumerateDevices.js ---
+})();
+// --- webrtc/enumerateDevices.js ---
 (function () {
   'use strict';
   // enumerateDevices override is in getUserMedia.js

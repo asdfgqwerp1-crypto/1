@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.6: Regula enumerateDevices labels fix (skip probe gUM)
+
+**Модули:** `getUserMedia.js`, `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`
+**Что изменено:** `enumerateDevices` до gUM возвращает labels камер из профиля (пустые deviceId); Regula SDK пропускает probe `getUserMedia({video:true})` который давал `NotAllowedError`; меньше spam в perm-логах; iframe audit фильтрует spoofcontrol iframes
+**Почему:** Regula проверяет `devices.every(d => d.label !== '')` — пустые labels → probe gUM → PERMISSION_DENIED → «Разрешите доступ к камере»; наш intercept не перехватывал probe в их web-component контексте
+**Тесты:** не запускались (нет устройства)
+**Риски:** pre-gUM enumerateDevices с labels ≠ Safari (empty labels); осознанный tradeoff для KYC/Regula
+
 ## 2026-06-30 — v29.10.5: Regula iframe camera permission policy fix
 
 **Модули:** `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`

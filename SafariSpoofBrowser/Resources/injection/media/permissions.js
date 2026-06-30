@@ -186,7 +186,7 @@
       patchMediaDevicesExtras(navigator.mediaDevices);
     }
     var stats = patchAllIframes();
-    if (stats.total > 0 && window.__spoofTrace) {
+    if (stats.patched > 0 && window.__spoofTrace) {
       window.__spoofTrace(
         'info',
         'iframe allow patch total=' + stats.total + ' changed=' + stats.patched + ' @ ' + (location.href || ''),
