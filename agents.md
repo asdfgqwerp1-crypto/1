@@ -119,6 +119,26 @@ Run regression checklist (see below). Update `docs/detection-vectors.md` if you 
 - Never commit real KYC credentials or production URLs
 - Include test evidence for fingerprint/media changes (diff report snippet)
 
+### 5. GitHub Push (агент пушит сам)
+
+Репозиторий: `https://github.com/asdfgqwerp1-crypto/1`
+
+**PAT хранится локально**, не в этом файле и не в git:
+
+| Файл | Назначение |
+|------|------------|
+| `Scripts/.github-token` | `GITHUB_USER`, `GITHUB_REPO`, `GITHUB_TOKEN` (в `.gitignore`) |
+| `Scripts/git-push.sh` | Пуш `main` с токеном из файла выше |
+
+После коммита агент **обязан** запушить сам:
+
+```bash
+cd "/mnt/hgfs/IOS SPOOFING"
+./Scripts/git-push.sh
+```
+
+**Никогда** не коммить `Scripts/.github-token` и не вставляй PAT в `agents.md`, `changelog` или любой tracked-файл.
+
 ## Build & Run
 
 | Action | Command |
