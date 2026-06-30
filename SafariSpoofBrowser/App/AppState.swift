@@ -24,30 +24,37 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         self.testServerHost = TestServerSettings.host
         let store = ProfileStore()
         self.profileStore = store
+
+        let resolvedProfile: DeviceProfile
         if let savedProfileID = BrowserSessionSettings.activeProfileID,
            let savedProfile = store.profile(id: savedProfileID) {
-            self.activeProfile = savedProfile
+            resolvedProfile = savedProfile
         } else if let snapshot = BrowserSessionStore.load(),
                   let snapshotProfile = store.profile(id: snapshot.activeProfileID) {
-            self.activeProfile = snapshotProfile
+            resolvedProfile = snapshotProfile
         } else {
-            self.activeProfile = store.defaultProfile
+            resolvedProfile = store.defaultProfile
         }
+        self.activeProfile = resolvedProfile
+
         UserDefaults.standard.set(FrameDeliveryFormat.jpeg.rawValue, forKey: "com.safarispoof.frameDelivery")
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
 
-        let initialProfile = activeProfile
         self.tabCoordinator = TabCoordinator(
-            profileProvider: { initialProfile.withFrameDelivery(.jpeg) },
-            profileIDProvider: { initialProfile.id }
+            profileProvider: { resolvedProfile.withFrameDelivery(.jpeg) },
+            profileIDProvider: { resolvedProfile.id }
         )
 
         self.frameBridge.delegate = self
-        self.frameBridge.setSchemeAuthKey(activeProfile.schemeAuthKey)
+        self.frameBridge.setSchemeAuthKey(resolvedProfile.schemeAuthKey)
         tabCoordinator.setProfileProviders(
-            profileProvider: { [weak self] in self?.effectiveProfile ?? initialProfile },
-            profileIDProvider: { [weak self] in self?.activeProfile.id ?? initialProfile.id }
+            profileProvider: { [weak self] in
+                self?.effectiveProfile ?? resolvedProfile.withFrameDelivery(.jpeg)
+            },
+            profileIDProvider: { [weak self] in
+                self?.activeProfile.id ?? resolvedProfile.id
+            }
         )
 
         if let savedURL = NetworkStreamSettings.url, !savedURL.isEmpty {

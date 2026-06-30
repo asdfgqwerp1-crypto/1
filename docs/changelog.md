@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.4: CI fix — AppState resolvedProfile local
+
+**Модули:** `AppState.swift`, `BuildInfo.swift`
+**Что изменено:** Профиль резолвится в локальную `resolvedProfile` до инициализации `tabCoordinator`; убран доступ к `activeProfile` через `self` до полной инициализации
+**Почему:** v29.13.3 — `'self' used in property access 'activeProfile' before all stored properties are initialized`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.3: CI fix — AppState init order
 
 **Модули:** `AppState.swift`, `TabCoordinator.swift`, `BuildInfo.swift`
