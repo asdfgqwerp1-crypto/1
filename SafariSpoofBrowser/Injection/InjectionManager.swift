@@ -32,5 +32,15 @@ final class InjectionManager {
             )
             controller.addUserScript(script)
         }
+
+        if let reporter = scriptLoader.loadModule(named: "media/frameReporter") {
+            let endScript = WKUserScript(
+                source: reporter,
+                injectionTime: .atDocumentEnd,
+                forMainFrameOnly: false,
+                in: .page
+            )
+            controller.addUserScript(endScript)
+        }
     }
 }

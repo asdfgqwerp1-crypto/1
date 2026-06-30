@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.2: Regula iframe probe + native injection diagnostics
+
+**Модули:** `frameReporter.js`, `permissions.js`, `InjectionManager.swift`, `BrowserCoordinator.swift`, `BrowserView.swift`
+**Что изменено:** `frameReporter` на documentEnd в каждом frame (TOP/IFRAME probe); native `probe(main/t+2s/t+5s)` + iframe count; auto `allow=camera` на создаваемых iframe; delayed re-probe для SPA
+**Почему:** Regula — только `[native] didFinish`, без JS логов; камера скорее всего в iframe; evaluateJavaScript только main frame
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.10.1: fix empty debug logs (GET transport + page world)
 
 **Модули:** `spoofTrace.js`, `debug-console.js`, `ControlSchemeHandler.swift`, `InjectionManager.swift`, `BrowserCoordinator.swift`, `AppState.swift`

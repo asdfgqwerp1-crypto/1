@@ -42,7 +42,7 @@ final class InjectionScriptLoader {
         return scripts
     }
 
-    private func loadModule(named name: String) -> String? {
+    func loadModule(named name: String) -> String? {
         let flatName = (name as NSString).lastPathComponent
         let subdirs = [
             "injection/\((name as NSString).deletingLastPathComponent)",

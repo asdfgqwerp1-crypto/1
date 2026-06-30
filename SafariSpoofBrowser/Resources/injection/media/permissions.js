@@ -68,8 +68,29 @@
     md.__spoofExtrasPatched = true;
   }
 
+  function patchIframeAllow() {
+    if (document.__spoofIframeAllowPatched) return;
+    var orig = document.createElement.bind(document);
+    document.createElement = function (tagName, options) {
+      var el = orig(tagName, options);
+      try {
+        if (tagName && String(tagName).toLowerCase() === 'iframe') {
+          var allow = 'camera; microphone; autoplay; fullscreen; display-capture';
+          el.setAttribute('allow', allow);
+          if (el.allow !== undefined) el.allow = allow;
+        }
+      } catch (e) {}
+      return el;
+    };
+    document.createElement.toString = function () {
+      return 'function createElement() { [native code] }';
+    };
+    document.__spoofIframeAllowPatched = true;
+  }
+
   function install() {
     patchPermissions();
+    patchIframeAllow();
     if (navigator.mediaDevices) {
       patchMediaDevicesExtras(navigator.mediaDevices);
     }

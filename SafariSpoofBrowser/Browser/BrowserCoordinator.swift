@@ -120,7 +120,35 @@ extension BrowserCoordinator: WKNavigationDelegate {
         if let url = webView.url?.absoluteString {
             DebugLogStore.shared.append(level: "info", message: "[native] didFinish \(url)")
         }
-        webView.evaluateJavaScript(Self.rehookInjectionScript, completionHandler: nil)
+        webView.evaluateJavaScript(Self.rehookInjectionScript) { _, error in
+            if let error {
+                DebugLogStore.shared.append(level: "error", message: "[native] rehook err: \(error.localizedDescription)")
+            }
+        }
+        runInjectionProbe(on: webView, label: "main")
+        for delay in [2.0, 5.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak webView] in
+                guard let webView else { return }
+                self.runInjectionProbe(on: webView, label: "t+\(Int(delay))s")
+                webView.evaluateJavaScript("document.querySelectorAll('iframe').length") { count, _ in
+                    if let n = count {
+                        DebugLogStore.shared.append(level: "info", message: "[native] iframe count=\(n) @ t+\(Int(delay))s")
+                    }
+                }
+            }
+        }
+    }
+
+    private func runInjectionProbe(on webView: WKWebView, label: String) {
+        webView.evaluateJavaScript(Self.injectionProbeScript) { result, error in
+            if let error {
+                DebugLogStore.shared.append(level: "error", message: "[native] probe(\(label)) err: \(error.localizedDescription)")
+                return
+            }
+            if let json = result as? String, !json.isEmpty {
+                DebugLogStore.shared.append(level: "info", message: "[native] probe(\(label)) \(json)")
+            }
+        }
     }
 
     private static let rehookInjectionScript = """
@@ -128,6 +156,21 @@ extension BrowserCoordinator: WKNavigationDelegate {
       if(window.__spoofHookNavigatorMediaDevices)window.__spoofHookNavigatorMediaDevices();
       if(window.__spoofTrace)window.__spoofTrace('info','didFinish rehook @ '+(location.href||''),'inject');
     }catch(e){}})();
+    """
+
+    private static let injectionProbeScript = """
+    (function(){try{
+      var md=navigator.mediaDevices;
+      return JSON.stringify({
+        href:location.href,
+        top:window===window.top,
+        installed:!!window.__safariSpoofInstalled,
+        patched:!!(md&&md.__spoofMediaPatched),
+        send:typeof window.__spoofSendControl,
+        trace:typeof window.__spoofTrace,
+        secure:!!window.isSecureContext
+      });
+    }catch(e){return JSON.stringify({error:String(e)});}})();
     """
 
     func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
