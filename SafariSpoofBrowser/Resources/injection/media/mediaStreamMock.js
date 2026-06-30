@@ -76,6 +76,12 @@
     return cameras[0];
   }
 
+  function findCameraById(deviceId) {
+    if (!deviceId) return null;
+    var cameras = config.cameras || [];
+    return cameras.find(function (c) { return c.deviceId === deviceId; }) || null;
+  }
+
   function activeCaps() {
     if (typeof window.__spoofGetActiveCaps === 'function') {
       return window.__spoofGetActiveCaps();
@@ -192,10 +198,12 @@
 
   window.__spoofPatchTrack = patchTrack;
   window.__spoofFindCamera = findCamera;
+  window.__spoofFindCameraById = findCameraById;
 
   try {
     Object.defineProperty(window, '__spoofPatchTrack', { enumerable: false, configurable: true, writable: true });
     Object.defineProperty(window, '__spoofFindCamera', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofFindCameraById', { enumerable: false, configurable: true, writable: true });
     Object.defineProperty(window, '__spoofTrackProtoPatched', { value: true, enumerable: false, configurable: true });
   } catch (e) {}
 })();

@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.7: Regula «Preparing camera» — pre-warm + fast gUM
+
+**Модули:** `getUserMedia.js`, `mediaStreamMock.js`, `bundle.js`
+**Что изменено:** preWarm stream на `enumerateDevices` (Regula вызывает до gUM); canvas не сбрасывается если размер совпадает; waitForFrames 5s (200ms если кадр уже есть); `deviceId` exact из constraints; enumerateDevices с profile deviceIds
+**Почему:** Regula зависала на «Preparing the camera» — gUM ждал до 12s после reset canvas; кадры не успевали до timeout
+**Тесты:** не запускались (нет устройства)
+**Риски:** pre-gUM enumerateDevices с deviceIds ≠ Safari empty ids
+
 ## 2026-06-30 — v29.10.6: Regula enumerateDevices labels fix (skip probe gUM)
 
 **Модули:** `getUserMedia.js`, `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`

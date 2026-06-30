@@ -31,6 +31,39 @@
     return 'user';
   }
 
+  function resolveCameraDevice(constraints) {
+    var video = constraints && constraints.video;
+    var deviceId = constraintValue(video, 'deviceId');
+    if (deviceId && typeof window.__spoofFindCameraById === 'function') {
+      var byId = window.__spoofFindCameraById(deviceId);
+      if (byId) return byId;
+    }
+    return window.__spoofFindCamera(parseFacingMode(constraints));
+  }
+
+  function preWarmStreamPipeline() {
+    if (window.__spoofStreamPreWarmed) return;
+    window.__spoofStreamPreWarmed = true;
+    var presets = config.mediaPresets || [];
+    var hd = presets.find(function (p) { return p.id === 'selfie_hd'; });
+    var warm = hd || {
+      width: config.mediaCapabilities.width,
+      height: config.mediaCapabilities.height,
+      frameRate: config.mediaCapabilities.frameRate || 30
+    };
+    traceMedia('preWarm stream ' + warm.width + 'x' + warm.height, 'info');
+    if (window.__spoofSendControl) {
+      window.__spoofSendControl('stream/start', {
+        width: warm.width,
+        height: warm.height,
+        frameRate: warm.frameRate
+      });
+    }
+    setTimeout(function () {
+      if (window.__spoofStartFramePoll) window.__spoofStartFramePoll();
+    }, 60);
+  }
+
   function wantsVideo(constraints) {
     return !!(constraints && constraints.video);
   }
@@ -115,16 +148,16 @@
 
   function startNativePipeline(active) {
     traceMedia('stream/start ' + active.width + 'x' + active.height + '@' + active.frameRate);
-    if (window.__spoofStopFramePoll) {
-      window.__spoofStopFramePoll();
+    var existing = window.__spoofCanvas;
+    var sizeChanged = !existing || existing.width !== active.width || existing.height !== active.height;
+    if (sizeChanged) {
+      if (window.__spoofStopFramePoll) window.__spoofStopFramePoll();
+      if (window.__spoofResetCanvas) window.__spoofResetCanvas();
+      window.__spoofFrameCount = 0;
+      window.__spoofLastFrameSeq = 0;
+      window.__spoofGotRealFrame = false;
+      window.__spoofLastFrameBytes = 0;
     }
-    if (window.__spoofResetCanvas) {
-      window.__spoofResetCanvas();
-    }
-    window.__spoofFrameCount = 0;
-    window.__spoofLastFrameSeq = 0;
-    window.__spoofGotRealFrame = false;
-    window.__spoofLastFrameBytes = 0;
     if (window.__spoofSendControl) {
       window.__spoofSendControl('stream/start', {
         width: active.width,
@@ -133,10 +166,8 @@
       });
     }
     setTimeout(function () {
-      if (window.__spoofStartFramePoll) {
-        window.__spoofStartFramePoll();
-      }
-    }, 100);
+      if (window.__spoofStartFramePoll) window.__spoofStartFramePoll();
+    }, sizeChanged ? 80 : 0);
   }
 
   function hasRealFrame() {
@@ -217,8 +248,8 @@
     var devices = [];
     (config.cameras || []).forEach(function (c) {
       devices.push({
-        deviceId: '',
-        groupId: '',
+        deviceId: c.deviceId || '',
+        groupId: c.groupId || '',
         kind: 'videoinput',
         label: c.label || '',
         toJSON: function () { return this; }
@@ -235,8 +266,8 @@
     }
     (config.microphones || []).forEach(function (m) {
       devices.push({
-        deviceId: '',
-        groupId: '',
+        deviceId: m.deviceId || '',
+        groupId: m.groupId || '',
         kind: 'audioinput',
         label: m.label || '',
         toJSON: function () { return this; }
@@ -255,6 +286,7 @@
   }
 
   function spoofEnumerateDevices() {
+    if (!mediaPermissionGranted) preWarmStreamPipeline();
     var list = mediaPermissionGranted ? buildSpoofDeviceList() : buildPrePermissionDeviceList();
     traceMedia(
       'enumerateDevices count=' + list.length + ' granted=' + mediaPermissionGranted,
@@ -308,7 +340,8 @@
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
-          waitForFrames(1, 12000).then(function (gotFrame) {
+          var frameWaitMs = hasRealFrame() ? 200 : 5000;
+          waitForFrames(1, frameWaitMs).then(function (gotFrame) {
             if (!gotFrame) {
               traceMedia('waitForFrames timeout bytes=' + (window.__spoofLastFrameBytes || 0), 'error');
               reject(new DOMException(
@@ -332,8 +365,7 @@
                 ));
                 return;
               }
-              var facingMode = parseFacingMode(constraints);
-              var camera = window.__spoofFindCamera(facingMode);
+              var camera = resolveCameraDevice(constraints);
 
               var tracks = stream.getVideoTracks();
               if (tracks.length > 0) {
