@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  var SPOOF_HANDLER_NAMES = ['spoofFrameBridge', 'spoofExportBridge'];
+  var SPOOF_HANDLER_NAMES = ['spoofFrameBridge', 'spoofExportBridge', 'ssbControl'];
 
   function isSpoofHandler(name) {
     if (!name || typeof name !== 'string') return false;
@@ -114,7 +114,24 @@
     }
   }
 
+  function sendControlViaMessageHandler(path, params) {
+    try {
+      var handlers = window.webkit && window.webkit.messageHandlers;
+      var channel = handlers && handlers.ssbControl;
+      if (!channel || typeof channel.postMessage !== 'function') return false;
+      channel.postMessage({
+        path: path,
+        params: params || {},
+        k: schemeAuthKey()
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function sendControl(path, params) {
+    if (sendControlViaMessageHandler(path, params)) return;
     var query = '';
     if (params) {
       query = Object.keys(params).map(function (key) {
@@ -131,15 +148,16 @@
         keepalive: true
       }).catch(function () {});
     } catch (e) {}
-    // WKWebView occasionally drops custom-scheme fetch; iframe backup reaches native reliably.
     setTimeout(function () {
       sendControlViaFrame(url);
     }, 80);
   }
 
   function sendControlPost(path, payload) {
+    var body = payload && typeof payload === 'object' ? payload : {};
+    if (sendControlViaMessageHandler(path, body)) return true;
     var url = withSchemeAuth('spoofcontrol://' + path);
-    var body = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
+    var raw = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
     try {
       fetch(url, {
         method: 'POST',
@@ -148,7 +166,7 @@
         cache: 'no-store',
         keepalive: true,
         headers: { 'Content-Type': 'application/json' },
-        body: body
+        body: raw
       }).catch(function () {});
       return true;
     } catch (e) {}

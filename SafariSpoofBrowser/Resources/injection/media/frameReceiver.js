@@ -640,8 +640,28 @@
     drawBlobAsImage(new Blob([buffer], { type: 'image/jpeg' }), meta, release);
   }
 
+  window.__spoofOnJPEGPush = function (payload) {
+    if (!payload || !payload.b64 || !ctx || !canvas) return;
+    try {
+      var meta = {
+        seq: payload.seq || 0,
+        ptsUs: payload.pts || 0,
+        width: payload.w || 0,
+        height: payload.h || 0
+      };
+      var binary = atob(payload.b64);
+      var len = binary.length;
+      var bytes = new Uint8Array(len);
+      for (var i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+      window.__spoofFrameTransport = 'native-push';
+      window.__spoofLastNativePush = Date.now();
+      handleBuffer(bytes.buffer, meta, function () {});
+    } catch (e) {}
+  };
+
   function drawFrame() {
     if (!ctx || !canvas || isDrawing) return;
+    if (Date.now() - (window.__spoofLastNativePush || 0) < 30) return;
     isDrawing = true;
     var released = false;
     function release() {

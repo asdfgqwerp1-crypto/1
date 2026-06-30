@@ -17,6 +17,15 @@ struct BrowserView: UIViewRepresentable {
         configuration.defaultWebpagePreferences = pagePrefs
         frameBridge.registerSchemes(on: configuration)
 
+        let controlHandler = SpoofControlMessageHandler()
+        controlHandler.frameBridge = frameBridge
+        controlHandler.exportBridge = coordinator.exportBridgeForSetup
+        configuration.userContentController.add(
+            controlHandler,
+            name: SpoofControlMessageHandler.handlerName
+        )
+        coordinator.retainControlMessageHandler(controlHandler)
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         #if DEBUG
         if #available(iOS 16.4, *) {

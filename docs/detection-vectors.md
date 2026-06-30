@@ -70,6 +70,13 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | RTCRtpSender.getStats | Risk | May differ canvas vs direct camera |
 | ML liveness (blink, depth) | Risk | Video is real face but re-encoded via JPEG |
 
+## CSP / Strict Sites (v29.11)
+
+| Vector | Status | Notes |
+|--------|--------|-------|
+| Strict CSP blocks `spoofcontrol://` / `spoofframe://` | Mitigated v29.11 | Primary transport: `webkit.messageHandlers.ssbControl` + native JPEG push |
+| Regula faceapi.regulaforensics.com | Mitigated v29.11 | CSP connect-src/frame-src allowlist only |
+
 ## WKWebView Stealth (v29.8)
 
 | Vector | Status | Notes |

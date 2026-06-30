@@ -19,7 +19,14 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     private var injectionManager: InjectionManager?
     private var frameBridge: FrameBridge?
     private let exportBridge = ExportBridge()
+    private var controlMessageHandler: SpoofControlMessageHandler?
     private var activeProfile: DeviceProfile?
+
+    var exportBridgeForSetup: ExportBridge { exportBridge }
+
+    func retainControlMessageHandler(_ handler: SpoofControlMessageHandler) {
+        controlMessageHandler = handler
+    }
 
     func prepare(profile: DeviceProfile, frameBridge: FrameBridge) {
         self.activeProfile = profile

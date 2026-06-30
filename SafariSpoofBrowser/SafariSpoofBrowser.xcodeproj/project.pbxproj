@@ -34,6 +34,7 @@
 		A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000043; };
 		A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000044; };
 		A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000045; };
+		A10000010000000000000056 /* SpoofControlMessageHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000056; };
 		A10000010000000000000047 /* DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000047; };
 		A10000010000000000000048 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000048; };
 		A10000010000000000000049 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000049; };
@@ -92,6 +93,7 @@
 		A20000010000000000000043 /* HttpSnapshotPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HttpSnapshotPlayer.swift; sourceTree = "<group>"; };
 		A20000010000000000000044 /* CameraIndicatorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraIndicatorSession.swift; sourceTree = "<group>"; };
 		A20000010000000000000045 /* ControlSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSchemeHandler.swift; sourceTree = "<group>"; };
+		A20000010000000000000056 /* SpoofControlMessageHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofControlMessageHandler.swift; sourceTree = "<group>"; };
 		A20000010000000000000046 /* webkit-stealth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webkit-stealth.js; sourceTree = "<group>"; };
 		A20000010000000000000047 /* DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogStore.swift; sourceTree = "<group>"; };
 		A20000010000000000000048 /* DebugOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugOverlayView.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 				A20000010000000000000039 /* ChunkedNV12Frame.swift */,
 				A20000010000000000000036 /* ExportBridge.swift */,
 				A20000010000000000000045 /* ControlSchemeHandler.swift */,
+				A20000010000000000000056 /* SpoofControlMessageHandler.swift */,
 				A20000010000000000000052 /* SchemeAuthValidator.swift */,
 			);
 			path = Bridge;
@@ -467,6 +470,7 @@
 				A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */,
 				A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */,
 				A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */,
+				A10000010000000000000056 /* SpoofControlMessageHandler.swift in Sources */,
 				A10000010000000000000052 /* SchemeAuthValidator.swift in Sources */,
 				A10000010000000000000041 /* FrameTiming.swift in Sources */,
 				A10000010000000000000038 /* SpoofFrame.swift in Sources */,

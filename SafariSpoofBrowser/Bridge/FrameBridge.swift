@@ -172,9 +172,42 @@ final class FrameBridge: NSObject {
                     presentationTimeUs: presentationTimeUs
                 )
             )
+            pushJPEGFrameToJS(
+                data: data,
+                width: width,
+                height: height,
+                sequence: sequence,
+                presentationTimeUs: presentationTimeUs
+            )
         }
         updateMetrics(latency: latency)
         notifyStartFramePollIfNeeded()
+    }
+
+    private func pushJPEGFrameToJS(
+        data: Data,
+        width: Int,
+        height: Int,
+        sequence: UInt64,
+        presentationTimeUs: UInt64
+    ) {
+        guard let webView else { return }
+        let payload: [String: Any] = [
+            "b64": data.base64EncodedString(),
+            "seq": sequence,
+            "w": width,
+            "h": height,
+            "pts": presentationTimeUs
+        ]
+        DispatchQueue.main.async {
+            webView.callAsyncJavaScript(
+                "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);",
+                arguments: [payload],
+                in: nil,
+                in: .page,
+                completionHandler: nil
+            )
+        }
     }
 
     private func notifyStartFramePollIfNeeded() {
