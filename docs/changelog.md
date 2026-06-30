@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.7: fix WebRTC black video with network stream
+
+**Модули:** `AppState.swift`, `VideoPipeline.swift`
+**Что изменено:** При `stream/start` для Network Stream не перезапускаем HTTP player и не ждём camera permission перед доставкой кадров; `prepareForBrowser` не делает stop/start если player уже активен; `stream/stop` для network только отключает delivery, pipeline остаётся для preview
+**Почему:** Settings preview работал (нативный `HttpSnapshotPlayer`), но WebRTC получал чёрный квадрат — `frameBridgeDidRequestStreamStart` вызывал `startVideoPipeline()` → `stop()` убивал уже работающий player, плюс async `requestCameraAccess` задерживал кадры
+**Тесты:** не запускались (нет устройства)
+**Риски:** без camera permission зелёный LED не зажжётся (ожидаемо для network-only)
+
 ## 2026-06-30 — v29.9.4: fix Settings preview black square (camera + network)
 
 **Модули:** `SettingsView.swift`, `AppState.swift`, `VideoPipeline.swift`, `HttpSnapshotPlayer.swift`, `NetworkVideoPlayer.swift`

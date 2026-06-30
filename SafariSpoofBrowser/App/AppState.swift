@@ -100,11 +100,13 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
             videoPipeline.updateStreamDelivery(config)
         }
         if isNetworkVideoSource {
+            // FrameBridge already enabled delivery in handleControlMessage.
+            // Do not restart the HTTP player — Settings preview may already be polling.
+            ensureNetworkStreamRunning()
             Task {
-                guard await Self.requestCameraAccessIfNeeded() else { return }
-                frameBridge.setDeliveryEnabled(true)
-                startVideoPipeline()
-                videoPipeline.setCameraIndicatorActive(true)
+                if await Self.requestCameraAccessIfNeeded() {
+                    videoPipeline.setCameraIndicatorActive(true)
+                }
             }
             return
         }
@@ -117,12 +119,22 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
     func prepareForBrowser() {
         guard isNetworkVideoSource else { return }
         videoPipeline.setCameraIndicatorActive(false)
-        startVideoPipeline()
+        ensureNetworkStreamRunning()
     }
 
     func frameBridgeDidRequestStreamStop() {
         videoPipeline.setCameraIndicatorActive(false)
+        if isNetworkVideoSource {
+            frameBridge.setDeliveryEnabled(false)
+            return
+        }
         stopVideoPipeline()
+    }
+
+    private func ensureNetworkStreamRunning() {
+        guard isNetworkVideoSource else { return }
+        if videoPipeline.isNetworkStreamActive { return }
+        startVideoPipelineNow()
     }
 
     static func requestCameraPermission() async -> Bool {

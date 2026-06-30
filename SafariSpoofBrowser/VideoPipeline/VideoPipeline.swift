@@ -21,6 +21,11 @@ final class VideoPipeline: NSObject {
     private var frameTiming = FrameTiming.iphoneDefault
     private var streamDelivery: StreamDeliveryConfig?
 
+    /// True when HTTP snapshot or network player is actively polling (preview or browser).
+    var isNetworkStreamActive: Bool {
+        isRunning && (httpSnapshotPlayer != nil || networkPlayer != nil)
+    }
+
     init(frameBridge: FrameBridge) {
         self.frameBridge = frameBridge
         super.init()
