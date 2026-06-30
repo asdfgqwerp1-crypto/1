@@ -3,6 +3,7 @@ import UIKit
 
 struct DebugOverlayView: View {
     @ObservedObject var store: DebugLogStore
+    var captureEnabled: Bool = true
     let onClose: () -> Void
 
     var body: some View {
@@ -27,7 +28,7 @@ struct DebugOverlayView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         if store.entries.isEmpty {
-                            Text("Нет логов. Откройте страницу — console.error и JS-ошибки появятся здесь.")
+                            Text(emptyHint)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .padding(.vertical, 8)
@@ -59,6 +60,13 @@ struct DebugOverlayView: View {
         )
         .padding(.horizontal, 8)
         .padding(.bottom, 8)
+    }
+
+    private var emptyHint: String {
+        if captureEnabled {
+            return "Нет логов. gUM/spoof-трасса и console.error появятся при действиях на странице."
+        }
+        return "gUM-трасса пишется автоматически при открытии камеры. Включите «JS Log Capture» в Settings для console.error."
     }
 
     private func line(for entry: DebugLogStore.Entry) -> String {

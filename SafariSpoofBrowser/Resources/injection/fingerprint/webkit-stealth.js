@@ -30,6 +30,17 @@
     return handlers;
   }
 
+  function schemeAuthKey() {
+    var cfg = window.__SAFARI_SPOOF_CONFIG__;
+    return (cfg && cfg.schemeAuthKey) || '';
+  }
+
+  function withSchemeAuth(url) {
+    var key = schemeAuthKey();
+    if (!key) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(key);
+  }
+
   function installWebkitStealth() {
     if (window.__spoofWebkitStealthInstalled) return;
     window.__spoofWebkitStealthInstalled = true;
@@ -37,8 +48,17 @@
     try {
       var webkit = window.webkit;
       if (webkit && webkit.messageHandlers) {
-        sanitizeMessageHandlers(webkit.messageHandlers);
         var original = webkit.messageHandlers;
+        var needsProxy = SPOOF_HANDLER_NAMES.some(function (name) {
+          return original && original[name] != null;
+        });
+        if (!needsProxy) {
+          hideGlobal('__spoofWebkitStealthInstalled');
+          hideGlobal('__safariSpoofInstalled');
+          hideGlobal('__SAFARI_SPOOF_CONFIG__');
+          return;
+        }
+        sanitizeMessageHandlers(original);
         var proxy = new Proxy(original, {
           get: function (target, prop) {
             if (typeof prop === 'string' && isSpoofHandler(prop)) return undefined;
@@ -101,7 +121,7 @@
         return encodeURIComponent(key) + '=' + encodeURIComponent(String(params[key]));
       }).join('&');
     }
-    var url = 'spoofcontrol://' + path + (query ? '?' + query : '');
+    var url = withSchemeAuth('spoofcontrol://' + path + (query ? '?' + query : ''));
     try {
       fetch(url, {
         method: 'GET',
@@ -118,7 +138,7 @@
   }
 
   function sendControlPost(path, payload) {
-    var url = 'spoofcontrol://' + path;
+    var url = withSchemeAuth('spoofcontrol://' + path);
     var body = typeof payload === 'string' ? payload : JSON.stringify(payload || {});
     try {
       fetch(url, {

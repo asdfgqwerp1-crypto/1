@@ -92,14 +92,14 @@ struct SettingsView: View {
                 }
 
                 Section("Debug") {
-                    Toggle("JS Console Overlay", isOn: Binding(
+                    Toggle("JS Log Capture", isOn: Binding(
                         get: { DebugSettings.consoleEnabled },
                         set: { enabled in
                             DebugSettings.consoleEnabled = enabled
                             NotificationCenter.default.post(name: .debugConsoleSettingsChanged, object: nil)
                         }
                     ))
-                    Text("Ловит console.error, window.onerror и unhandledrejection. После включения страница перезагрузится автоматически.")
+                    Text("Кнопка 🐞 в браузере всегда видна. Этот переключатель добавляет перехват console.error/onerror. gUM-трасса пишется всегда.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

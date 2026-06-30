@@ -57,20 +57,33 @@
   var fetchOptions = { cache: 'no-store', credentials: 'omit' };
   var MIN_REAL_FRAME_BYTES = 512;
 
+  function schemeAuthKey() {
+    return (config && config.schemeAuthKey) || '';
+  }
+
+  function withSchemeAuth(url) {
+    var key = schemeAuthKey();
+    var out = url;
+    if (key) {
+      out += (out.indexOf('?') >= 0 ? '&' : '?') + 'k=' + encodeURIComponent(key);
+    }
+    return out;
+  }
+
   function frameURL() {
     var base = window.__SAFARI_SPOOF_FRAME_URL__ || 'spoofframe://frame/latest';
-    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+    return withSchemeAuth(base + (base.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now());
   }
 
   function partURL(index) {
     if (typeof window.__spoofPartURL__ === 'function') {
       return window.__spoofPartURL__(0, index);
     }
-    return 'spoofframe://frame/part?p=' + index + '&t=' + Date.now();
+    return withSchemeAuth('spoofframe://frame/part?p=' + index + '&t=' + Date.now());
   }
 
   function jpegMirrorURL() {
-    return 'spoofframe://frame/jpeg?t=' + Date.now();
+    return withSchemeAuth('spoofframe://frame/jpeg?t=' + Date.now());
   }
 
   function fetchJpegMirror(meta, onDone) {

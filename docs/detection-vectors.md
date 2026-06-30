@@ -77,7 +77,9 @@ Known vectors used by fingerprint services, WebRTC inspectors, and KYC providers
 | `window.webkit.messageHandlers.spoofFrameBridge` | Patched v29.8 | Handlers removed; JS→native via `spoofcontrol://` scheme |
 | `window.webkit.messageHandlers.spoofExportBridge` | Patched v29.8 | Export via `spoofcontrol://export` POST |
 | `webkit.messageHandlers` enumeration | Mitigated v29.8 | Proxy hides spoof* handler names if present |
-| Custom URL schemes (`spoofframe`, `spoofcontrol`) | Risk | Probe via fetch may detect app-only schemes; not in Safari baseline |
+| Custom URL schemes (`spoofframe`, `spoofcontrol`) | Mitigated v29.10 | Requests without profile `schemeAuthKey` (`k=` query) fail like unknown host; page probes should not get 200 |
+| `permissions.query({name:'camera'})` | Patched v29.10 | Returns `granted` for camera/microphone |
+| `webkit.messageHandlers` Proxy getter | Mitigated v29.10 | Proxy only installed when legacy spoof handlers present; otherwise untouched |
 
 ## Known Unfixable (v1)
 

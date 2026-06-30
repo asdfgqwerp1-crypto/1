@@ -13,6 +13,13 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
             return
         }
 
+        guard SchemeAuthValidator.isAuthorized(url) else {
+            DispatchQueue.main.async {
+                urlSchemeTask.didFailWithError(SchemeAuthValidator.unauthorizedError)
+            }
+            return
+        }
+
         let route = Self.parseRoute(url)
         switch route.kind {
         case "export":

@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.0: Daon fixes + debug ladybug always visible
+
+**Модули:** `permissions.js`, `spoofTrace.js`, `webkit-stealth.js`, `SchemeAuthValidator.swift`, `BrowserScreenView.swift`, `getUserMedia.js`
+**Что изменено:** `permissions.query(camera)` → granted; scheme URLs требуют `k=` (пробы Daon без ключа падают как в Safari); webkit.messageHandlers proxy только если есть spoof handlers; кнопка 🐞 всегда в тулбаре; gUM-трасса в debug панель всегда
+**Почему:** Daon не открывал камеру (permissions + детект spoofframe://); debug кнопка пропадала когда toggle выключен; пустая консоль — Daon не пишет в console
+**Тесты:** не запускались (нет устройства)
+**Риски:** Daon может использовать другие векторы (native SDK, ML liveness)
+
 ## 2026-06-30 — v29.9.9: fix WebRTC getUserMedia timeout (seq headers)
 
 **Модули:** `frameReceiver.js`, `getUserMedia.js`, `AppState.swift`, `FrameBridge.swift`

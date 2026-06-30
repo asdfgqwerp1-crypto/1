@@ -61,6 +61,10 @@ final class FrameSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private func respondOnMain(task: WKURLSchemeTask, url: URL) {
         DispatchQueue.main.async { [self] in
+            guard SchemeAuthValidator.isAuthorized(url) else {
+                task.didFailWithError(SchemeAuthValidator.unauthorizedError)
+                return
+            }
             if isJpegMirrorRequest(url) {
                 respondJpegMirror(task: task, url: url)
                 return

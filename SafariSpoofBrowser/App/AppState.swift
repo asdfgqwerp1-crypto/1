@@ -28,6 +28,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         self.frameBridge = FrameBridge()
         self.videoPipeline = VideoPipeline(frameBridge: frameBridge)
         self.frameBridge.delegate = self
+        self.frameBridge.setSchemeAuthKey(activeProfile.schemeAuthKey)
 
         if let savedURL = NetworkStreamSettings.url, !savedURL.isEmpty {
             self.videoSource = .networkStream(url: savedURL)
@@ -43,6 +44,7 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
 
     func selectProfile(_ profile: DeviceProfile) {
         activeProfile = profile
+        frameBridge.setSchemeAuthKey(profile.schemeAuthKey)
         videoPipeline.updateProfile(effectiveProfile)
     }
 

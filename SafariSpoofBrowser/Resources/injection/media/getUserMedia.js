@@ -9,6 +9,12 @@
   var originalEnumerateDevices = null;
   var installTimer = null;
 
+  function traceMedia(message, level) {
+    if (typeof window.__spoofTrace === 'function') {
+      window.__spoofTrace(level || 'info', message, 'gUM');
+    }
+  }
+
   function nativeFn(name, impl) {
     impl.toString = function () {
       return 'function ' + name + '() { [native code] }';
@@ -108,6 +114,7 @@
   }
 
   function startNativePipeline(active) {
+    traceMedia('stream/start ' + active.width + 'x' + active.height + '@' + active.frameRate);
     if (window.__spoofStopFramePoll) {
       window.__spoofStopFramePoll();
     }
@@ -264,18 +271,21 @@
 
           waitForFrames(1, 12000).then(function (gotFrame) {
             if (!gotFrame) {
+              traceMedia('waitForFrames timeout bytes=' + (window.__spoofLastFrameBytes || 0), 'error');
               reject(new DOMException(
                 'Camera failed to produce frames (bridge bytes=' + (window.__spoofLastFrameBytes || 0) + ')',
                 'NotReadableError'
               ));
               return;
             }
+            traceMedia('frames ready bytes=' + (window.__spoofLastFrameBytes || 0));
             try {
               var fps = Math.min(activeMediaCapabilities().frameRate || 30, 30);
               var stream;
               try {
                 stream = canvas.captureStream(fps);
               } catch (captureErr) {
+                traceMedia('captureStream failed: ' + (captureErr && captureErr.message), 'error');
                 window.__spoofResetCanvas();
                 reject(new DOMException(
                   captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed',
@@ -316,12 +326,15 @@
                 }
               }
 
+              traceMedia('stream ready tracks=' + stream.getVideoTracks().length);
               resolve(stream);
             } catch (err) {
+              traceMedia('resolve error: ' + (err && err.message), 'error');
               reject(err);
             }
           });
         } catch (err) {
+          traceMedia('setup error: ' + (err && err.message), 'error');
           reject(err);
         }
       }, delay);
@@ -329,6 +342,7 @@
   }
 
   var spoofGetUserMedia = nativeFn('getUserMedia', function (constraints) {
+    traceMedia('getUserMedia ' + JSON.stringify(constraints || {}));
     if (wantsVideo(constraints)) {
       return resolveVideoStream(constraints || {});
     }
@@ -391,6 +405,7 @@
     if (!applyPatchesToMediaDevices(md)) return false;
 
     installed = true;
+    traceMedia('mediaDevices patched @ ' + (location && location.href ? location.href : 'unknown'));
     if (installTimer) {
       clearInterval(installTimer);
       installTimer = null;

@@ -210,6 +210,10 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         )
     }
 
+    var schemeAuthKey: String {
+        ProfileSchemeAuth.key(for: id)
+    }
+
     var injectionConfigJSON: String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
@@ -223,6 +227,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
 
 private struct InjectionConfig: Encodable {
     let profileId: String
+    let schemeAuthKey: String
     let emulateSafariObject: Bool?
     let frameDelivery: FrameDeliveryFormat
     let navigator: DeviceProfile.NavigatorProfile
@@ -240,6 +245,7 @@ private struct InjectionConfig: Encodable {
 
     init(profile: DeviceProfile) {
         profileId = profile.id
+        schemeAuthKey = profile.schemeAuthKey
         emulateSafariObject = profile.emulateSafariObject
         frameDelivery = profile.resolvedFrameDelivery
         navigator = profile.navigator

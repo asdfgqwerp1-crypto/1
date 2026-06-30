@@ -9,8 +9,10 @@ final class InjectionScriptLoader {
         "fingerprint/webgl",
         "fingerprint/canvas",
         "fingerprint/audio",
+        "media/spoofTrace",
         "media/frameReceiver",
         "media/mediaStreamMock",
+        "media/permissions",
         "media/getUserMedia",
         "webrtc/enumerateDevices"
     ]

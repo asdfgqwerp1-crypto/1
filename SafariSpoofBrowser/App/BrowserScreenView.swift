@@ -90,13 +90,11 @@ struct BrowserScreenView: View {
                         .foregroundStyle(.blue)
                 }
 
-                if DebugSettings.consoleEnabled {
-                    Button {
-                        showDebugPanel.toggle()
-                    } label: {
-                        Image(systemName: showDebugPanel ? "ladybug.fill" : "ladybug")
-                            .foregroundStyle(.orange)
-                    }
+                Button {
+                    showDebugPanel.toggle()
+                } label: {
+                    Image(systemName: showDebugPanel ? "ladybug.fill" : "ladybug")
+                        .foregroundStyle(.orange)
                 }
 
                 Button { appState.showSettings = true } label: {
@@ -119,8 +117,11 @@ struct BrowserScreenView: View {
         }
         .background(Color.white)
         .overlay(alignment: .bottom) {
-            if DebugSettings.consoleEnabled && showDebugPanel {
-                DebugOverlayView(store: debugLogStore) {
+            if showDebugPanel {
+                DebugOverlayView(
+                    store: debugLogStore,
+                    captureEnabled: DebugSettings.consoleEnabled
+                ) {
                     showDebugPanel = false
                 }
             }

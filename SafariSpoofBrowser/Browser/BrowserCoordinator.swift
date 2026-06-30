@@ -24,6 +24,7 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     func prepare(profile: DeviceProfile, frameBridge: FrameBridge) {
         self.activeProfile = profile
         self.frameBridge = frameBridge
+        frameBridge.setSchemeAuthKey(profile.schemeAuthKey)
         frameBridge.controlSchemeHandler.exportBridge = exportBridge
     }
 

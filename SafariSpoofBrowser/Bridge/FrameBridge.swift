@@ -53,6 +53,10 @@ final class FrameBridge: NSObject {
         self.webView = webView
     }
 
+    func setSchemeAuthKey(_ key: String) {
+        SchemeAuthValidator.setAuthKey(key)
+    }
+
     func setDeliveryEnabled(_ enabled: Bool) {
         isDeliveryEnabled = enabled
         if !enabled {
