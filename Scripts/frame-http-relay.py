@@ -54,6 +54,8 @@ def mjpeg_reader(rtsp_url: str, store: FrameStore, vf: str) -> None:
         vf,
         "-pix_fmt",
         "yuvj420p",
+        "-q:v",
+        "3",
         "-f",
         "mjpeg",
         "pipe:1",
@@ -99,7 +101,7 @@ class FrameHandler(http.server.BaseHTTPRequestHandler):
             return
         data = b"" if self.store is None else self.store.get()
         if not data:
-            self.send_error(503, "No frame yet — start OBS stream first")
+            self.send_error(503, "No frame yet - start OBS stream first")
             return
         self.send_response(200)
         self.send_header("Content-Type", "image/jpeg")
@@ -118,8 +120,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Low-latency JPEG frame relay")
     parser.add_argument("--rtsp", default="rtsp://127.0.0.1:8554/live/obs")
     parser.add_argument("--port", type=int, default=8090)
-    parser.add_argument("--width", type=int, default=480)
-    parser.add_argument("--height", type=int, default=640)
+    parser.add_argument("--width", type=int, default=1280)
+    parser.add_argument("--height", type=int, default=720)
     parser.add_argument("--fps", type=int, default=30)
     args = parser.parse_args()
 
@@ -132,7 +134,10 @@ def main() -> None:
     FrameHandler.store = store
     threading.Thread(target=mjpeg_reader, args=(args.rtsp, store, vf), daemon=True).start()
 
-    with socketserver.ThreadingTCPServer(("0.0.0.0", args.port), FrameHandler) as httpd:
+    class ReuseTCPServer(socketserver.ThreadingTCPServer):
+        allow_reuse_address = True
+
+    with ReuseTCPServer(("0.0.0.0", args.port), FrameHandler) as httpd:
         print(f"Frame relay listening on http://0.0.0.0:{args.port}/frame.jpg", flush=True)
         httpd.serve_forever()
 

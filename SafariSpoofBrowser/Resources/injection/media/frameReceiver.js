@@ -119,7 +119,8 @@
     var bytes = payloadBytes || 0;
     var w = pixelW || 0;
     var h = pixelH || 0;
-    if (bytes > MIN_REAL_FRAME_BYTES || (w > 32 && h > 32) || (meta && meta.seq > 0)) {
+    var decoded = w > 32 && h > 32;
+    if (bytes > MIN_REAL_FRAME_BYTES && decoded) {
       window.__spoofGotRealFrame = true;
       window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
     }
@@ -400,6 +401,10 @@
     var srcW = source.width;
     var srcH = source.height;
     if (!srcW || !srcH) return;
+    if (typeof ctx.imageSmoothingEnabled !== 'undefined') {
+      ctx.imageSmoothingEnabled = true;
+      if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
+    }
     ctx.fillStyle = '#000000';
     ctx.fillRect(0, 0, dstW, dstH);
     if (srcW === dstW && srcH === dstH) {
@@ -754,6 +759,9 @@
       pollTimer = null;
     }
     window.__spoofFrameCount = 0;
+    window.__spoofGotRealFrame = false;
+    window.__spoofLastFrameBytes = 0;
+    window.__spoofLastNativePush = 0;
   };
 
   window.__spoofReceiveFrame = function () {};

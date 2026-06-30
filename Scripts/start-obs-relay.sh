@@ -77,8 +77,8 @@ sleep 2
 python3 "$RELAY_PY" \
   --rtsp "rtsp://127.0.0.1:8554/live/${STREAM_NAME}" \
   --port "$FRAME_PORT" \
-  --width 480 \
-  --height 640 \
+  --width 1280 \
+  --height 720 \
   --fps 30 &
 FRAME_PID=$!
 

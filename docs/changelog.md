@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.12.0: Frame quality + second gUM hang fix
+
+**Модули:** `VideoPipeline.swift`, `getUserMedia.js`, `frameReceiver.js`, `FrameBridge.swift`, `frame-http-relay.py`, `bundle.js`
+**Что изменено:** Relay 1280×720 + q:v3; native HTTP JPEG upscale/re-encode (0.82); `noteRealFrame` требует реальные bytes+decode (не seq); `stopFramePoll` сбрасывает gotRealFrame; gUM сериализован; stream/stop перед resize canvas; waitForFrames 8s; clearFrame на каждый startStream
+**Почему:** Regula 1280×720/FHD — пиксели из upscale 480×640 ~8KB JPEG; повторный gUM `frames ready bytes=0` — ложный ready по meta.seq без кадра
+**Тесты:** не запускались (нет устройства)
+**Риски:** upscale 720→1080 всё ещё мягче чем native FHD; сериализация gUM +8s timeout на повторные вызовы
+
 ## 2026-06-30 — v29.11.1: CI compile fix (callAsyncJavaScript arguments)
 
 **Модули:** `FrameBridge.swift`, `BrowserCoordinator.swift`, `BuildInfo.swift`

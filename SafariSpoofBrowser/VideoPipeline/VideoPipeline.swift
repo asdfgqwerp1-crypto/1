@@ -269,8 +269,15 @@ final class VideoPipeline: NSObject {
         let targetHeight = streamDelivery?.height ?? profile.mediaCapabilities.height
         frameSequence &+= 1
 
+        let payload = scaledJPEGData(
+            from: data,
+            width: targetWidth,
+            height: targetHeight,
+            quality: 0.82
+        ) ?? data
+
         frameBridge.sendFrame(
-            data: data,
+            data: payload,
             format: .jpeg,
             width: targetWidth,
             height: targetHeight,
@@ -278,6 +285,31 @@ final class VideoPipeline: NSObject {
             presentationTimeUs: UInt64(now * 1_000_000),
             captureTimestamp: now
         )
+    }
+
+    private func scaledJPEGData(from data: Data, width: Int, height: Int, quality: CGFloat) -> Data? {
+        guard width > 0, height > 0, let image = UIImage(data: data) else { return nil }
+        let srcSize = image.size
+        guard srcSize.width > 1, srcSize.height > 1 else { return nil }
+
+        let targetSize = CGSize(width: width, height: height)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        let scaled = renderer.image { ctx in
+            UIColor.black.setFill()
+            ctx.fill(CGRect(origin: .zero, size: targetSize))
+            let scale = max(targetSize.width / srcSize.width, targetSize.height / srcSize.height)
+            let drawW = srcSize.width * scale
+            let drawH = srcSize.height * scale
+            let origin = CGPoint(
+                x: (targetSize.width - drawW) * 0.5,
+                y: (targetSize.height - drawH) * 0.5
+            )
+            image.draw(in: CGRect(origin: origin, size: CGSize(width: drawW, height: drawH)))
+        }
+        return scaled.jpegData(compressionQuality: quality)
     }
 
     private func startFilePlayback(path: String, profile: DeviceProfile) {

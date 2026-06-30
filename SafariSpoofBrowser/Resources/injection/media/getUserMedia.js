@@ -8,6 +8,7 @@
   var originalGetUserMedia = null;
   var originalEnumerateDevices = null;
   var installTimer = null;
+  var videoStreamChain = Promise.resolve();
 
   function traceMedia(message, level) {
     if (typeof window.__spoofTrace === 'function') {
@@ -152,11 +153,13 @@
     var sizeChanged = !existing || existing.width !== active.width || existing.height !== active.height;
     if (sizeChanged) {
       if (window.__spoofStopFramePoll) window.__spoofStopFramePoll();
+      if (window.__spoofSendControl) window.__spoofSendControl('stream/stop');
       if (window.__spoofResetCanvas) window.__spoofResetCanvas();
       window.__spoofFrameCount = 0;
       window.__spoofLastFrameSeq = 0;
       window.__spoofGotRealFrame = false;
       window.__spoofLastFrameBytes = 0;
+      window.__spoofStreamPreWarmed = false;
     }
     if (window.__spoofSendControl) {
       window.__spoofSendControl('stream/start', {
@@ -170,8 +173,11 @@
     }, sizeChanged ? 80 : 0);
   }
 
+  var MIN_READY_FRAME_BYTES = 512;
+
   function hasRealFrame() {
-    return window.__spoofGotRealFrame === true;
+    return window.__spoofGotRealFrame === true
+      && (window.__spoofLastFrameBytes || 0) >= MIN_READY_FRAME_BYTES;
   }
 
   function waitForFrames(minCount, timeoutMs) {
@@ -324,7 +330,7 @@
     });
   }
 
-  function resolveVideoStream(constraints) {
+  function resolveVideoStreamInner(constraints) {
     return new Promise(function (resolve, reject) {
       var delay = 50 + Math.floor(Math.random() * 150);
       setTimeout(function () {
@@ -340,7 +346,7 @@
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
-          var frameWaitMs = hasRealFrame() ? 200 : 5000;
+          var frameWaitMs = 8000;
           waitForFrames(1, frameWaitMs).then(function (gotFrame) {
             if (!gotFrame) {
               traceMedia('waitForFrames timeout bytes=' + (window.__spoofLastFrameBytes || 0), 'error');
@@ -410,6 +416,14 @@
         }
       }, delay);
     });
+  }
+
+  function resolveVideoStream(constraints) {
+    var job = videoStreamChain.then(function () {
+      return resolveVideoStreamInner(constraints);
+    });
+    videoStreamChain = job.catch(function () {});
+    return job;
   }
 
   var spoofGetUserMedia = nativeFn('getUserMedia', function (constraints) {
