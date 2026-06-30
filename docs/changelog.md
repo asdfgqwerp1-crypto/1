@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.10.4: Regula iframe allow + guaranteed probe logs
+
+**Модули:** `permissions.js`, `BrowserCoordinator.swift`, `bundle.js`
+**Что изменено:** MutationObserver + `setAttribute` hook для `allow=camera` на всех iframe (Regula web-components); probe всегда пишет результат (включая empty); `[native] probe scheduled v29.10.4` после didFinish
+**Почему:** на Regula старая IPA — нет probe/версии в логах; Regula может грузить liveness в динамическом iframe без camera permission policy
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-06-30 — v29.10.3: build marker in debug log + pbxproj dedup
 
 **Модули:** `BuildInfo.swift`, `BrowserCoordinator.swift`, `project.pbxproj`, `bundle.js`

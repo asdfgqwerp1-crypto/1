@@ -128,6 +128,7 @@ extension BrowserCoordinator: WKNavigationDelegate {
                 DebugLogStore.shared.append(level: "error", message: "[native] rehook err: \(error.localizedDescription)")
             }
         }
+        DebugLogStore.shared.append(level: "info", message: "[native] probe scheduled \(BuildInfo.marker)")
         runInjectionProbe(on: webView, label: "main")
         for delay in [2.0, 5.0] {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak webView] in
@@ -148,9 +149,11 @@ extension BrowserCoordinator: WKNavigationDelegate {
                 DebugLogStore.shared.append(level: "error", message: "[native] probe(\(label)) err: \(error.localizedDescription)")
                 return
             }
-            if let json = result as? String, !json.isEmpty {
-                DebugLogStore.shared.append(level: "info", message: "[native] probe(\(label)) \(json)")
-            }
+            let json = (result as? String) ?? String(describing: result ?? "nil")
+            DebugLogStore.shared.append(
+                level: "info",
+                message: "[native] probe(\(label)) \(json.isEmpty ? "(empty)" : json)"
+            )
         }
     }
 
