@@ -23,6 +23,8 @@ workflows:
             BUILD_DIR="$PWD/build" \
             build 2>&1 | tee build.log
           if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+            echo "=== BUILD FAILED — error lines ==="
+            grep -nE "error:|fatal error:|cannot find|undefined symbol|Build input file cannot be found" build.log || true
             echo "=== BUILD FAILED — last 80 lines ==="
             tail -80 build.log
             exit 65

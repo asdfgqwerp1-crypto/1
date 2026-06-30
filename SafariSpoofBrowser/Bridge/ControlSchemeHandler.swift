@@ -137,13 +137,13 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
             }
         }
 
-        guard let json else {
+        guard let exportJson = json else {
             fail(task: urlSchemeTask, code: 400, message: "Missing export payload")
             return
         }
 
         DispatchQueue.main.async { [weak self] in
-            self?.exportBridge?.handleExport(filename: filename, json: json)
+            self?.exportBridge?.handleExport(filename: filename, json: exportJson)
             self?.respondOK(task: task)
         }
     }

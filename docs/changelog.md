@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9.1: fix DebugLogStore missing Combine import
+
+**Модули:** `DebugLogStore.swift`, `ControlSchemeHandler.swift`
+**Что изменено:** `import Combine` в DebugLogStore (ObservableObject/@Published); `guard let exportJson = json` вместо shorthand optional binding
+**Почему:** Codemagic exit 65 — DebugLogStore не компилировался без Combine
+**Тесты:** не запускались
+**Риски:** нет
+
 ## 2026-06-30 — v29.9: debug overlay + fix Codemagic build 65
 
 **Модули:** `ControlSchemeHandler.swift`, `DebugLogStore.swift`, `DebugOverlayView.swift`, `debug-console.js`, `BrowserScreenView.swift`, `SettingsView.swift`
