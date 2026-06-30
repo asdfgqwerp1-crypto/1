@@ -55,6 +55,19 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Debug") {
+                    Toggle("JS Console Overlay", isOn: Binding(
+                        get: { DebugSettings.consoleEnabled },
+                        set: { enabled in
+                            DebugSettings.consoleEnabled = enabled
+                            NotificationCenter.default.post(name: .debugConsoleSettingsChanged, object: nil)
+                        }
+                    ))
+                    Text("Ловит console.error, window.onerror и unhandledrejection. После включения страница перезагрузится автоматически.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("Bridge Metrics") {
                     LabeledContent("FPS", value: String(format: "%.1f", appState.bridgeMetrics.fps))
                     LabeledContent("Latency", value: String(format: "%.1f ms", appState.bridgeMetrics.latencyMs))

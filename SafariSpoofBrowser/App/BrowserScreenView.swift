@@ -8,6 +8,8 @@ struct BrowserScreenView: View {
     let onNavigate: (String) -> Void
 
     @State private var mountWebView = true
+    @State private var showDebugPanel = false
+    @ObservedObject private var debugLogStore = DebugLogStore.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -88,6 +90,15 @@ struct BrowserScreenView: View {
                         .foregroundStyle(.blue)
                 }
 
+                if DebugSettings.consoleEnabled {
+                    Button {
+                        showDebugPanel.toggle()
+                    } label: {
+                        Image(systemName: showDebugPanel ? "ladybug.fill" : "ladybug")
+                            .foregroundStyle(.orange)
+                    }
+                }
+
                 Button { appState.showSettings = true } label: {
                     Image(systemName: "gearshape")
                 }
@@ -107,6 +118,23 @@ struct BrowserScreenView: View {
             }
         }
         .background(Color.white)
+        .overlay(alignment: .bottom) {
+            if DebugSettings.consoleEnabled && showDebugPanel {
+                DebugOverlayView(store: debugLogStore) {
+                    showDebugPanel = false
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .debugConsoleSettingsChanged)) { _ in
+            if DebugSettings.consoleEnabled {
+                showDebugPanel = true
+            } else {
+                showDebugPanel = false
+                debugLogStore.clear()
+            }
+            coordinator.refreshInjection()
+            coordinator.reload()
+        }
         .onChange(of: appState.activeProfile.id) { _ in
             coordinator.configure(
                 profile: appState.effectiveProfile,

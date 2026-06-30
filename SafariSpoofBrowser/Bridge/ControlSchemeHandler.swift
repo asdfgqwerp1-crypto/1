@@ -17,6 +17,8 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
         switch route.kind {
         case "export":
             handleExport(task: urlSchemeTask, request: urlSchemeTask.request, url: url)
+        case "debug":
+            handleDebugLog(task: urlSchemeTask, request: urlSchemeTask.request)
         case "stream":
             switch route.action {
             case "start":
@@ -42,6 +44,13 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
 
         if host == "export" || path == "export" {
             return ("export", "")
+        }
+
+        if host == "debug" || path.hasPrefix("debug/") || path == "debug" {
+            let action = host == "debug"
+                ? (path.isEmpty ? "log" : path)
+                : String(path.dropFirst("debug/".count))
+            return ("debug", action.isEmpty ? "log" : action)
         }
 
         if host == "stream" {
@@ -104,7 +113,8 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
             json = String(data: Data(reading: stream), encoding: .utf8)
         }
 
-        if let json, let data = json.data(using: .utf8),
+        if let currentJson = json,
+           let data = currentJson.data(using: .utf8),
            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             if let nested = object["json"] as? String {
                 json = nested
@@ -135,6 +145,32 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
         DispatchQueue.main.async { [weak self] in
             self?.exportBridge?.handleExport(filename: filename, json: json)
             self?.respondOK(task: task)
+        }
+    }
+
+    private func handleDebugLog(task: WKURLSchemeTask, request: URLRequest) {
+        var payload: [String: Any] = [:]
+
+        if let body = request.httpBody, !body.isEmpty,
+           let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any] {
+            payload = object
+        } else if let stream = request.httpBodyStream,
+                  let body = String(data: Data(reading: stream), encoding: .utf8),
+                  let data = body.data(using: .utf8),
+                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            payload = object
+        }
+
+        let level = (payload["level"] as? String) ?? "log"
+        let message = (payload["message"] as? String) ?? ""
+        let source = payload["source"] as? String
+        let composed = source.map { "[\($0)] \(message)" } ?? message
+
+        DispatchQueue.main.async {
+            Task { @MainActor in
+                DebugLogStore.shared.append(level: level, message: composed)
+            }
+            self.respondOK(task: task)
         }
     }
 

@@ -34,6 +34,9 @@
 		A10000010000000000000043 /* HttpSnapshotPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000043; };
 		A10000010000000000000044 /* CameraIndicatorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000044; };
 		A10000010000000000000045 /* ControlSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000045; };
+		A10000010000000000000047 /* DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000047; };
+		A10000010000000000000048 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000048; };
+		A10000010000000000000049 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000049; };
 		A10000010000000000000041 /* FrameTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000041; };
 		A10000010000000000000038 /* SpoofFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000038; };
 		A10000010000000000000039 /* ChunkedNV12Frame.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000039; };
@@ -42,6 +45,7 @@
 		A10000010000000000000017 /* iphone15pro_ios174.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000017; };
 		A10000010000000000000028 /* iphone11_ios265.json in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000028; };
 		A10000010000000000000046 /* webkit-stealth.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000046; };
+		A10000010000000000000050 /* debug-console.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000050; };
 		A10000010000000000000018 /* navigator.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000018; };
 		A10000010000000000000019 /* screen.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000019; };
 		A10000010000000000000020 /* webgl.js in Resources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000020; };
@@ -84,6 +88,10 @@
 		A20000010000000000000044 /* CameraIndicatorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraIndicatorSession.swift; sourceTree = "<group>"; };
 		A20000010000000000000045 /* ControlSchemeHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlSchemeHandler.swift; sourceTree = "<group>"; };
 		A20000010000000000000046 /* webkit-stealth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webkit-stealth.js; sourceTree = "<group>"; };
+		A20000010000000000000047 /* DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogStore.swift; sourceTree = "<group>"; };
+		A20000010000000000000048 /* DebugOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugOverlayView.swift; sourceTree = "<group>"; };
+		A20000010000000000000049 /* DebugSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettings.swift; sourceTree = "<group>"; };
+		A20000010000000000000050 /* debug-console.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = debug-console.js; sourceTree = "<group>"; };
 		A20000010000000000000041 /* FrameTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameTiming.swift; sourceTree = "<group>"; };
 		A20000010000000000000038 /* SpoofFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoofFrame.swift; sourceTree = "<group>"; };
 		A20000010000000000000039 /* ChunkedNV12Frame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChunkedNV12Frame.swift; sourceTree = "<group>"; };
@@ -172,6 +180,9 @@
 				A20000010000000000000033 /* BrowserScreenView.swift */,
 				A20000010000000000000034 /* ServerReachability.swift */,
 				A20000010000000000000035 /* TestBookmarks.swift */,
+				A20000010000000000000047 /* DebugLogStore.swift */,
+				A20000010000000000000048 /* DebugOverlayView.swift */,
+				A20000010000000000000049 /* DebugSettings.swift */,
 				A20000010000000000000002 /* AppState.swift */,
 				A20000010000000000000003 /* ContentView.swift */,
 				A20000010000000000000004 /* SettingsView.swift */,
@@ -270,6 +281,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000010000000000000046 /* webkit-stealth.js */,
+				A20000010000000000000050 /* debug-console.js */,
 				A20000010000000000000018 /* navigator.js */,
 				A20000010000000000000019 /* screen.js */,
 				A20000010000000000000020 /* webgl.js */,
@@ -379,6 +391,7 @@
 				A10000010000000000000017 /* iphone15pro_ios174.json in Resources */,
 				A10000010000000000000028 /* iphone11_ios265.json in Resources */,
 				A10000010000000000000046 /* webkit-stealth.js in Resources */,
+				A10000010000000000000050 /* debug-console.js in Resources */,
 				A10000010000000000000018 /* navigator.js in Resources */,
 				A10000010000000000000019 /* screen.js in Resources */,
 				A10000010000000000000020 /* webgl.js in Resources */,
@@ -411,6 +424,9 @@
 				A10000010000000000000033 /* BrowserScreenView.swift in Sources */,
 				A10000010000000000000034 /* ServerReachability.swift in Sources */,
 				A10000010000000000000035 /* TestBookmarks.swift in Sources */,
+				A10000010000000000000047 /* DebugLogStore.swift in Sources */,
+				A10000010000000000000048 /* DebugOverlayView.swift in Sources */,
+				A10000010000000000000049 /* DebugSettings.swift in Sources */,
 				A10000010000000000000036 /* ExportBridge.swift in Sources */,
 				A10000010000000000000002 /* AppState.swift in Sources */,
 				A10000010000000000000003 /* ContentView.swift in Sources */,

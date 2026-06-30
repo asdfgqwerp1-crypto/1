@@ -19,7 +19,10 @@ final class InjectionManager {
         let controller = webView.configuration.userContentController
         controller.removeAllUserScripts()
 
-        let scripts = scriptLoader.loadBundledScripts(configJSON: profile.injectionConfigJSON)
+        let scripts = scriptLoader.loadBundledScripts(
+            configJSON: profile.injectionConfigJSON,
+            debugConsoleEnabled: DebugSettings.consoleEnabled
+        )
         for source in scripts {
             let script = WKUserScript(
                 source: source,

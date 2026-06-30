@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-06-30 — v29.9: debug overlay + fix Codemagic build 65
+
+**Модули:** `ControlSchemeHandler.swift`, `DebugLogStore.swift`, `DebugOverlayView.swift`, `debug-console.js`, `BrowserScreenView.swift`, `SettingsView.swift`
+**Что изменено:** In-app JS console overlay (toggle в Settings): перехват console.error/onerror/unhandledrejection через `spoofcontrol://debug/log`. Исправлен compile error в `handleExport` (`if let json` → `if let currentJson`) — причина exit 65 на Codemagic.
+**Почему:** отладка Daon без Mac; v29.8 не собиралась из-за присваивания в immutable `if let`
+**Тесты:** не запускались (нет устройства)
+**Риски:** debug-console.js инжектится только при включённом toggle
+
 ## 2026-06-30 — v29.8: WKWebView bypass — убраны messageHandlers
 
 **Модули:** `ControlSchemeHandler.swift`, `FrameBridge.swift`, `ExportBridge.swift`, `webkit-stealth.js`, `getUserMedia.js`, `InjectionManager.swift`, `BrowserCoordinator.swift`

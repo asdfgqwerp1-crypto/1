@@ -72,6 +72,11 @@ final class BrowserCoordinator: NSObject, ObservableObject {
     func goForward() { webView?.goForward() }
     func reload() { webView?.reload() }
 
+    func refreshInjection() {
+        reinjectScripts()
+        statusMessage = DebugSettings.consoleEnabled ? "Debug console включена" : "Браузер готов"
+    }
+
     private func reinjectScripts() {
         guard let webView, let profile = activeProfile, let frameBridge else { return }
         let manager = InjectionManager(profile: profile, frameBridge: frameBridge)

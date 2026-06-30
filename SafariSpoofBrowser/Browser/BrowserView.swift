@@ -15,6 +15,11 @@ struct BrowserView: UIViewRepresentable {
         frameBridge.registerSchemes(on: configuration)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        #if DEBUG
+        if #available(iOS 16.4, *) {
+            webView.isInspectable = true
+        }
+        #endif
         webView.isOpaque = true
         webView.backgroundColor = .white
         webView.scrollView.backgroundColor = .white

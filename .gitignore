@@ -14,3 +14,4 @@ __pycache__/
 Scripts/.github-token
 Scripts/node_modules/auto.crt
 auto.key
+auto.crt

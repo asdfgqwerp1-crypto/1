@@ -15,7 +15,7 @@ final class InjectionScriptLoader {
         "webrtc/enumerateDevices"
     ]
 
-    func loadBundledScripts(configJSON: String) -> [String] {
+    func loadBundledScripts(configJSON: String, debugConsoleEnabled: Bool = false) -> [String] {
         let bootstrap = """
         (function() {
             'use strict';
@@ -31,6 +31,10 @@ final class InjectionScriptLoader {
             if let source = loadModule(named: module) {
                 scripts.append(source)
             }
+        }
+
+        if debugConsoleEnabled, let debugScript = loadModule(named: "fingerprint/debug-console") {
+            scripts.append(debugScript)
         }
 
         return scripts
