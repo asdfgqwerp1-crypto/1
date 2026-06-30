@@ -292,6 +292,10 @@ final class VideoPipeline: NSObject {
         let srcSize = image.size
         guard srcSize.width > 1, srcSize.height > 1 else { return nil }
 
+        if Int(srcSize.width.rounded()) == width && Int(srcSize.height.rounded()) == height {
+            return data
+        }
+
         let targetSize = CGSize(width: width, height: height)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1

@@ -119,10 +119,13 @@
     var bytes = payloadBytes || 0;
     var w = pixelW || 0;
     var h = pixelH || 0;
-    var decoded = w > 32 && h > 32;
-    if (bytes > MIN_REAL_FRAME_BYTES && decoded) {
+    var hasBytes = bytes > MIN_REAL_FRAME_BYTES;
+    var hasPicture = w >= 64 && h >= 64;
+    if (hasBytes || hasPicture) {
       window.__spoofGotRealFrame = true;
-      window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
+      if (bytes > 0) {
+        window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
+      }
     }
   }
 

@@ -32,20 +32,20 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
             return
         }
 
-        if path == "stream/start" || path.hasPrefix("stream/") {
+        if path == "stream/stop" {
+            DispatchQueue.main.async { [weak self] in
+                self?.frameBridge?.handleControlMessage(["event": "stopStream"])
+            }
+            return
+        }
+
+        if path == "stream/start" {
             var control: [String: Any] = ["event": "startStream"]
             params.forEach { key, value in
                 control[key] = value
             }
             DispatchQueue.main.async { [weak self] in
                 self?.frameBridge?.handleControlMessage(control)
-            }
-            return
-        }
-
-        if path == "stream/stop" {
-            DispatchQueue.main.async { [weak self] in
-                self?.frameBridge?.handleControlMessage(["event": "stopStream"])
             }
             return
         }

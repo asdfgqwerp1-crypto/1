@@ -16,7 +16,7 @@ protocol FrameBridgeDelegate: AnyObject {
 
 final class FrameBridge: NSObject {
     static let maxNV12PayloadBytes = 600_000
-    static let maxJPEGPayloadBytes = 180_000
+    static let maxJPEGPayloadBytes = 400_000
 
     let schemeHandler = FrameSchemeHandler()
     let controlSchemeHandler = ControlSchemeHandler()

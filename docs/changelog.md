@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.12.1: stream/stop handler regression fix
+
+**Модули:** `SpoofControlMessageHandler.swift`, `getUserMedia.js`, `frameReceiver.js`, `FrameBridge.swift`, `VideoPipeline.swift`
+**Что изменено:** `stream/stop` больше не матчится как `startStream` (hasPrefix bug); stream/stop только при resize с активным кадром; JPEG cap 400KB; skip rescale если размер совпадает; noteRealFrame принимает decoded 64×64+
+**Почему:** v29.12.0 ломал Regula — `stream/stop` → `stream/start default`, кадры рисовались (frames=144) но bytes=0 → waitForFrames timeout
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.12.0: Frame quality + second gUM hang fix
 
 **Модули:** `VideoPipeline.swift`, `getUserMedia.js`, `frameReceiver.js`, `FrameBridge.swift`, `frame-http-relay.py`, `bundle.js`

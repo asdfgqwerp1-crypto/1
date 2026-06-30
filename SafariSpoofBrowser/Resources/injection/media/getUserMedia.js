@@ -153,7 +153,9 @@
     var sizeChanged = !existing || existing.width !== active.width || existing.height !== active.height;
     if (sizeChanged) {
       if (window.__spoofStopFramePoll) window.__spoofStopFramePoll();
-      if (window.__spoofSendControl) window.__spoofSendControl('stream/stop');
+      if (window.__spoofGotRealFrame && window.__spoofSendControl) {
+        window.__spoofSendControl('stream/stop');
+      }
       if (window.__spoofResetCanvas) window.__spoofResetCanvas();
       window.__spoofFrameCount = 0;
       window.__spoofLastFrameSeq = 0;
@@ -176,8 +178,7 @@
   var MIN_READY_FRAME_BYTES = 512;
 
   function hasRealFrame() {
-    return window.__spoofGotRealFrame === true
-      && (window.__spoofLastFrameBytes || 0) >= MIN_READY_FRAME_BYTES;
+    return window.__spoofGotRealFrame === true;
   }
 
   function waitForFrames(minCount, timeoutMs) {
