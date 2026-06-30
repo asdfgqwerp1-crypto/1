@@ -93,7 +93,9 @@ final class TabCoordinator: ObservableObject {
 
     func clearTabData(_ id: UUID) {
         dataStoreRegistry.clearWebsiteData(for: id) { [weak self] in
-            self?.coordinator(for: id).reload()
+            Task { @MainActor in
+                self?.coordinator(for: id).reload()
+            }
         }
     }
 

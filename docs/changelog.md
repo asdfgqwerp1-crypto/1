@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.1: CI fix — WKWebsiteDataStore API
+
+**Модули:** `TabDataStoreRegistry.swift`, `BrowserView.swift`, `TabCoordinator.swift`
+**Что изменено:** `dataStore(forIdentifier:)` / `removeDataStore(forIdentifier:)` class methods; убран @MainActor с registry; `BrowserView.Coordinator` typealias
+**Почему:** Codemagic compile failed — неверные WKWebsiteDataStore initializers в v29.13.0
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.0: Anti-detect browser sessions — tabs, cookies, restore
 
 **Модули:** `TabCoordinator`, `TabSession`, `TabDataStoreRegistry`, `BrowserSessionStore`, `BrowserView`, `BrowserScreenView`, `AppState`

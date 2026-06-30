@@ -2,6 +2,8 @@ import SwiftUI
 import WebKit
 
 struct BrowserView: UIViewRepresentable {
+    typealias Coordinator = BrowserViewHost
+
     @ObservedObject var coordinator: BrowserCoordinator
     let tab: TabSession
     let profile: DeviceProfile
