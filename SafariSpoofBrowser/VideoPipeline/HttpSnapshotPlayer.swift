@@ -12,6 +12,9 @@ final class HttpSnapshotPlayer: NSObject {
     private var previewImageView: UIImageView?
     private var lastErrorLog: CFAbsoluteTime = 0
     private var fetchSuccessCount = 0
+    private var lastPayloadDigest = 0
+    private var lastPayloadChangeTime: CFAbsoluteTime = 0
+    private var lastStaleLogTime: CFAbsoluteTime = 0
 
     override init() {
         let config = URLSessionConfiguration.ephemeral
@@ -27,6 +30,9 @@ final class HttpSnapshotPlayer: NSObject {
         stop()
         frameURL = url
         fetchSuccessCount = 0
+        lastPayloadDigest = 0
+        lastPayloadChangeTime = 0
+        lastStaleLogTime = 0
         DispatchQueue.main.async {
             DebugLogStore.shared.append(level: "info", message: "[http] start poll \(url.absoluteString)")
         }
@@ -90,6 +96,7 @@ final class HttpSnapshotPlayer: NSObject {
                 return
             }
             self.fetchSuccessCount += 1
+            self.notePayloadFreshness(data, response: http)
             if self.fetchSuccessCount == 1 {
                 DispatchQueue.main.async {
                     DebugLogStore.shared.append(
@@ -103,6 +110,26 @@ final class HttpSnapshotPlayer: NSObject {
                 self.onJPEG?(data)
             }
         }.resume()
+    }
+
+    private func notePayloadFreshness(_ data: Data, response: HTTPURLResponse) {
+        let digest = data.hashValue
+        let now = CFAbsoluteTimeGetCurrent()
+        if digest != lastPayloadDigest {
+            lastPayloadDigest = digest
+            lastPayloadChangeTime = now
+            return
+        }
+        guard now - lastPayloadChangeTime >= 3, now - lastStaleLogTime >= 3 else { return }
+        lastStaleLogTime = now
+        let relaySeq = response.value(forHTTPHeaderField: "X-Relay-Seq") ?? "?"
+        let relayAge = response.value(forHTTPHeaderField: "X-Relay-Age-Ms") ?? "?"
+        DispatchQueue.main.async {
+            DebugLogStore.shared.append(
+                level: "warn",
+                message: "[http] stale frame unchanged >3s bytes=\(data.count) relaySeq=\(relaySeq) ageMs=\(relayAge) — restart OBS stream or frame relay"
+            )
+        }
     }
 
     private func logFetchIssue(_ detail: String) {

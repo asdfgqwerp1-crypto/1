@@ -7,6 +7,7 @@ import http.server
 import socketserver
 import subprocess
 import threading
+import time
 
 SOI = b"\xff\xd8"
 EOI = b"\xff\xd9"
@@ -16,14 +17,20 @@ class FrameStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._data = b""
+        self._seq = 0
+        self._updated_at = 0.0
 
     def update(self, data: bytes) -> None:
         with self._lock:
+            if data != self._data:
+                self._seq += 1
             self._data = data
+            self._updated_at = time.time()
 
-    def get(self) -> bytes:
+    def get(self) -> tuple[bytes, int, float]:
         with self._lock:
-            return self._data
+            age = time.time() - self._updated_at if self._updated_at else 999.0
+            return self._data, self._seq, age
 
 
 def ffmpeg_bin() -> str:
@@ -39,50 +46,71 @@ def ffmpeg_bin() -> str:
     return "ffmpeg"
 
 
-def mjpeg_reader(rtsp_url: str, store: FrameStore, vf: str) -> None:
-    cmd = [
-        ffmpeg_bin(),
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-rtsp_transport",
-        "tcp",
-        "-i",
-        rtsp_url,
-        "-an",
-        "-vf",
-        vf,
-        "-pix_fmt",
-        "yuvj420p",
-        "-q:v",
-        "3",
-        "-f",
-        "mjpeg",
-        "pipe:1",
-    ]
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    assert proc.stdout is not None
-    buf = b""
+def run_ffmpeg_loop(rtsp_url: str, store: FrameStore, vf: str, stall_sec: float) -> None:
     while True:
-        chunk = proc.stdout.read(8192)
-        if not chunk:
-            err = proc.stderr.read().decode("utf-8", errors="replace") if proc.stderr else ""
-            if err.strip():
-                print(f"[frame-relay] ffmpeg ended: {err.strip()}", flush=True)
-            break
-        buf += chunk
+        cmd = [
+            ffmpeg_bin(),
+            "-hide_banner",
+            "-loglevel",
+            "error",
+            "-rtsp_transport",
+            "tcp",
+            "-i",
+            rtsp_url,
+            "-an",
+            "-vf",
+            vf,
+            "-pix_fmt",
+            "yuvj420p",
+            "-q:v",
+            "3",
+            "-f",
+            "mjpeg",
+            "pipe:1",
+        ]
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        assert proc.stdout is not None
+        buf = b""
+        last_frame_at = time.time()
+        print(f"[frame-relay] ffmpeg started pid={proc.pid}", flush=True)
+
         while True:
-            start = buf.find(SOI)
-            if start < 0:
-                buf = b""
+            if time.time() - last_frame_at > stall_sec:
+                print(
+                    f"[frame-relay] ffmpeg stall >{stall_sec:.0f}s, restarting",
+                    flush=True,
+                )
+                proc.kill()
                 break
-            end = buf.find(EOI, start + 2)
-            if end < 0:
-                buf = buf[start:]
+
+            chunk = proc.stdout.read(8192)
+            if not chunk:
+                err = proc.stderr.read().decode("utf-8", errors="replace") if proc.stderr else ""
+                if err.strip():
+                    print(f"[frame-relay] ffmpeg ended: {err.strip()}", flush=True)
                 break
-            frame = buf[start : end + 2]
-            buf = buf[end + 2 :]
-            store.update(frame)
+
+            buf += chunk
+            while True:
+                start = buf.find(SOI)
+                if start < 0:
+                    buf = b""
+                    break
+                end = buf.find(EOI, start + 2)
+                if end < 0:
+                    buf = buf[start:]
+                    break
+                frame = buf[start : end + 2]
+                buf = buf[end + 2 :]
+                store.update(frame)
+                last_frame_at = time.time()
+
+        try:
+            proc.wait(timeout=2)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+
+        time.sleep(0.5)
 
 
 class FrameHandler(http.server.BaseHTTPRequestHandler):
@@ -99,7 +127,10 @@ class FrameHandler(http.server.BaseHTTPRequestHandler):
         if path not in ("/frame.jpg", "/"):
             self.send_error(404)
             return
-        data = b"" if self.store is None else self.store.get()
+        if self.store is None:
+            self.send_error(503, "Relay not ready")
+            return
+        data, seq, age = self.store.get()
         if not data:
             self.send_error(503, "No frame yet - start OBS stream first")
             return
@@ -108,6 +139,8 @@ class FrameHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("X-Relay-Seq", str(seq))
+        self.send_header("X-Relay-Age-Ms", str(int(age * 1000)))
         self.end_headers()
         if not head_only:
             self.wfile.write(data)
@@ -123,6 +156,7 @@ def main() -> None:
     parser.add_argument("--width", type=int, default=1280)
     parser.add_argument("--height", type=int, default=720)
     parser.add_argument("--fps", type=int, default=30)
+    parser.add_argument("--stall-sec", type=float, default=5.0)
     args = parser.parse_args()
 
     vf = (
@@ -132,7 +166,11 @@ def main() -> None:
     )
     store = FrameStore()
     FrameHandler.store = store
-    threading.Thread(target=mjpeg_reader, args=(args.rtsp, store, vf), daemon=True).start()
+    threading.Thread(
+        target=run_ffmpeg_loop,
+        args=(args.rtsp, store, vf, args.stall_sec),
+        daemon=True,
+    ).start()
 
     class ReuseTCPServer(socketserver.ThreadingTCPServer):
         allow_reuse_address = True

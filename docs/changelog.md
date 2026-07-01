@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.10: OBS relay stall — ffmpeg watchdog + stale frame warn
+
+**Модули:** `Scripts/frame-http-relay.py`, `HttpSnapshotPlayer.swift`, `BuildInfo.swift`
+**Что изменено:** Relay перезапускает ffmpeg при stall >5s; HTTP headers `X-Relay-Seq`/`X-Relay-Age-Ms`; приложение логирует `[http] stale frame unchanged >3s` если JPEG не меняется
+**Почему:** Трансляция показывала старый кадр — relay отдавал один и тот же JPEG (ffmpeg завис), не баг canvas
+**Тесты:** curl md5 до restart — 5/5 одинаковых; после restart — кадры меняются
+**Риски:** статичная сцена OBS без движения тоже даст stale warn (ожидаемо)
+
 ## 2026-07-01 — v29.14.9: Daon document — sync stream size, rebind только при invalid frame
 
 **Модули:** `FrameBridge.swift`, `SpoofControlMessageHandler.swift`, `AppState.swift`, `VideoPipeline.swift`, `getUserMedia.js`, `frameReceiver.js`, `bundle.js`, `BuildInfo.swift`
