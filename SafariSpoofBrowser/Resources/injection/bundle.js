@@ -466,6 +466,7 @@
     };
   }
 })();
+// --- media/frameReceiver.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -1110,7 +1111,10 @@
       return;
     }
     var img = new Image();
-    img.crossOrigin = 'anonymous';
+    // crossOrigin on blob:/custom schemes taints canvas and breaks captureStream().
+    if (String(src).indexOf('blob:') !== 0 && String(src).indexOf('spoofframe:') !== 0) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = function () {
       drawImageCover(ctx, img, canvas.width, canvas.height);
       if (revoke) URL.revokeObjectURL(src);
@@ -1175,8 +1179,8 @@
     }
   };
 
-  function drawFrameViaImage(onDone) {
-    var img = new Image();
+  function drawFrameViaXHR(onDone) {
+    var xhr = new XMLHttpRequest();
     var released = false;
     function release() {
       if (released) return;
@@ -1184,27 +1188,22 @@
       isDrawing = false;
       if (onDone) onDone();
     }
-    img.onload = function () {
-      var w = img.naturalWidth || 0;
-      var h = img.naturalHeight || 0;
-      if (!ctx || !canvas) {
+    xhr.open('GET', frameURL(), true);
+    xhr.responseType = 'blob';
+    xhr.onload = function () {
+      if (xhr.status !== 200 || !xhr.response) {
+        logPollFail('xhr status ' + xhr.status);
         release();
         return;
       }
-      if (w < 64 || h < 64) {
-        drawImageCover(ctx, img, canvas.width, canvas.height);
-        finishFrame(null, release, 0, w, h);
-        return;
-      }
-      window.__spoofFrameTransport = 'scheme-img';
-      drawImageCover(ctx, img, canvas.width, canvas.height);
-      finishFrame(null, release, w * h * 2, w, h);
+      window.__spoofFrameTransport = 'scheme-xhr';
+      drawBlobAsImage(xhr.response, null, release);
     };
-    img.onerror = function () {
-      logPollFail('img load failed');
+    xhr.onerror = function () {
+      logPollFail('xhr failed');
       release();
     };
-    img.src = frameURL();
+    xhr.send();
   }
 
   function drawFrame() {
@@ -1226,14 +1225,18 @@
       isDrawing = false;
     }
 
-    // WKWebView rejects fetch(spoofframe://) with "Load failed"; Image element works.
+    // JPEG: native push is primary; XHR blob fallback (never Image — taints canvas).
     if (!preferNV12) {
-      drawFrameViaImage(release);
+      if (Date.now() - (window.__spoofLastNativePush || 0) < 80) {
+        release();
+        return;
+      }
+      drawFrameViaXHR(release);
       return;
     }
 
     if (typeof fetch !== 'function') {
-      drawFrameViaImage(release);
+      drawFrameViaXHR(release);
       return;
     }
 
@@ -1259,7 +1262,7 @@
       })
       .catch(function (err) {
         logPollFail(err && err.message ? err.message : 'fetch failed');
-        drawFrameViaImage(release);
+        drawFrameViaXHR(release);
       });
   }
 
@@ -1294,6 +1297,8 @@
     window.__spoofFrameCount = 0;
     window.__spoofGotRealFrame = false;
     window.__spoofLastFrameBytes = 0;
+    window.__spoofCanvasTainted = false;
+    window.__spoofLoggedPush = false;
     drawPlaceholder();
   };
 
@@ -1560,7 +1565,6 @@
     Object.defineProperty(window, '__spoofTrackProtoPatched', { value: true, enumerable: false, configurable: true });
   } catch (e) {}
 })();
-// --- media/getUserMedia.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;
@@ -1926,17 +1930,22 @@
             }
             traceMedia('frames ready bytes=' + (window.__spoofLastFrameBytes || 0));
             try {
+              if (window.__spoofCanvasTainted && window.__spoofResetCanvas) {
+                window.__spoofResetCanvas();
+                canvas = window.__spoofCanvas;
+              }
               var fps = Math.min(activeMediaCapabilities().frameRate || 30, 30);
               var stream;
               try {
                 stream = canvas.captureStream(fps);
               } catch (captureErr) {
-                traceMedia('captureStream failed: ' + (captureErr && captureErr.message), 'error');
-                window.__spoofResetCanvas();
-                reject(new DOMException(
-                  captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed',
-                  'SecurityError'
-                ));
+                var captureMsg = captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed';
+                traceMedia('captureStream failed: ' + captureMsg, 'error');
+                if (captureMsg.indexOf('tainted') >= 0 || captureMsg.indexOf('Tainted') >= 0) {
+                  window.__spoofCanvasTainted = true;
+                }
+                if (window.__spoofResetCanvas) window.__spoofResetCanvas();
+                reject(new DOMException(captureMsg, 'SecurityError'));
                 return;
               }
               var camera = resolveCameraDevice(constraints);

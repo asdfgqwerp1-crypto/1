@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.9: Canvas tainted — убран spoofframe Image poll
+
+**Модули:** `frameReceiver.js`, `getUserMedia.js`, `debug-console.js`, `bundle.js`
+**Что изменено:** Poll spoofframe через XHR→blob→createImageBitmap (не `Image.src`); native push приоритетен; убран `crossOrigin` на blob/spoofframe; reset canvas при taint; throttle `window.onerror` spam
+**Почему:** v29.13.7 Image poll рисовал `spoofframe://` в canvas → `captureStream()` SecurityError "canvas is tainted" + спам `[window.onerror] script error`
+**Тесты:** не запускались (нет устройства)
+**Риски:** если XHR на spoofframe не работает, JPEG полагается на native push
+
 ## 2026-07-01 — v29.13.8: CI fix — callAsyncJavaScript Result completion (Xcode 26)
 
 **Модули:** `FrameBridge.swift`, `BuildInfo.swift`

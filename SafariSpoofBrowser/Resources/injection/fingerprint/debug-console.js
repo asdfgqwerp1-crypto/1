@@ -52,10 +52,16 @@
     console[level] = wrapConsole(level, original);
   });
 
+  var lastOnErrorKey = '';
+  var lastOnErrorAt = 0;
   window.addEventListener('error', function (event) {
     var msg = (event.message || 'Script error') +
       (event.filename ? ' @ ' + event.filename : '') +
       (event.lineno ? ':' + event.lineno : '');
+    var now = Date.now();
+    if (msg === lastOnErrorKey && now - lastOnErrorAt < 3000) return;
+    lastOnErrorKey = msg;
+    lastOnErrorAt = now;
     emit('error', msg, 'window.onerror');
   });
 

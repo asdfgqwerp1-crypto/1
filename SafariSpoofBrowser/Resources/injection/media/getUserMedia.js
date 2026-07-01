@@ -363,17 +363,22 @@
             }
             traceMedia('frames ready bytes=' + (window.__spoofLastFrameBytes || 0));
             try {
+              if (window.__spoofCanvasTainted && window.__spoofResetCanvas) {
+                window.__spoofResetCanvas();
+                canvas = window.__spoofCanvas;
+              }
               var fps = Math.min(activeMediaCapabilities().frameRate || 30, 30);
               var stream;
               try {
                 stream = canvas.captureStream(fps);
               } catch (captureErr) {
-                traceMedia('captureStream failed: ' + (captureErr && captureErr.message), 'error');
-                window.__spoofResetCanvas();
-                reject(new DOMException(
-                  captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed',
-                  'SecurityError'
-                ));
+                var captureMsg = captureErr && captureErr.message ? captureErr.message : 'Canvas capture failed';
+                traceMedia('captureStream failed: ' + captureMsg, 'error');
+                if (captureMsg.indexOf('tainted') >= 0 || captureMsg.indexOf('Tainted') >= 0) {
+                  window.__spoofCanvasTainted = true;
+                }
+                if (window.__spoofResetCanvas) window.__spoofResetCanvas();
+                reject(new DOMException(captureMsg, 'SecurityError'));
                 return;
               }
               var camera = resolveCameraDevice(constraints);
