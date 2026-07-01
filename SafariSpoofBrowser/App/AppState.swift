@@ -47,6 +47,9 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         )
 
         self.frameBridge.delegate = self
+        self.frameBridge.onStreamConfig = { [weak self] config in
+            self?.videoPipeline.updateStreamDelivery(config)
+        }
         self.frameBridge.setSchemeAuthKey(resolvedProfile.schemeAuthKey)
         tabCoordinator.setProfileProviders(
             profileProvider: { [weak self] in

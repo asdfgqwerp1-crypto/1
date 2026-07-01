@@ -202,6 +202,13 @@
     };
   }
 
+  function streamControlMeta() {
+    return {
+      ownerHost: location.hostname || '',
+      href: location.href || ''
+    };
+  }
+
   function startNativePipeline(active) {
     traceMedia('stream/start ' + active.width + 'x' + active.height + '@' + active.frameRate);
     var existing = window.__spoofCanvas;
@@ -220,13 +227,12 @@
     }
     window.__spoofIsDeliveryOwner = true;
     if (window.__spoofSendControl) {
-      window.__spoofSendControl('stream/start', {
+      window.__spoofSendControl('stream/start', Object.assign({
         width: active.width,
         height: active.height,
         frameRate: active.frameRate,
-        href: location.href,
         claimOwner: true
-      });
+      }, streamControlMeta()));
     }
     var pollDelayMs = 0;
     if (sizeChanged) {

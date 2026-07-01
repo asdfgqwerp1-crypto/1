@@ -758,9 +758,16 @@
       width: active.width,
       height: active.height,
       frameRate: active.frameRate || 30,
-      href: location.href,
+      ownerHost: location.hostname || '',
+      href: location.href || '',
       rebind: true
     });
+  }
+
+  function stopPollIfBackground() {
+    if (document.visibilityState !== 'visible' && pollActive && window.__spoofStopFramePoll) {
+      window.__spoofStopFramePoll();
+    }
   }
 
   function drawFrame() {
@@ -895,6 +902,10 @@
   window.__spoofReceiveFrame = function () {};
 
   window.__spoofResetCanvas();
+  document.addEventListener('visibilitychange', stopPollIfBackground);
+  window.addEventListener('pagehide', function () {
+    if (window.__spoofStopFramePoll) window.__spoofStopFramePoll();
+  });
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       if (canvas && !canvas.parentNode) mountCanvas(canvas);

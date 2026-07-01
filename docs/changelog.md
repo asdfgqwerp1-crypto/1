@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.9: Daon document — sync stream size, rebind только при invalid frame
+
+**Модули:** `FrameBridge.swift`, `SpoofControlMessageHandler.swift`, `AppState.swift`, `VideoPipeline.swift`, `getUserMedia.js`, `frameReceiver.js`, `bundle.js`, `BuildInfo.swift`
+**Что изменено:** `onStreamConfig` синхронно обновляет `streamDelivery` до JPEG deliver (fix 480×640 race); rejected rebind не вызывает `handleControlMessage` (тест-вкладка 192.168 не перезапускает pipeline); rebind только при `deliveryFrameInvalidated`; `ownerHost` из `location.hostname`; poll останавливается на `visibilitychange`/`pagehide`
+**Почему:** Daon document step — stale poll с :8443 слал 1080×1920 каждые 2s, owner=main, native deliver 480×640, push invalid frame
+**Тесты:** не запускались (нет устройства)
+**Риски:** закрыть лишние вкладки (webrtc test) перед KYC
+
 ## 2026-07-01 — v29.14.8: KYC разрешения без пресетов — constraints + mediaDefaults
 
 **Модули:** `getUserMedia.js`, `DeviceProfile.swift`, `iphone11_ios265.json`, `ProfileStore.swift`, `bundle.js`, `BuildInfo.swift`

@@ -40,6 +40,7 @@ final class VideoPipeline: NSObject {
 
     func updateStreamDelivery(_ config: StreamDeliveryConfig) {
         streamDelivery = config
+        loggedFirstDeliver = false
         if let profile = activeProfile {
             activeProfile = profile.withStreamDelivery(config)
         }

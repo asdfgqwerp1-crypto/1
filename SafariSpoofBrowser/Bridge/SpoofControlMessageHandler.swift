@@ -63,9 +63,8 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
             let frameInfo = message.frameInfo
             DispatchQueue.main.async { [weak self] in
                 guard let bridge = self?.frameBridge else { return }
-                if bridge.acceptStreamStart(params: params) {
-                    bridge.setStreamDeliveryTarget(webView: webView, frame: frameInfo)
-                }
+                guard bridge.acceptStreamStart(params: params) else { return }
+                bridge.setStreamDeliveryTarget(webView: webView, frame: frameInfo)
                 bridge.handleControlMessage(control)
             }
             return

@@ -22,6 +22,7 @@ final class FrameBridge: NSObject {
     let controlSchemeHandler = ControlSchemeHandler()
 
     weak var delegate: FrameBridgeDelegate?
+    var onStreamConfig: ((StreamDeliveryConfig) -> Void)?
 
     private let metricsSubject = CurrentValueSubject<FrameBridgeMetrics, Never>(FrameBridgeMetrics())
     var metricsPublisher: AnyPublisher<FrameBridgeMetrics, Never> {
@@ -80,22 +81,25 @@ final class FrameBridge: NSObject {
 
         let claimOwner = params["claimOwner"] as? Bool ?? false
         let rebind = params["rebind"] as? Bool ?? false
-        let hrefHost = Self.host(fromHref: params["href"] as? String)
+        let requestHost = Self.ownerHost(from: params)
 
         if claimOwner {
-            deliveryOwnerHost = hrefHost
+            deliveryOwnerHost = requestHost
             return true
         }
         if rebind {
-            if deliveryFrameInvalidated { return true }
-            if let owner = deliveryOwnerHost, !owner.isEmpty, hrefHost != owner {
+            guard deliveryFrameInvalidated else { return false }
+            if requestHost != "main" {
+                deliveryOwnerHost = requestHost
+            }
+            if let owner = deliveryOwnerHost, !owner.isEmpty, requestHost != owner {
                 let now = CFAbsoluteTimeGetCurrent()
                 if now - lastRejectedStreamLogTime >= 2.0 {
                     lastRejectedStreamLogTime = now
                     DispatchQueue.main.async {
                         DebugLogStore.shared.append(
                             level: "info",
-                            message: "[native] stream/start rejected rebind host=\(hrefHost) owner=\(owner)"
+                            message: "[native] stream/start rejected rebind host=\(requestHost) owner=\(owner)"
                         )
                     }
                 }
@@ -134,6 +138,15 @@ final class FrameBridge: NSObject {
     private static func host(fromHref href: String?) -> String {
         guard let href, let url = URL(string: href), let host = url.host else { return "main" }
         return host
+    }
+
+    private static func ownerHost(from params: [String: Any]) -> String {
+        if let explicit = params["ownerHost"] as? String,
+           !explicit.isEmpty,
+           explicit != "main" {
+            return explicit
+        }
+        return host(fromHref: params["href"] as? String)
     }
 
     func setSchemeAuthKey(_ key: String) {
@@ -175,6 +188,9 @@ final class FrameBridge: NSObject {
                 )
             }
             if prewarm { return }
+            if let streamConfig {
+                onStreamConfig?(streamConfig)
+            }
             DispatchQueue.main.async { [weak self] in
                 self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
             }
