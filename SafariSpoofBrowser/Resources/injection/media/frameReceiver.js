@@ -741,6 +741,7 @@
 
   function maybeRebindDeliveryFrame() {
     if (!pollActive || typeof window.__spoofSendControl !== 'function') return;
+    if (!window.__spoofIsDeliveryOwner) return;
     var now = Date.now();
     if (now - lastDeliveryRebind < DELIVERY_REBIND_MS) return;
     var lastPush = window.__spoofLastNativePush || 0;
@@ -752,11 +753,13 @@
     var active = activeCaps();
     lastDeliveryRebind = now;
     window.__spoofLoggedPush = false;
-    traceFrame('delivery rebind stale=' + (now - lastPush) + 'ms', 'info');
+    traceFrame('delivery rebind stale=' + (now - lastPush) + 'ms owner=' + (location.host || 'main'), 'info');
     window.__spoofSendControl('stream/start', {
       width: active.width,
       height: active.height,
-      frameRate: active.frameRate || 30
+      frameRate: active.frameRate || 30,
+      href: location.href,
+      rebind: true
     });
   }
 
@@ -886,6 +889,7 @@
     window.__spoofGotRealFrame = false;
     window.__spoofLastFrameBytes = 0;
     window.__spoofLastNativePush = 0;
+    window.__spoofIsDeliveryOwner = false;
   };
 
   window.__spoofReceiveFrame = function () {};

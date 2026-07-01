@@ -33,9 +33,16 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
         }
 
         if path == "stream/stop" {
+            var control: [String: Any] = ["event": "stopStream"]
+            params.forEach { key, value in
+                control[key] = value
+            }
+            let localOnly = params["localOnly"] as? Bool ?? false
             DispatchQueue.main.async { [weak self] in
-                self?.frameBridge?.setStreamDeliveryTarget(webView: nil, frame: nil)
-                self?.frameBridge?.handleControlMessage(["event": "stopStream"])
+                if !localOnly {
+                    self?.frameBridge?.setStreamDeliveryTarget(webView: nil, frame: nil)
+                }
+                self?.frameBridge?.handleControlMessage(control)
             }
             return
         }
@@ -48,8 +55,11 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
             let webView = message.webView
             let frameInfo = message.frameInfo
             DispatchQueue.main.async { [weak self] in
-                self?.frameBridge?.setStreamDeliveryTarget(webView: webView, frame: frameInfo)
-                self?.frameBridge?.handleControlMessage(control)
+                guard let bridge = self?.frameBridge else { return }
+                if bridge.acceptStreamStart(params: params) {
+                    bridge.setStreamDeliveryTarget(webView: webView, frame: frameInfo)
+                }
+                bridge.handleControlMessage(control)
             }
             return
         }

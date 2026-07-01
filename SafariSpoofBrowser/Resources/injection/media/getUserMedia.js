@@ -45,24 +45,7 @@
   function preWarmStreamPipeline() {
     if (window.__spoofStreamPreWarmed) return;
     window.__spoofStreamPreWarmed = true;
-    var presets = config.mediaPresets || [];
-    var hd = presets.find(function (p) { return p.id === 'selfie_hd'; });
-    var warm = hd || {
-      width: config.mediaCapabilities.width,
-      height: config.mediaCapabilities.height,
-      frameRate: config.mediaCapabilities.frameRate || 30
-    };
-    traceMedia('preWarm stream ' + warm.width + 'x' + warm.height, 'info');
-    if (window.__spoofSendControl) {
-      window.__spoofSendControl('stream/start', {
-        width: warm.width,
-        height: warm.height,
-        frameRate: warm.frameRate
-      });
-    }
-    setTimeout(function () {
-      if (window.__spoofStartFramePoll) window.__spoofStartFramePoll();
-    }, 60);
+    traceMedia('preWarm flagged (no poll)', 'info');
   }
 
   function wantsVideo(constraints) {
@@ -154,7 +137,7 @@
     if (sizeChanged) {
       if (window.__spoofStopFramePoll) window.__spoofStopFramePoll();
       if (window.__spoofGotRealFrame && window.__spoofSendControl) {
-        window.__spoofSendControl('stream/stop');
+        window.__spoofSendControl('stream/stop', { localOnly: true });
       }
       if (window.__spoofResetCanvas) window.__spoofResetCanvas();
       window.__spoofFrameCount = 0;
@@ -163,11 +146,14 @@
       window.__spoofLastFrameBytes = 0;
       window.__spoofStreamPreWarmed = false;
     }
+    window.__spoofIsDeliveryOwner = true;
     if (window.__spoofSendControl) {
       window.__spoofSendControl('stream/start', {
         width: active.width,
         height: active.height,
-        frameRate: active.frameRate
+        frameRate: active.frameRate,
+        href: location.href,
+        claimOwner: true
       });
     }
     var pollDelayMs = 0;
@@ -206,11 +192,9 @@
   function attachTrackStopHandler(tracks) {
     if (tracks.length > 0 && tracks[0].addEventListener) {
       tracks[0].addEventListener('ended', function () {
+        window.__spoofIsDeliveryOwner = false;
         if (window.__spoofStopFramePoll) {
           window.__spoofStopFramePoll();
-        }
-        if (window.__spoofSendControl) {
-          window.__spoofSendControl('stream/stop');
         }
       });
     }

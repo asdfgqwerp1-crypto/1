@@ -33,7 +33,9 @@ final class FrameBridge: NSObject {
     private weak var deliveryWebView: WKWebView?
     private var deliveryFrame: WKFrameInfo?
     private var deliveryFrameInvalidated = false
+    private var deliveryOwnerHost: String?
     private var lastInvalidFrameLogTime: CFAbsoluteTime = 0
+    private var lastRejectedStreamLogTime: CFAbsoluteTime = 0
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
     private(set) var isDeliveryEnabled = false
@@ -72,6 +74,38 @@ final class FrameBridge: NSObject {
         }
     }
 
+    func acceptStreamStart(params: [String: Any]) -> Bool {
+        let prewarm = params["prewarm"] as? Bool ?? false
+        if prewarm { return false }
+
+        let claimOwner = params["claimOwner"] as? Bool ?? false
+        let rebind = params["rebind"] as? Bool ?? false
+        let hrefHost = Self.host(fromHref: params["href"] as? String)
+
+        if claimOwner {
+            deliveryOwnerHost = hrefHost
+            return true
+        }
+        if rebind {
+            if deliveryFrameInvalidated { return true }
+            if let owner = deliveryOwnerHost, !owner.isEmpty, hrefHost != owner {
+                let now = CFAbsoluteTimeGetCurrent()
+                if now - lastRejectedStreamLogTime >= 2.0 {
+                    lastRejectedStreamLogTime = now
+                    DispatchQueue.main.async {
+                        DebugLogStore.shared.append(
+                            level: "info",
+                            message: "[native] stream/start rejected rebind host=\(hrefHost) owner=\(owner)"
+                        )
+                    }
+                }
+                return false
+            }
+            return true
+        }
+        return deliveryOwnerHost == nil
+    }
+
     func setStreamDeliveryTarget(webView: WKWebView?, frame: WKFrameInfo?) {
         deliveryWebView = webView
         deliveryFrame = frame
@@ -97,6 +131,11 @@ final class FrameBridge: NSObject {
         return frame.request.url?.host ?? "main"
     }
 
+    private static func host(fromHref href: String?) -> String {
+        guard let href, let url = URL(string: href), let host = url.host else { return "main" }
+        return host
+    }
+
     func setSchemeAuthKey(_ key: String) {
         SchemeAuthValidator.setAuthKey(key)
     }
@@ -113,10 +152,13 @@ final class FrameBridge: NSObject {
 
         switch event {
         case "startStream":
+            let prewarm = body["prewarm"] as? Bool ?? false
             isDeliveryEnabled = true
-            hasStartedPoll = false
-            sendFrameIndex = 0
-            schemeHandler.clearFrame()
+            if !prewarm {
+                hasStartedPoll = false
+                sendFrameIndex = 0
+                schemeHandler.clearFrame()
+            }
             let streamConfig = Self.parseStreamConfig(from: body)
             if let frameRate = streamConfig?.frameRate {
                 frameTiming = FrameTiming(
@@ -132,17 +174,22 @@ final class FrameBridge: NSObject {
                     slowdownFactorMax: frameTiming.slowdownFactorMax
                 )
             }
+            if prewarm { return }
             DispatchQueue.main.async { [weak self] in
                 self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
             }
         case "stopStream":
-            deliveryWebView = nil
-            deliveryFrame = nil
-            deliveryFrameInvalidated = false
-            // Keep delivery enabled — network ingest should keep filling spoofframe buffer.
-            notifyStopFramePoll()
-            DispatchQueue.main.async { [weak self] in
-                self?.delegate?.frameBridgeDidRequestStreamStop()
+            let localOnly = body["localOnly"] as? Bool ?? false
+            if !localOnly {
+                deliveryWebView = nil
+                deliveryFrame = nil
+                deliveryFrameInvalidated = false
+                deliveryOwnerHost = nil
+                // Keep delivery enabled — network ingest should keep filling spoofframe buffer.
+                notifyStopFramePoll()
+                DispatchQueue.main.async { [weak self] in
+                    self?.delegate?.frameBridgeDidRequestStreamStop()
+                }
             }
         default:
             break
