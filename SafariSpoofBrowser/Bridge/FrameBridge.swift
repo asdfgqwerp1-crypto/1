@@ -209,14 +209,12 @@ final class FrameBridge: NSObject {
                     arguments: ["p": payload],
                     in: nil,
                     in: .page,
-                    completionHandler: { _, error in
-                        guard let error else { return }
-                        DispatchQueue.main.async {
-                            DebugLogStore.shared.append(
-                                level: "warn",
-                                message: "[native] push fail: \(error.localizedDescription)"
-                            )
-                        }
+                    completionHandler: { @MainActor result in
+                        guard case .failure(let error) = result else { return }
+                        DebugLogStore.shared.append(
+                            level: "warn",
+                            message: "[native] push fail: \(error.localizedDescription)"
+                        )
                     }
                 )
             }

@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.8: CI fix — callAsyncJavaScript Result completion (Xcode 26)
+
+**Модули:** `FrameBridge.swift`, `BuildInfo.swift`
+**Что изменено:** `callAsyncJavaScript` completion handler принимает `Result<Any, Error>` вместо `(Any?, Error?)`
+**Почему:** Codemagic Xcode 26.4 — `expects 1 argument, but 2 were used in closure body`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.7: spoofframe poll — Image path + decoded-size ready gate
 
 **Модули:** `frameReceiver.js`, `FrameBridge.swift`, `BrowserView.swift`, `bundle.js`
