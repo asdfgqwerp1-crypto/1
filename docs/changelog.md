@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.3: CI fix — WKFrameInfo.request.url optional (Xcode 26)
+
+**Модули:** `FrameBridge.swift`, `BuildInfo.swift`
+**Что изменено:** `frame.request.url?.host` — `url` optional на Xcode 26.4
+**Почему:** CI `value of optional type 'URL?' must be unwrapped`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.14.2: CI fix — дополнение v29.14.1 (host helper + Result handler)
 
 **Модули:** `FrameBridge.swift`, `BuildInfo.swift`

@@ -76,7 +76,7 @@ final class FrameBridge: NSObject {
 
     private static func host(for frame: WKFrameInfo?) -> String {
         guard let frame else { return "main" }
-        return frame.request.url.host ?? "main"
+        return frame.request.url?.host ?? "main"
     }
 
     func setSchemeAuthKey(_ key: String) {
