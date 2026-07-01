@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.4: Onfido document step — stale WKFrameInfo rebind
+
+**Модули:** `FrameBridge.swift`, `BrowserCoordinator.swift`, `frameReceiver.js`, `bundle.js`, `BuildInfo.swift`
+**Что изменено:** При `invalid frame` натив очищает `deliveryFrame`, прекращает push-spam (throttle warn 2s); `clearDeliveryFrameForNavigation` на main navigation; JS heartbeat — если нет native push >2s, повторный `stream/start` из текущего iframe через `ssbControl` с новым `WKFrameInfo`
+**Почему:** После успешного face-scan Onfido переходит на document upload в новом/перезагруженном iframe; старый `WKFrameInfo` (host=mail) инвалидируется → бесконечный loader + warn spam
+**Тесты:** не запускались (нет устройства)
+**Риски:** heartbeat может дублировать `stream/start` при долгом gap сети — идемпотентно; rebind только при активном poll
+
 ## 2026-07-01 — v29.14.3: CI fix — WKFrameInfo.request.url optional (Xcode 26)
 
 **Модули:** `FrameBridge.swift`, `BuildInfo.swift`

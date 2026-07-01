@@ -526,8 +526,10 @@
   var fetchOptions = { cache: 'no-store', credentials: 'omit' };
   var MIN_REAL_FRAME_BYTES = 512;
   var POLL_FETCH_TIMEOUT_MS = 3000;
+  var DELIVERY_REBIND_MS = 2000;
   var pollFailCount = 0;
   var lastPollFailLog = 0;
+  var lastDeliveryRebind = 0;
 
   function traceFrame(message, level) {
     if (typeof window.__spoofTrace === 'function') {
@@ -1206,8 +1208,30 @@
     xhr.send();
   }
 
+  function maybeRebindDeliveryFrame() {
+    if (!pollActive || typeof window.__spoofSendControl !== 'function') return;
+    var now = Date.now();
+    if (now - lastDeliveryRebind < DELIVERY_REBIND_MS) return;
+    var lastPush = window.__spoofLastNativePush || 0;
+    if (!lastPush) {
+      if (now - streamStartPerf < DELIVERY_REBIND_MS) return;
+    } else if (now - lastPush < DELIVERY_REBIND_MS) {
+      return;
+    }
+    var active = activeCaps();
+    lastDeliveryRebind = now;
+    window.__spoofLoggedPush = false;
+    traceFrame('delivery rebind stale=' + (now - lastPush) + 'ms', 'info');
+    window.__spoofSendControl('stream/start', {
+      width: active.width,
+      height: active.height,
+      frameRate: active.frameRate || 30
+    });
+  }
+
   function drawFrame() {
     if (!ctx || !canvas) return;
+    maybeRebindDeliveryFrame();
     if (isDrawing) {
       if (Date.now() - (window.__spoofDrawStartedAt || 0) > POLL_FETCH_TIMEOUT_MS + 500) {
         isDrawing = false;
@@ -1565,6 +1589,7 @@
     Object.defineProperty(window, '__spoofTrackProtoPatched', { value: true, enumerable: false, configurable: true });
   } catch (e) {}
 })();
+// --- media/getUserMedia.js ---
 (function () {
   'use strict';
   var config = window.__SAFARI_SPOOF_CONFIG__;

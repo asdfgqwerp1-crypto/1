@@ -32,6 +32,8 @@ final class FrameBridge: NSObject {
     private let attachedWebViews = NSHashTable<WKWebView>.weakObjects()
     private weak var deliveryWebView: WKWebView?
     private var deliveryFrame: WKFrameInfo?
+    private var deliveryFrameInvalidated = false
+    private var lastInvalidFrameLogTime: CFAbsoluteTime = 0
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
     private(set) var isDeliveryEnabled = false
@@ -57,9 +59,25 @@ final class FrameBridge: NSObject {
         self.webView = webView
     }
 
+    func clearDeliveryFrameForNavigation(webView: WKWebView?) {
+        guard deliveryFrame != nil else { return }
+        guard deliveryWebView == nil || deliveryWebView === webView else { return }
+        deliveryFrame = nil
+        deliveryFrameInvalidated = true
+        DispatchQueue.main.async {
+            DebugLogStore.shared.append(
+                level: "info",
+                message: "[native] delivery frame cleared (navigation)"
+            )
+        }
+    }
+
     func setStreamDeliveryTarget(webView: WKWebView?, frame: WKFrameInfo?) {
         deliveryWebView = webView
         deliveryFrame = frame
+        if frame != nil {
+            deliveryFrameInvalidated = false
+        }
         guard let frame else { return }
         let host = Self.host(for: frame)
         DispatchQueue.main.async {
@@ -120,6 +138,7 @@ final class FrameBridge: NSObject {
         case "stopStream":
             deliveryWebView = nil
             deliveryFrame = nil
+            deliveryFrameInvalidated = false
             // Keep delivery enabled — network ingest should keep filling spoofframe buffer.
             notifyStopFramePoll()
             DispatchQueue.main.async { [weak self] in
@@ -223,6 +242,9 @@ final class FrameBridge: NSObject {
         ]
         let script = "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);"
         if let deliveryWebView {
+            if deliveryFrame == nil && deliveryFrameInvalidated {
+                return
+            }
             invokeJavaScript(
                 script,
                 arguments: ["p": payload],
@@ -256,19 +278,40 @@ final class FrameBridge: NSObject {
         }
     }
 
+    private func handleJavaScriptFailure(
+        error: Error,
+        frame: WKFrameInfo?,
+        label: String
+    ) {
+        let message = error.localizedDescription
+        if message.localizedCaseInsensitiveContains("invalid frame") {
+            deliveryFrame = nil
+            deliveryFrameInvalidated = true
+            let now = CFAbsoluteTimeGetCurrent()
+            guard now - lastInvalidFrameLogTime >= 2.0 else { return }
+            lastInvalidFrameLogTime = now
+            DebugLogStore.shared.append(
+                level: "warn",
+                message: "[native] \(label) invalid frame host=\(Self.host(for: frame)) — awaiting stream/start rebind"
+            )
+            return
+        }
+        DebugLogStore.shared.append(
+            level: "warn",
+            message: "[native] \(label) fail host=\(Self.host(for: frame)): \(message)"
+        )
+    }
+
     private func runScript(
         _ script: String,
         on webView: WKWebView,
         frame: WKFrameInfo?,
         label: String
     ) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
             webView.evaluateJavaScript(script, in: frame, in: .page) { @MainActor result in
                 guard case .failure(let error) = result else { return }
-                DebugLogStore.shared.append(
-                    level: "warn",
-                    message: "[native] \(label) fail host=\(Self.host(for: frame)): \(error.localizedDescription)"
-                )
+                self?.handleJavaScriptFailure(error: error, frame: frame, label: label)
             }
         }
     }
@@ -280,7 +323,7 @@ final class FrameBridge: NSObject {
         frame: WKFrameInfo?,
         label: String
     ) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
             webView.callAsyncJavaScript(
                 script,
                 arguments: arguments,
@@ -288,10 +331,7 @@ final class FrameBridge: NSObject {
                 in: .page,
                 completionHandler: { @MainActor result in
                     guard case .failure(let error) = result else { return }
-                    DebugLogStore.shared.append(
-                        level: "warn",
-                        message: "[native] \(label) fail host=\(Self.host(for: frame)): \(error.localizedDescription)"
-                    )
+                    self?.handleJavaScriptFailure(error: error, frame: frame, label: label)
                 }
             )
         }

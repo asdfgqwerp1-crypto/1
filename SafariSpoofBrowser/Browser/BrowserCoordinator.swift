@@ -125,6 +125,7 @@ extension BrowserLogLevel {
 extension BrowserCoordinator: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
         isLoading = true
+        frameBridge?.clearDeliveryFrameForNavigation(webView: webView)
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
