@@ -29,7 +29,7 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
         case "stream":
             switch route.action {
             case "start":
-                handleStreamStart(task: urlSchemeTask, url: url)
+                handleStreamStart(webView: webView, task: urlSchemeTask, url: url)
             case "stop":
                 handleStreamStop(task: urlSchemeTask)
             default:
@@ -79,7 +79,7 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
         return ("", "")
     }
 
-    private func handleStreamStart(task: WKURLSchemeTask, url: URL) {
+    private func handleStreamStart(webView: WKWebView, task: WKURLSchemeTask, url: URL) {
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
         var params: [String: Any] = ["event": "startStream"]
         components?.queryItems?.forEach { item in
@@ -98,6 +98,7 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
             }
         }
         DispatchQueue.main.async { [weak self] in
+            self?.frameBridge?.setStreamDeliveryTarget(webView: webView, frame: nil)
             self?.frameBridge?.handleControlMessage(params)
             self?.respondOK(task: task)
         }
@@ -105,6 +106,7 @@ final class ControlSchemeHandler: NSObject, WKURLSchemeHandler {
 
     private func handleStreamStop(task: WKURLSchemeTask) {
         DispatchQueue.main.async { [weak self] in
+            self?.frameBridge?.setStreamDeliveryTarget(webView: nil, frame: nil)
             self?.frameBridge?.handleControlMessage(["event": "stopStream"])
             self?.respondOK(task: task)
         }

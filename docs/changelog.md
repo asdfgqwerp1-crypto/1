@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.0: Onfido iframe — JPEG push в WKFrameInfo
+
+**Модули:** `FrameBridge.swift`, `SpoofControlMessageHandler.swift`, `ControlSchemeHandler.swift`
+**Что изменено:** `stream/start` через `ssbControl` запоминает `message.webView` + `message.frameInfo`; `__spoofOnJPEGPush` вызывается в iframe Onfido (`callAsyncJavaScript(in: frame)`), не только в main frame Bybit
+**Почему:** Native `[first JPEG deliver]` OK, но Onfido iframe `bytes=0` + `xhr failed` — push шёл на top frame, gUM ждал кадры в `sdk.onfido.com`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.13.9: Canvas tainted — убран spoofframe Image poll
 
 **Модули:** `frameReceiver.js`, `getUserMedia.js`, `debug-console.js`, `bundle.js`

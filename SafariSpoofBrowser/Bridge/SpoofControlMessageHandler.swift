@@ -34,6 +34,7 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
 
         if path == "stream/stop" {
             DispatchQueue.main.async { [weak self] in
+                self?.frameBridge?.setStreamDeliveryTarget(webView: nil, frame: nil)
                 self?.frameBridge?.handleControlMessage(["event": "stopStream"])
             }
             return
@@ -44,7 +45,10 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
             params.forEach { key, value in
                 control[key] = value
             }
+            let webView = message.webView
+            let frameInfo = message.frameInfo
             DispatchQueue.main.async { [weak self] in
+                self?.frameBridge?.setStreamDeliveryTarget(webView: webView, frame: frameInfo)
                 self?.frameBridge?.handleControlMessage(control)
             }
             return

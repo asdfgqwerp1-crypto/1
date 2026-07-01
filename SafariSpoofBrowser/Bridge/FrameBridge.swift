@@ -30,6 +30,8 @@ final class FrameBridge: NSObject {
 
     private weak var webView: WKWebView?
     private let attachedWebViews = NSHashTable<WKWebView>.weakObjects()
+    private weak var deliveryWebView: WKWebView?
+    private var deliveryFrame: WKFrameInfo?
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
     private(set) var isDeliveryEnabled = false
@@ -53,6 +55,19 @@ final class FrameBridge: NSObject {
     func attach(webView: WKWebView) {
         attachedWebViews.add(webView)
         self.webView = webView
+    }
+
+    func setStreamDeliveryTarget(webView: WKWebView?, frame: WKFrameInfo?) {
+        deliveryWebView = webView
+        deliveryFrame = frame
+        guard let frame else { return }
+        let host = frame.request?.url?.host ?? "?"
+        DispatchQueue.main.async {
+            DebugLogStore.shared.append(
+                level: "info",
+                message: "[native] delivery frame main=\(frame.isMainFrame) host=\(host)"
+            )
+        }
     }
 
     private var allAttachedWebViews: [WKWebView] {
@@ -98,6 +113,8 @@ final class FrameBridge: NSObject {
                 self?.delegate?.frameBridgeDidRequestStreamStart(config: streamConfig)
             }
         case "stopStream":
+            deliveryWebView = nil
+            deliveryFrame = nil
             // Keep delivery enabled — network ingest should keep filling spoofframe buffer.
             notifyStopFramePoll()
             DispatchQueue.main.async { [weak self] in
@@ -192,8 +209,6 @@ final class FrameBridge: NSObject {
         sequence: UInt64,
         presentationTimeUs: UInt64
     ) {
-        let targets = allAttachedWebViews
-        guard !targets.isEmpty else { return }
         let payload: [String: Any] = [
             "b64": data.base64EncodedString(),
             "seq": sequence,
@@ -202,47 +217,92 @@ final class FrameBridge: NSObject {
             "pts": presentationTimeUs
         ]
         let script = "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);"
-        for target in targets {
-            DispatchQueue.main.async {
-                target.callAsyncJavaScript(
-                    script,
-                    arguments: ["p": payload],
-                    in: nil,
-                    in: .page,
-                    completionHandler: { @MainActor result in
-                        guard case .failure(let error) = result else { return }
-                        DebugLogStore.shared.append(
-                            level: "warn",
-                            message: "[native] push fail: \(error.localizedDescription)"
-                        )
-                    }
-                )
-            }
+        if let deliveryWebView {
+            invokeJavaScript(
+                script,
+                arguments: ["p": payload],
+                on: deliveryWebView,
+                frame: deliveryFrame,
+                label: "push"
+            )
+            return
+        }
+        for target in allAttachedWebViews {
+            invokeJavaScript(
+                script,
+                arguments: ["p": payload],
+                on: target,
+                frame: nil,
+                label: "push"
+            )
         }
     }
 
     private func notifyStartFramePollIfNeeded() {
         guard !hasStartedPoll else { return }
-        let targets = allAttachedWebViews
-        guard !targets.isEmpty else { return }
         hasStartedPoll = true
         let script = "window.__spoofStartFramePoll && window.__spoofStartFramePoll();"
-        for target in targets {
-            DispatchQueue.main.async {
-                target.evaluateJavaScript(script, completionHandler: nil)
+        if let deliveryWebView {
+            runScript(script, on: deliveryWebView, frame: deliveryFrame, label: "poll")
+            return
+        }
+        for target in allAttachedWebViews {
+            runScript(script, on: target, frame: nil, label: "poll")
+        }
+    }
+
+    private func runScript(
+        _ script: String,
+        on webView: WKWebView,
+        frame: WKFrameInfo?,
+        label: String
+    ) {
+        DispatchQueue.main.async {
+            webView.evaluateJavaScript(script, in: frame, in: .page) { _, error in
+                guard let error else { return }
+                let host = frame?.request?.url?.host ?? "main"
+                DebugLogStore.shared.append(
+                    level: "warn",
+                    message: "[native] \(label) fail host=\(host): \(error.localizedDescription)"
+                )
             }
+        }
+    }
+
+    private func invokeJavaScript(
+        _ script: String,
+        arguments: [String: Any],
+        on webView: WKWebView,
+        frame: WKFrameInfo?,
+        label: String
+    ) {
+        DispatchQueue.main.async {
+            webView.callAsyncJavaScript(
+                script,
+                arguments: arguments,
+                in: frame,
+                in: .page,
+                completionHandler: { @MainActor result in
+                    guard case .failure(let error) = result else { return }
+                    let host = frame?.request?.url?.host ?? "main"
+                    DebugLogStore.shared.append(
+                        level: "warn",
+                        message: "[native] \(label) fail host=\(host): \(error.localizedDescription)"
+                    )
+                }
+            )
         }
     }
 
     private func notifyStopFramePoll() {
         hasStartedPoll = false
-        let targets = allAttachedWebViews
-        guard !targets.isEmpty else { return }
         let script = "window.__spoofStopFramePoll && window.__spoofStopFramePoll();"
-        for target in targets {
-            DispatchQueue.main.async {
-                target.evaluateJavaScript(script, completionHandler: nil)
-            }
+        if let deliveryWebView {
+            runScript(script, on: deliveryWebView, frame: deliveryFrame, label: "poll-stop")
+            return
+        }
+        for target in allAttachedWebViews {
+            runScript(script, on: target, frame: nil, label: "poll-stop")
         }
     }
 
