@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.13.7: spoofframe poll — Image path + decoded-size ready gate
+
+**Модули:** `frameReceiver.js`, `FrameBridge.swift`, `BrowserView.swift`, `bundle.js`
+**Что изменено:** Poll JPEG через `Image.src` вместо `fetch(spoofframe://)` (WKWebView даёт Load failed); `noteRealFrame` считает кадр реальным по decode ≥64px без byte length; native `__spoofOnJPEGPush` broadcast на все вкладки; `setDeliveryEnabled(false)` не чистит spoofframe buffer
+**Почему:** Логи v29.13.6: `[http] first frame` + `[native] first JPEG deliver` OK, но `poll fail Load failed`, `waitForFrames frames=227 bytes=0` — img fallback рисовал placeholder без bytes, gotRealFrame никогда не ставился
+**Тесты:** не запускались (нет устройства)
+**Риски:** 2×2 placeholder не считается ready (корректно); Daon FHD по-прежнему ждёт decode ≥64px
+
 ## 2026-07-01 — v29.13.6: Frame bridge bytes=0 — delivery lifecycle + HTTP diagnostics
 
 **Модули:** `AppState.swift`, `FrameBridge.swift`, `VideoPipeline.swift`, `HttpSnapshotPlayer.swift`, `frameReceiver.js`, `bundle.js`

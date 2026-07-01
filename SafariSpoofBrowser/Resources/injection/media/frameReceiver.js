@@ -151,8 +151,13 @@
     var bytes = payloadBytes || 0;
     var w = pixelW || 0;
     var h = pixelH || 0;
-    if (bytes <= MIN_REAL_FRAME_BYTES) return;
+    // WKWebView: fetch(spoofframe://) fails; Image path has no byte length — use decoded size.
     if (w >= 64 && h >= 64) {
+      window.__spoofGotRealFrame = true;
+      window.__spoofLastFrameBytes = Math.max(bytes || w * h, window.__spoofLastFrameBytes || 0);
+      return;
+    }
+    if (bytes > MIN_REAL_FRAME_BYTES) {
       window.__spoofGotRealFrame = true;
       window.__spoofLastFrameBytes = Math.max(bytes, window.__spoofLastFrameBytes || 0);
     }
@@ -692,9 +697,47 @@
       for (var i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
       window.__spoofFrameTransport = 'native-push';
       window.__spoofLastNativePush = Date.now();
+      if (!window.__spoofLoggedPush) {
+        window.__spoofLoggedPush = true;
+        traceFrame('native push bytes=' + len, 'info');
+      }
       handleBuffer(bytes.buffer, meta, function () {});
-    } catch (e) {}
+    } catch (e) {
+      traceFrame('native push decode fail: ' + (e && e.message), 'error');
+    }
   };
+
+  function drawFrameViaImage(onDone) {
+    var img = new Image();
+    var released = false;
+    function release() {
+      if (released) return;
+      released = true;
+      isDrawing = false;
+      if (onDone) onDone();
+    }
+    img.onload = function () {
+      var w = img.naturalWidth || 0;
+      var h = img.naturalHeight || 0;
+      if (!ctx || !canvas) {
+        release();
+        return;
+      }
+      if (w < 64 || h < 64) {
+        drawImageCover(ctx, img, canvas.width, canvas.height);
+        finishFrame(null, release, 0, w, h);
+        return;
+      }
+      window.__spoofFrameTransport = 'scheme-img';
+      drawImageCover(ctx, img, canvas.width, canvas.height);
+      finishFrame(null, release, w * h * 2, w, h);
+    };
+    img.onerror = function () {
+      logPollFail('img load failed');
+      release();
+    };
+    img.src = frameURL();
+  }
 
   function drawFrame() {
     if (!ctx || !canvas) return;
@@ -715,8 +758,14 @@
       isDrawing = false;
     }
 
+    // WKWebView rejects fetch(spoofframe://) with "Load failed"; Image element works.
+    if (!preferNV12) {
+      drawFrameViaImage(release);
+      return;
+    }
+
     if (typeof fetch !== 'function') {
-      drawImageSource(frameURL(), false, null, release);
+      drawFrameViaImage(release);
       return;
     }
 
@@ -742,7 +791,7 @@
       })
       .catch(function (err) {
         logPollFail(err && err.message ? err.message : 'fetch failed');
-        drawImageSource(frameURL(), false, null, release);
+        drawFrameViaImage(release);
       });
   }
 

@@ -39,8 +39,8 @@ struct BrowserView: UIViewRepresentable {
         guard let webView = context.coordinator.webView else { return }
         webView.isHidden = !isActive
         webView.isUserInteractionEnabled = isActive
+        frameBridge.attach(webView: webView)
         if isActive {
-            frameBridge.attach(webView: webView)
             coordinator.configure(profile: profile, frameBridge: frameBridge)
         }
     }
@@ -99,6 +99,7 @@ struct BrowserView: UIViewRepresentable {
                 context.coordinator.webView = webView
                 context.coordinator.loadedTabID = tab.id
                 coordinator.prepare(profile: profile, frameBridge: frameBridge)
+                frameBridge.attach(webView: webView)
                 coordinator.attach(webView: webView, frameBridgeActive: isActive)
 
                 if !tab.url.isEmpty {

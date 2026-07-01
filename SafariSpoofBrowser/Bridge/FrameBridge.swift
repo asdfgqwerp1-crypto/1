@@ -29,6 +29,7 @@ final class FrameBridge: NSObject {
     }
 
     private weak var webView: WKWebView?
+    private let attachedWebViews = NSHashTable<WKWebView>.weakObjects()
     private var frameTimestamps: [CFAbsoluteTime] = []
     private var metrics = FrameBridgeMetrics()
     private(set) var isDeliveryEnabled = false
@@ -50,7 +51,12 @@ final class FrameBridge: NSObject {
     }
 
     func attach(webView: WKWebView) {
+        attachedWebViews.add(webView)
         self.webView = webView
+    }
+
+    private var allAttachedWebViews: [WKWebView] {
+        attachedWebViews.allObjects
     }
 
     func setSchemeAuthKey(_ key: String) {
@@ -61,7 +67,6 @@ final class FrameBridge: NSObject {
         isDeliveryEnabled = enabled
         if !enabled {
             hasStartedPoll = false
-            schemeHandler.clearFrame()
         }
     }
 
@@ -187,7 +192,8 @@ final class FrameBridge: NSObject {
         sequence: UInt64,
         presentationTimeUs: UInt64
     ) {
-        guard let webView else { return }
+        let targets = allAttachedWebViews
+        guard !targets.isEmpty else { return }
         let payload: [String: Any] = [
             "b64": data.base64EncodedString(),
             "seq": sequence,
@@ -195,36 +201,50 @@ final class FrameBridge: NSObject {
             "h": height,
             "pts": presentationTimeUs
         ]
-        DispatchQueue.main.async {
-            webView.callAsyncJavaScript(
-                "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);",
-                arguments: ["p": payload],
-                in: nil,
-                in: .page,
-                completionHandler: nil
-            )
+        let script = "if (window.__spoofOnJPEGPush) window.__spoofOnJPEGPush(p);"
+        for target in targets {
+            DispatchQueue.main.async {
+                target.callAsyncJavaScript(
+                    script,
+                    arguments: ["p": payload],
+                    in: nil,
+                    in: .page,
+                    completionHandler: { _, error in
+                        guard let error else { return }
+                        DispatchQueue.main.async {
+                            DebugLogStore.shared.append(
+                                level: "warn",
+                                message: "[native] push fail: \(error.localizedDescription)"
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 
     private func notifyStartFramePollIfNeeded() {
-        guard !hasStartedPoll, let webView else { return }
+        guard !hasStartedPoll else { return }
+        let targets = allAttachedWebViews
+        guard !targets.isEmpty else { return }
         hasStartedPoll = true
-        DispatchQueue.main.async {
-            webView.evaluateJavaScript(
-                "window.__spoofStartFramePoll && window.__spoofStartFramePoll();",
-                completionHandler: nil
-            )
+        let script = "window.__spoofStartFramePoll && window.__spoofStartFramePoll();"
+        for target in targets {
+            DispatchQueue.main.async {
+                target.evaluateJavaScript(script, completionHandler: nil)
+            }
         }
     }
 
     private func notifyStopFramePoll() {
         hasStartedPoll = false
-        guard let webView else { return }
-        DispatchQueue.main.async {
-            webView.evaluateJavaScript(
-                "window.__spoofStopFramePoll && window.__spoofStopFramePoll();",
-                completionHandler: nil
-            )
+        let targets = allAttachedWebViews
+        guard !targets.isEmpty else { return }
+        let script = "window.__spoofStopFramePoll && window.__spoofStopFramePoll();"
+        for target in targets {
+            DispatchQueue.main.async {
+                target.evaluateJavaScript(script, completionHandler: nil)
+            }
         }
     }
 
