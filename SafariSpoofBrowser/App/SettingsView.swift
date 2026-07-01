@@ -60,7 +60,7 @@ struct SettingsView: View {
 
                 Section("Frame Delivery") {
                     LabeledContent("Format", value: "JPEG")
-                    Text("JPEG + VFR ~30 fps. Пресеты 480p/720p/1080p по constraints.")
+                    Text("JPEG + VFR ~30 fps. Размер из constraints сайта или mediaDefaults по facingMode.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

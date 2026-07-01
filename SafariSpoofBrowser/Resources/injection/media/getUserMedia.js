@@ -96,7 +96,7 @@
     var facing = parseFacingMode(constraints);
     traceMedia(
       'site request ' + req.label + ' facing=' + facing
-        + ' → preset ' + active.width + 'x' + active.height + ' (' + (active.id || 'default') + ')',
+        + ' → resolved ' + active.width + 'x' + active.height + ' (' + (active.id || 'default') + ')',
       'info'
     );
     window.__spoofSendControl('media/status', {
@@ -112,46 +112,77 @@
     });
   }
 
-  function selectMediaPreset(constraints) {
-    var presets = config.mediaPresets || [];
-    var base = {
-      id: 'default',
-      width: config.mediaCapabilities.width,
-      height: config.mediaCapabilities.height,
-      frameRate: config.mediaCapabilities.frameRate,
-      aspectRatio: config.mediaCapabilities.width / config.mediaCapabilities.height
-    };
-    if (!presets.length) return base;
+  function clampDim(value, min, max) {
+    if (value == null || isNaN(value)) return null;
+    return Math.max(min, Math.min(max, Math.round(value)));
+  }
 
+  function facingDefault(facing) {
+    var caps = config.mediaCapabilities;
+    var defaults = config.mediaDefaults || {};
+    var base = defaults[facing] || defaults.user || {};
+    return {
+      width: base.width || caps.width,
+      height: base.height || caps.height,
+      frameRate: base.frameRate || caps.frameRate || 30
+    };
+  }
+
+  function resolveStreamDimensions(constraints) {
+    var caps = config.mediaCapabilities;
+    var facing = parseFacingMode(constraints);
     var video = constraints && constraints.video;
     var reqW = constraintValue(video, 'width');
     var reqH = constraintValue(video, 'height');
     var reqAspect = constraintValue(video, 'aspectRatio');
+    var fb = facingDefault(facing);
+    var width = fb.width;
+    var height = fb.height;
+    var frameRate = fb.frameRate;
+    var fbAspect = fb.width / fb.height;
 
-    var best = null;
-    var bestScore = Infinity;
-    presets.forEach(function (preset) {
-      var aspect = preset.aspectRatio || (preset.width / preset.height);
-      var score = 0;
-      if (reqW) score += Math.abs(preset.width - reqW) * 2;
-      if (reqH) score += Math.abs(preset.height - reqH) * 2;
-      if (reqAspect) score += Math.abs(aspect - reqAspect) * 1000;
-      if (reqW && reqH && preset.width === reqW && preset.height === reqH) score -= 10000;
-      if (score < bestScore) {
-        bestScore = score;
-        best = preset;
+    if (reqW != null && reqH != null) {
+      width = clampDim(reqW, caps.widthMin, caps.widthMax);
+      height = clampDim(reqH, caps.heightMin, caps.heightMax);
+    } else if (reqW != null) {
+      width = clampDim(reqW, caps.widthMin, caps.widthMax);
+      var aspect = reqAspect || fbAspect;
+      height = clampDim(width / aspect, caps.heightMin, caps.heightMax);
+    } else if (reqH != null) {
+      height = clampDim(reqH, caps.heightMin, caps.heightMax);
+      var aspectH = reqAspect || fbAspect;
+      width = clampDim(height * aspectH, caps.widthMin, caps.widthMax);
+    } else if (reqAspect != null) {
+      if (reqAspect >= fbAspect) {
+        width = clampDim(fb.height * reqAspect, caps.widthMin, caps.widthMax);
+        height = clampDim(width / reqAspect, caps.heightMin, caps.heightMax);
+      } else {
+        height = clampDim(fb.width / reqAspect, caps.heightMin, caps.heightMax);
+        width = clampDim(height * reqAspect, caps.widthMin, caps.widthMax);
       }
-    });
-    return best || base;
+    }
+
+    width = clampDim(width, caps.widthMin, caps.widthMax);
+    height = clampDim(height, caps.heightMin, caps.heightMax);
+
+    return {
+      id: facing + '_' + width + 'x' + height,
+      facingMode: facing,
+      width: width,
+      height: height,
+      frameRate: frameRate,
+      aspectRatio: width / height
+    };
   }
 
-  function applyMediaPreset(preset) {
+  function applyStreamDimensions(resolved) {
     var active = {
-      id: preset.id || 'default',
-      width: preset.width,
-      height: preset.height,
-      frameRate: preset.frameRate || config.mediaCapabilities.frameRate || 30,
-      aspectRatio: preset.aspectRatio || (preset.width / preset.height)
+      id: resolved.id || 'default',
+      facingMode: resolved.facingMode,
+      width: resolved.width,
+      height: resolved.height,
+      frameRate: resolved.frameRate || config.mediaCapabilities.frameRate || 30,
+      aspectRatio: resolved.aspectRatio || (resolved.width / resolved.height)
     };
     window.__spoofActiveMediaCapabilities = active;
     config.mediaCapabilities = Object.assign({}, config.mediaCapabilities, {
@@ -371,13 +402,13 @@
             return;
           }
 
-          var preset = selectMediaPreset(constraints);
-          var active = applyMediaPreset(preset);
+          var resolved = resolveStreamDimensions(constraints);
+          var active = applyStreamDimensions(resolved);
           reportMediaStatus(constraints, active);
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 
-          var frameWaitMs = active.width >= 1920 ? 12000 : 8000;
+          var frameWaitMs = Math.max(active.width, active.height) >= 1920 ? 12000 : 8000;
           waitForFrames(1, frameWaitMs).then(function (gotFrame) {
             if (!gotFrame) {
               traceMedia('waitForFrames timeout bytes=' + (window.__spoofLastFrameBytes || 0), 'error');
@@ -594,13 +625,17 @@
     window.addEventListener('pageshow', hookNavigatorMediaDevices);
   }
 
-  window.__spoofApplyMediaPreset = applyMediaPreset;
+  window.__spoofResolveStreamDimensions = resolveStreamDimensions;
+  window.__spoofApplyStreamDimensions = applyStreamDimensions;
   window.__spoofGetActiveCaps = activeMediaCapabilities;
-  window.__spoofSelectMediaPreset = selectMediaPreset;
+  window.__spoofApplyMediaPreset = applyStreamDimensions;
+  window.__spoofSelectMediaPreset = resolveStreamDimensions;
 
   try {
-    Object.defineProperty(window, '__spoofApplyMediaPreset', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofResolveStreamDimensions', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofApplyStreamDimensions', { enumerable: false, configurable: true, writable: true });
     Object.defineProperty(window, '__spoofGetActiveCaps', { enumerable: false, configurable: true, writable: true });
+    Object.defineProperty(window, '__spoofApplyMediaPreset', { enumerable: false, configurable: true, writable: true });
     Object.defineProperty(window, '__spoofSelectMediaPreset', { enumerable: false, configurable: true, writable: true });
   } catch (e) {}
 

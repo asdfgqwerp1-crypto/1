@@ -18,6 +18,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
     let cameras: [CameraDevice]
     let microphones: [AudioDevice]
     let mediaCapabilities: MediaCapabilities
+    let mediaDefaults: MediaDefaults?
     let mediaPresets: [MediaPreset]?
     let frameTiming: FrameTiming?
     let frameNoise: FrameNoise?
@@ -86,6 +87,17 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
         let widthMax: Int
         let heightMin: Int
         let heightMax: Int
+    }
+
+    struct MediaFacingDefaults: Codable, Equatable {
+        let width: Int
+        let height: Int
+        let frameRate: Double?
+    }
+
+    struct MediaDefaults: Codable, Equatable {
+        let user: MediaFacingDefaults?
+        let environment: MediaFacingDefaults?
     }
 
     struct MediaPreset: Codable, Equatable, Identifiable {
@@ -169,6 +181,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
             cameras: cameras,
             microphones: microphones,
             mediaCapabilities: mediaCapabilities,
+            mediaDefaults: mediaDefaults,
             mediaPresets: mediaPresets,
             frameTiming: frameTiming,
             frameNoise: frameNoise,
@@ -202,6 +215,7 @@ struct DeviceProfile: Codable, Identifiable, Equatable {
             cameras: cameras,
             microphones: microphones,
             mediaCapabilities: caps,
+            mediaDefaults: mediaDefaults,
             mediaPresets: mediaPresets,
             frameTiming: frameTiming,
             frameNoise: frameNoise,
@@ -237,7 +251,7 @@ private struct InjectionConfig: Encodable {
     let cameras: [DeviceProfile.CameraDevice]
     let microphones: [DeviceProfile.AudioDevice]
     let mediaCapabilities: DeviceProfile.MediaCapabilities
-    let mediaPresets: [DeviceProfile.MediaPreset]?
+    let mediaDefaults: DeviceProfile.MediaDefaults?
     let frameTiming: FrameTiming?
     let frameNoise: DeviceProfile.FrameNoise?
     let videoTrackSpoof: DeviceProfile.VideoTrackSpoof?
@@ -255,7 +269,7 @@ private struct InjectionConfig: Encodable {
         cameras = profile.cameras
         microphones = profile.microphones
         mediaCapabilities = profile.mediaCapabilities
-        mediaPresets = profile.mediaPresets
+        mediaDefaults = profile.mediaDefaults
         frameTiming = profile.resolvedFrameTiming
         frameNoise = profile.frameNoise
         videoTrackSpoof = profile.videoTrackSpoof

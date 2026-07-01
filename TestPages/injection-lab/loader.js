@@ -37,7 +37,7 @@
       cameras: profile.cameras,
       microphones: profile.microphones,
       mediaCapabilities: profile.mediaCapabilities,
-      mediaPresets: profile.mediaPresets,
+      mediaDefaults: profile.mediaDefaults,
       frameTiming: profile.frameTiming,
       frameNoise: profile.frameNoise,
       videoTrackSpoof: profile.videoTrackSpoof,
@@ -109,17 +109,19 @@
       assert('enumerate pre-permission count', devicesBefore.length === 2, 'count=' + devicesBefore.length);
       assert('enumerate pre-permission empty ids', devicesBefore.every(function (d) { return !d.deviceId; }));
 
-      if (typeof window.__spoofSelectMediaPreset === 'function') {
-        var hdPreset = window.__spoofSelectMediaPreset({ video: { width: 1280, height: 720 } });
-        assert('preset 720p', hdPreset && hdPreset.width === 1280 && hdPreset.height === 720,
-          hdPreset ? (hdPreset.width + 'x' + hdPreset.height) : 'none');
+      if (typeof window.__spoofResolveStreamDimensions === 'function') {
+        var hd = window.__spoofResolveStreamDimensions({ video: { width: 1280, height: 720 } });
+        assert('resolve 720p from constraints', hd && hd.width === 1280 && hd.height === 720,
+          hd ? (hd.width + 'x' + hd.height) : 'none');
       }
 
       var stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
       assert('getUserMedia stream', !!stream && stream.getVideoTracks().length === 1);
       var track = stream.getVideoTracks()[0];
       var settings = track.getSettings();
-      assert('track width', settings.width === profile.mediaCapabilities.width, JSON.stringify(settings));
+      var expectedW = (profile.mediaDefaults && profile.mediaDefaults.user && profile.mediaDefaults.user.width)
+        || profile.mediaCapabilities.width;
+      assert('track width', settings.width === expectedW, JSON.stringify(settings));
       assert('track deviceId', settings.deviceId === profile.cameras[0].deviceId, JSON.stringify(settings));
       assert('bridge startStream', (window.__MOCK_BRIDGE_EVENTS__ || []).some(function (e) { return e.event === 'startStream'; }));
 

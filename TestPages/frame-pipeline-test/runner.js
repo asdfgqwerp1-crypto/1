@@ -37,7 +37,7 @@
       cameras: profile.cameras,
       microphones: profile.microphones,
       mediaCapabilities: profile.mediaCapabilities,
-      mediaPresets: profile.mediaPresets,
+      mediaDefaults: profile.mediaDefaults,
       frameTiming: profile.frameTiming,
       frameNoise: profile.frameNoise,
       videoTrackSpoof: profile.videoTrackSpoof,

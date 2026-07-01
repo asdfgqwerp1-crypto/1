@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.8: KYC разрешения без пресетов — constraints + mediaDefaults
+
+**Модули:** `getUserMedia.js`, `DeviceProfile.swift`, `iphone11_ios265.json`, `ProfileStore.swift`, `bundle.js`, `BuildInfo.swift`
+**Что изменено:** Убраны `mediaPresets`; `resolveStreamDimensions` — прямое чтение width/height из constraints (ideal/exact/min/max), иначе `mediaDefaults` по facingMode: user=1080×1920, environment=1920×1080; clamp до widthMax/heightMax (4032×3024)
+**Почему:** KYC запрашивает конкретные размеры и две камеры; пресеты vga/hd/fhd не покрывали portrait selfie и document back camera
+**Тесты:** не запускались (нет устройства)
+**Риски:** без constraints только facingMode — не 480×640 Safari baseline, а KYC defaults; webrtc-inspector без width всё ещё 1080×1920 на user
+
 ## 2026-07-01 — v29.14.7: UI — запрошенное сайтом разрешение камеры
 
 **Модули:** `getUserMedia.js`, `MediaDeliveryStatusStore.swift`, `SpoofControlMessageHandler.swift`, `BrowserScreenView.swift`, `AppState.swift`, `bundle.js`, `BuildInfo.swift`

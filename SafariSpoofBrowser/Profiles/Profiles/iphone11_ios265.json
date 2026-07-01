@@ -69,11 +69,10 @@
     "heightMin": 1,
     "heightMax": 3024
   },
-  "mediaPresets": [
-    { "id": "selfie_vga", "width": 480, "height": 640, "frameRate": 30, "aspectRatio": 0.75 },
-    { "id": "selfie_hd", "width": 1280, "height": 720, "frameRate": 30, "aspectRatio": 1.7777777777777777 },
-    { "id": "selfie_fhd", "width": 1920, "height": 1080, "frameRate": 30, "aspectRatio": 1.7777777777777777 }
-  ],
+  "mediaDefaults": {
+    "user": { "width": 1080, "height": 1920, "frameRate": 30 },
+    "environment": { "width": 1920, "height": 1080, "frameRate": 30 }
+  },
   "frameTiming": {
     "targetFrameRate": 30,
     "minDeliverFps": 24,
