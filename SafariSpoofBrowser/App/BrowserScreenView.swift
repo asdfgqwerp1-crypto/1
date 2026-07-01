@@ -9,6 +9,7 @@ struct BrowserScreenView: View {
 
     @State private var showDebugPanel = false
     @ObservedObject private var debugLogStore = DebugLogStore.shared
+    @ObservedObject private var mediaStatus = MediaDeliveryStatusStore.shared
 
     private var activeCoordinator: BrowserCoordinator {
         tabCoordinator.coordinator(for: tabCoordinator.activeTabID)
@@ -99,17 +100,24 @@ struct BrowserScreenView: View {
     }
 
     private var statusBar: some View {
-        HStack(spacing: 8) {
-            Text(activeCoordinator.statusMessage)
-                .foregroundStyle(
-                    activeCoordinator.statusMessage.contains("Ошибка")
-                        || activeCoordinator.statusMessage.contains("Не открылось")
-                        ? .red : .secondary
-                )
-            Spacer(minLength: 8)
-            Text(String(format: "%.0f fps · %d frm", appState.bridgeMetrics.fps, appState.bridgeMetrics.framesSent))
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                Text(activeCoordinator.statusMessage)
+                    .foregroundStyle(
+                        activeCoordinator.statusMessage.contains("Ошибка")
+                            || activeCoordinator.statusMessage.contains("Не открылось")
+                            ? .red : .secondary
+                    )
+                Spacer(minLength: 8)
+                Text(String(format: "%.0f fps · %d frm", appState.bridgeMetrics.fps, appState.bridgeMetrics.framesSent))
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(appState.bridgeMetrics.framesSent > 0 ? .green : .orange)
+            }
+            Text(mediaStatus.statusLine)
                 .font(.caption2.monospaced())
-                .foregroundStyle(appState.bridgeMetrics.framesSent > 0 ? .green : .orange)
+                .foregroundStyle(mediaStatus.hasNativeMismatch ? .orange : .secondary)
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
         }
         .font(.caption)
         .frame(maxWidth: .infinity, alignment: .leading)

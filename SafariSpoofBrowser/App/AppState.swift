@@ -142,6 +142,10 @@ final class AppState: ObservableObject, FrameBridgeDelegate {
         frameBridge.setDeliveryEnabled(true)
         if let config {
             videoPipeline.updateStreamDelivery(config)
+            MediaDeliveryStatusStore.shared.updateNativeDelivered(
+                width: config.width,
+                height: config.height
+            )
         }
         if isNetworkVideoSource {
             ensureNetworkStreamRunning(forceRestart: true)

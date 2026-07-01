@@ -71,6 +71,47 @@
     return undefined;
   }
 
+  function describeRequestedVideo(constraints) {
+    var video = constraints && constraints.video;
+    if (!video || video === true) {
+      return { label: 'default', width: null, height: null };
+    }
+    var reqW = constraintValue(video, 'width');
+    var reqH = constraintValue(video, 'height');
+    if (reqW != null && reqH != null) {
+      return { label: Math.round(reqW) + '×' + Math.round(reqH), width: reqW, height: reqH };
+    }
+    if (reqW != null) {
+      return { label: Math.round(reqW) + '×?', width: reqW, height: null };
+    }
+    if (reqH != null) {
+      return { label: '?×' + Math.round(reqH), width: null, height: reqH };
+    }
+    return { label: 'default', width: null, height: null };
+  }
+
+  function reportMediaStatus(constraints, active) {
+    if (typeof window.__spoofSendControl !== 'function') return;
+    var req = describeRequestedVideo(constraints);
+    var facing = parseFacingMode(constraints);
+    traceMedia(
+      'site request ' + req.label + ' facing=' + facing
+        + ' → preset ' + active.width + 'x' + active.height + ' (' + (active.id || 'default') + ')',
+      'info'
+    );
+    window.__spoofSendControl('media/status', {
+      host: location.host || 'main',
+      requested: req.label,
+      reqWidth: req.width,
+      reqHeight: req.height,
+      facingMode: facing,
+      preset: active.id || 'default',
+      width: active.width,
+      height: active.height,
+      frameRate: active.frameRate
+    });
+  }
+
   function selectMediaPreset(constraints) {
     var presets = config.mediaPresets || [];
     var base = {
@@ -332,6 +373,7 @@
 
           var preset = selectMediaPreset(constraints);
           var active = applyMediaPreset(preset);
+          reportMediaStatus(constraints, active);
           startNativePipeline(active);
           canvas = window.__spoofCanvas;
 

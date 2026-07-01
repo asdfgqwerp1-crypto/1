@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.7: UI — запрошенное сайтом разрешение камеры
+
+**Модули:** `getUserMedia.js`, `MediaDeliveryStatusStore.swift`, `SpoofControlMessageHandler.swift`, `BrowserScreenView.swift`, `AppState.swift`, `bundle.js`, `BuildInfo.swift`
+**Что изменено:** При gUM парсятся constraints (width/height/facingMode) → `media/status`; статус-бар: `host: запрос 1920×1080 (user) → 1920×1080 | натив 480×640` (оранжевый при mismatch); лог `[gUM] site request … → preset …`
+**Почему:** Оператору нужно видеть что запросил сайт vs что реально масштабирует натив
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.14.6: Daon/Onfido — stream owner lease, no delivery steal
 
 **Модули:** `FrameBridge.swift`, `SpoofControlMessageHandler.swift`, `getUserMedia.js`, `frameReceiver.js`, `bundle.js`, `BuildInfo.swift`

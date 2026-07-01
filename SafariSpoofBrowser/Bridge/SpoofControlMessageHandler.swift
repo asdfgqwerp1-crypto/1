@@ -32,6 +32,13 @@ final class SpoofControlMessageHandler: NSObject, WKScriptMessageHandler {
             return
         }
 
+        if path == "media/status" {
+            Task { @MainActor in
+                MediaDeliveryStatusStore.shared.updateSiteRequest(params: params)
+            }
+            return
+        }
+
         if path == "stream/stop" {
             var control: [String: Any] = ["event": "stopStream"]
             params.forEach { key, value in

@@ -40,6 +40,7 @@
 		A10000010000000000000059 /* BrowserSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000059; };
 		A10000010000000000000060 /* TabCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000060; };
 		A10000010000000000000047 /* DebugLogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000047; };
+		A10000010000000000000061 /* MediaDeliveryStatusStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000061; };
 		A10000010000000000000048 /* DebugOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000048; };
 		A10000010000000000000049 /* DebugSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000049; };
 		A10000010000000000000041 /* FrameTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000010000000000000041; };
@@ -104,6 +105,7 @@
 		A20000010000000000000060 /* TabCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabCoordinator.swift; sourceTree = "<group>"; };
 		A20000010000000000000046 /* webkit-stealth.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = webkit-stealth.js; sourceTree = "<group>"; };
 		A20000010000000000000047 /* DebugLogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogStore.swift; sourceTree = "<group>"; };
+		A20000010000000000000061 /* MediaDeliveryStatusStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaDeliveryStatusStore.swift; sourceTree = "<group>"; };
 		A20000010000000000000048 /* DebugOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugOverlayView.swift; sourceTree = "<group>"; };
 		A20000010000000000000049 /* DebugSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugSettings.swift; sourceTree = "<group>"; };
 		A20000010000000000000050 /* debug-console.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = debug-console.js; sourceTree = "<group>"; };
@@ -201,6 +203,7 @@
 				A20000010000000000000034 /* ServerReachability.swift */,
 				A20000010000000000000035 /* TestBookmarks.swift */,
 				A20000010000000000000047 /* DebugLogStore.swift */,
+				A20000010000000000000061 /* MediaDeliveryStatusStore.swift */,
 				A20000010000000000000048 /* DebugOverlayView.swift */,
 				A20000010000000000000049 /* DebugSettings.swift */,
 				A20000010000000000000002 /* AppState.swift */,
@@ -458,6 +461,7 @@
 				A10000010000000000000034 /* ServerReachability.swift in Sources */,
 				A10000010000000000000035 /* TestBookmarks.swift in Sources */,
 				A10000010000000000000047 /* DebugLogStore.swift in Sources */,
+				A10000010000000000000061 /* MediaDeliveryStatusStore.swift in Sources */,
 				A10000010000000000000048 /* DebugOverlayView.swift in Sources */,
 				A10000010000000000000049 /* DebugSettings.swift in Sources */,
 				A10000010000000000000036 /* ExportBridge.swift in Sources */,
