@@ -74,6 +74,11 @@ final class FrameBridge: NSObject {
         attachedWebViews.allObjects
     }
 
+    private static func host(for frame: WKFrameInfo?) -> String {
+        guard let frame else { return "main" }
+        return frame.request.url.host ?? "main"
+    }
+
     func setSchemeAuthKey(_ key: String) {
         SchemeAuthValidator.setAuthKey(key)
     }
@@ -258,12 +263,11 @@ final class FrameBridge: NSObject {
         label: String
     ) {
         DispatchQueue.main.async {
-            webView.evaluateJavaScript(script, in: frame, in: .page) { _, error in
-                guard let error else { return }
-                let host = frame?.request?.url?.host ?? "main"
+            webView.evaluateJavaScript(script, in: frame, in: .page) { @MainActor result in
+                guard case .failure(let error) = result else { return }
                 DebugLogStore.shared.append(
                     level: "warn",
-                    message: "[native] \(label) fail host=\(host): \(error.localizedDescription)"
+                    message: "[native] \(label) fail host=\(Self.host(for: frame)): \(error.localizedDescription)"
                 )
             }
         }
@@ -284,10 +288,9 @@ final class FrameBridge: NSObject {
                 in: .page,
                 completionHandler: { @MainActor result in
                     guard case .failure(let error) = result else { return }
-                    let host = frame?.request?.url?.host ?? "main"
                     DebugLogStore.shared.append(
                         level: "warn",
-                        message: "[native] \(label) fail host=\(host): \(error.localizedDescription)"
+                        message: "[native] \(label) fail host=\(Self.host(for: frame)): \(error.localizedDescription)"
                     )
                 }
             )

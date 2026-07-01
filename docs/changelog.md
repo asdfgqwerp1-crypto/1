@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.2: CI fix — дополнение v29.14.1 (host helper + Result handler)
+
+**Модули:** `FrameBridge.swift`, `BuildInfo.swift`
+**Что изменено:** Добавлен пропущенный `host(for:)`; `runScript` completion → `Result`; убран `request?` optional chaining
+**Почему:** v29.14.1 закоммичен неполностью — CI `Self has no member host` + старый evaluateJS handler
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.14.1: CI fix — WKFrameInfo.request + evaluateJavaScript Result (Xcode 26)
 
 **Модули:** `FrameBridge.swift`, `BuildInfo.swift`
