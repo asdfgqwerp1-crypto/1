@@ -2,6 +2,14 @@
 
 Journal of important project changes. Maintained by agents per [agents.md](../agents.md).
 
+## 2026-07-01 — v29.14.5: CI fix — handleJavaScriptFailure @MainActor (Xcode 26)
+
+**Модули:** `FrameBridge.swift`, `BuildInfo.swift`
+**Что изменено:** `handleJavaScriptFailure` помечен `@MainActor` — доступ к `DebugLogStore.shared.append` из completion handler
+**Почему:** Codemagic Xcode 26.4 — `call to main actor-isolated instance method 'append' in a synchronous nonisolated context`
+**Тесты:** не запускались (нет устройства)
+**Риски:** нет
+
 ## 2026-07-01 — v29.14.4: Onfido document step — stale WKFrameInfo rebind
 
 **Модули:** `FrameBridge.swift`, `BrowserCoordinator.swift`, `frameReceiver.js`, `bundle.js`, `BuildInfo.swift`

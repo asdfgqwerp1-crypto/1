@@ -278,6 +278,7 @@ final class FrameBridge: NSObject {
         }
     }
 
+    @MainActor
     private func handleJavaScriptFailure(
         error: Error,
         frame: WKFrameInfo?,
