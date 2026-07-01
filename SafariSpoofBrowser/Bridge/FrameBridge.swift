@@ -61,7 +61,7 @@ final class FrameBridge: NSObject {
         deliveryWebView = webView
         deliveryFrame = frame
         guard let frame else { return }
-        let host = frame.request?.url?.host ?? "?"
+        let host = Self.host(for: frame)
         DispatchQueue.main.async {
             DebugLogStore.shared.append(
                 level: "info",

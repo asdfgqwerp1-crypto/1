@@ -1,6 +1,6 @@
 import Foundation
 
 enum BuildInfo {
-    static let marker = "v29.14.0"
+    static let marker = "v29.14.1"
     static let frameDelivery = "jpeg-only"
 }
